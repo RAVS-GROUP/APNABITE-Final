@@ -1,1 +1,39 @@
+.app-button {
+  border: 0;
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+  font-weight: var(--font-semibold);
+}
+
+.skeleton {
+  background: #eeeeee;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.5),
+    transparent
+  );
+  animation: skeleton-loading 1.2s infinite;
+}
+
+@keyframes skeleton-loading {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hidden {
+  display: none !important;
+}
 
