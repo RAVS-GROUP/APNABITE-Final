@@ -1,11 +1,1 @@
-{
-  "name": "ApnaBite",
-  "short_name": "ApnaBite",
-  "description": "Apna Swaad, Apni Pasand",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "orientation": "portrait",
-  "icons": []
-}
+
