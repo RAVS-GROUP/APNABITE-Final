@@ -1,0 +1,39 @@
+body {
+  background: #ffffff;
+  color: #222222;
+}
+
+#app {
+  width: 100%;
+  max-width: var(--app-max-width);
+  min-height: 100vh;
+  margin: 0 auto;
+}
+
+.app-loader {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.loader-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #dddddd;
+  border-top-color: #222222;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.app-loader p {
+  font-size: var(--text-sm);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
