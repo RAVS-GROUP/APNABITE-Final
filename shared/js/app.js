@@ -1,6 +1,14 @@
+/**
+ * ============================================================
+ * APNABITE FRONTEND
+ * FILE: shared/js/app.js
+ * PURPOSE: Application bootstrap and API connection test
+ * ============================================================
+ */
+
 const App = {
 
-  init() {
+  async init() {
 
     this.hideLoader();
 
@@ -9,29 +17,35 @@ const App = {
     );
 
     console.log(
-      "Performance architecture: ACTIVE"
+      "Testing Backend API..."
     );
 
-    console.log(
-      "API gateway: READY"
-    );
+    await this.testBackend();
 
-    console.log(
-      "Local storage: READY"
-    );
-
-    console.log(
-      "Cache system: READY"
-    );
-
-    console.log(
-      "Session system: READY"
-    );
-
-    console.log(
-      "Cart system: READY"
-    );
   },
+
+
+  async testBackend() {
+
+    try {
+
+      const result =
+        await API.request("health");
+
+      console.log(
+        "BACKEND CONNECTION: PASS",
+        result
+      );
+
+    } catch (error) {
+
+      console.error(
+        "BACKEND CONNECTION: FAIL",
+        error
+      );
+    }
+  },
+
 
   hideLoader() {
 
@@ -39,9 +53,11 @@ const App = {
       document.getElementById("appLoader");
 
     if (loader) {
+
       loader.classList.add("hidden");
     }
   }
+
 };
 
 
@@ -54,7 +70,7 @@ document.addEventListener(
 
 
 /*
- * Register Service Worker.
+ * Service Worker
  */
 if ("serviceWorker" in navigator) {
 
@@ -65,15 +81,19 @@ if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("./sw.js")
         .then(() => {
+
           console.log(
             "ApnaBite Service Worker registered."
           );
+
         })
         .catch(error => {
+
           console.error(
             "Service Worker registration failed:",
             error
           );
+
         });
 
     }
