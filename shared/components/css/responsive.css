@@ -1,1 +1,17 @@
+@media (min-width: 601px) {
+  body {
+    background: #f5f5f5;
+  }
 
+  #app {
+    background: #ffffff;
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --space-lg: 12px;
+    --text-md: 14px;
+  }
+}
