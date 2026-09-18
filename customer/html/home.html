@@ -8,37 +8,75 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <meta name="theme-color" content="#ffffff">
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
 
   <meta
     name="description"
-    content="Discover nearby food and home kitchens on ApnaBite"
+    content="Discover nearby food, home kitchens and meals on ApnaBite"
   >
 
   <title>Home | ApnaBite</title>
 
-  <link rel="manifest" href="../manifest.json">
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
 
-  <link rel="stylesheet" href="../shared/css/reset.css">
-  <link rel="stylesheet" href="../shared/css/variables.css">
-  <link rel="stylesheet" href="../shared/css/common.css">
-  <link rel="stylesheet" href="../shared/css/components.css">
-  <link rel="stylesheet" href="../shared/css/role-home.css">
-  <link rel="stylesheet" href="../shared/css/customer-home.css">
-  <link rel="stylesheet" href="../shared/css/responsive.css">
+  <!-- COMMON CSS -->
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+  <!-- CUSTOMER HOME CSS -->
+
+  <link
+    rel="stylesheet"
+    href="../css/home.css"
+  >
 </head>
 
 <body data-required-role="Customer">
 
-  <main class="customer-app">
+  <main
+    class="customer-app"
+    id="customerApp"
+  >
 
-    <!-- SESSION VALIDATION LOADER -->
+    <!-- INITIAL SESSION LOADER -->
 
     <div
-      class="role-home-loader"
+      class="customer-page-loader"
       id="roleHomeLoader"
     >
-      <div class="loader-spinner"></div>
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
 
       <p>
         Preparing your ApnaBite home...
@@ -46,12 +84,14 @@
     </div>
 
 
-    <!-- CUSTOMER HOME -->
+    <!-- CUSTOMER HOME CONTENT -->
 
     <div
       class="customer-home hidden"
       id="roleHomeContent"
     >
+
+      <!-- HEADER -->
 
       <header class="customer-header">
 
@@ -59,7 +99,7 @@
           class="customer-location-button"
           id="customerLocationButton"
           type="button"
-          aria-label="View or update location"
+          aria-label="View or update delivery location"
         >
 
           <span
@@ -76,34 +116,45 @@
             </small>
 
             <strong id="customerLocationText">
-              Current location
+              Select location
             </strong>
 
           </span>
 
-          <span aria-hidden="true">
+          <span
+            class="customer-location-arrow"
+            aria-hidden="true"
+          >
             ▾
           </span>
 
         </button>
 
 
-        <button
-          class="customer-icon-button"
-          id="notificationButton"
-          type="button"
-          aria-label="Notifications"
-        >
-          🔔
+        <div class="customer-header-actions">
 
-          <span
-            class="notification-dot hidden"
-            id="notificationDot"
-          ></span>
-        </button>
+          <button
+            class="customer-icon-button"
+            id="notificationButton"
+            type="button"
+            aria-label="Open notifications"
+          >
+            <span aria-hidden="true">
+              🔔
+            </span>
+
+            <span
+              class="notification-dot hidden"
+              id="notificationDot"
+            ></span>
+          </button>
+
+        </div>
 
       </header>
 
+
+      <!-- SCROLLABLE PAGE CONTENT -->
 
       <section class="customer-main">
 
@@ -111,13 +162,17 @@
 
         <div class="customer-search-wrap">
 
-          <span aria-hidden="true">
+          <span
+            class="customer-search-icon"
+            aria-hidden="true"
+          >
             🔍
           </span>
 
           <input
             id="customerSearchInput"
             type="search"
+            inputmode="search"
             autocomplete="off"
             placeholder="Search food, dish or kitchen"
             aria-label="Search food, dish or kitchen"
@@ -135,12 +190,12 @@
         </div>
 
 
-        <!-- FOOD TYPE -->
+        <!-- VEG / NON-VEG FILTER -->
 
         <div
           class="food-type-filter"
           id="foodTypeFilter"
-          aria-label="Food preference"
+          aria-label="Select food preference"
         >
 
           <button
@@ -156,7 +211,11 @@
             data-food-type="VEG"
             type="button"
           >
-            <span class="veg-symbol"></span>
+            <span
+              class="veg-symbol"
+              aria-hidden="true"
+            ></span>
+
             Veg
           </button>
 
@@ -165,22 +224,34 @@
             data-food-type="NON_VEG"
             type="button"
           >
-            <span class="non-veg-symbol"></span>
+            <span
+              class="non-veg-symbol"
+              aria-hidden="true"
+            ></span>
+
             Non-Veg
           </button>
 
         </div>
 
 
-        <!-- CATEGORIES -->
+        <!-- FOOD CATEGORIES -->
 
-        <section class="customer-section">
+        <section
+          class="customer-section"
+          aria-labelledby="categoryHeading"
+        >
 
           <div class="customer-section-heading">
 
             <div>
-              <h2>What would you like?</h2>
-              <p>Browse by food category</p>
+              <h2 id="categoryHeading">
+                What would you like?
+              </h2>
+
+              <p>
+                Browse by food category
+              </p>
             </div>
 
           </div>
@@ -193,53 +264,88 @@
               data-category="Home Food"
               type="button"
             >
-              <span>🏠</span>
-              <strong>Home Food</strong>
+              <span aria-hidden="true">
+                🏠
+              </span>
+
+              <strong>
+                Home Food
+              </strong>
             </button>
+
 
             <button
               class="category-item"
               data-category="Meals"
               type="button"
             >
-              <span>🍱</span>
-              <strong>Meals</strong>
+              <span aria-hidden="true">
+                🍱
+              </span>
+
+              <strong>
+                Meals
+              </strong>
             </button>
+
 
             <button
               class="category-item"
               data-category="Tiffin"
               type="button"
             >
-              <span>🥘</span>
-              <strong>Tiffin</strong>
+              <span aria-hidden="true">
+                🥘
+              </span>
+
+              <strong>
+                Tiffin
+              </strong>
             </button>
+
 
             <button
               class="category-item"
               data-category="Snacks"
               type="button"
             >
-              <span>🥟</span>
-              <strong>Snacks</strong>
+              <span aria-hidden="true">
+                🥟
+              </span>
+
+              <strong>
+                Snacks
+              </strong>
             </button>
+
 
             <button
               class="category-item"
               data-category="Bakery"
               type="button"
             >
-              <span>🧁</span>
-              <strong>Bakery</strong>
+              <span aria-hidden="true">
+                🧁
+              </span>
+
+              <strong>
+                Bakery
+              </strong>
             </button>
+
 
             <button
               class="category-item"
               data-category="Sweets"
               type="button"
             >
-              <span>🍬</span>
-              <strong>Sweets</strong>
+              <span aria-hidden="true">
+                🍬
+              </span>
+
+              <strong>
+                Sweets
+              </strong>
             </button>
 
           </div>
@@ -249,13 +355,21 @@
 
         <!-- OFFERS -->
 
-        <section class="customer-section">
+        <section
+          class="customer-section"
+          aria-labelledby="offerHeading"
+        >
 
           <div class="customer-section-heading">
 
             <div>
-              <h2>Offers for you</h2>
-              <p>Available deals and rewards</p>
+              <h2 id="offerHeading">
+                Offers for you
+              </h2>
+
+              <p>
+                Deals, rewards and nearby offers
+              </p>
             </div>
 
           </div>
@@ -266,7 +380,8 @@
             id="customerOfferBanner"
           >
 
-            <div>
+            <div class="offer-banner-content">
+
               <span class="offer-label">
                 APNABITE
               </span>
@@ -276,8 +391,9 @@
               </h3>
 
               <p>
-                Local kitchens and offers will appear here.
+                Available offers will appear here.
               </p>
+
             </div>
 
             <span
@@ -294,16 +410,23 @@
 
         <!-- NEARBY KITCHENS -->
 
-        <section class="customer-section">
+        <section
+          class="customer-section"
+          aria-labelledby="nearbyKitchenHeading"
+        >
 
           <div class="customer-section-heading">
 
             <div>
-              <h2>Nearby kitchens</h2>
+              <h2 id="nearbyKitchenHeading">
+                Nearby kitchens
+              </h2>
+
               <p id="nearbyKitchenSubtitle">
                 Based on your selected location
               </p>
             </div>
+
 
             <button
               class="section-text-button"
@@ -316,59 +439,100 @@
           </div>
 
 
+          <!-- LOADING SKELETON -->
+
           <div
             class="kitchen-list"
             id="kitchenList"
           >
 
-            <div class="kitchen-skeleton">
-              <div class="skeleton kitchen-image-skeleton"></div>
+            <article class="kitchen-skeleton">
+
+              <div
+                class="skeleton kitchen-image-skeleton"
+              ></div>
 
               <div class="kitchen-skeleton-content">
-                <div class="skeleton skeleton-line-wide"></div>
-                <div class="skeleton skeleton-line-medium"></div>
-                <div class="skeleton skeleton-line-small"></div>
+
+                <div
+                  class="skeleton skeleton-line-wide"
+                ></div>
+
+                <div
+                  class="skeleton skeleton-line-medium"
+                ></div>
+
+                <div
+                  class="skeleton skeleton-line-small"
+                ></div>
+
               </div>
-            </div>
+
+            </article>
 
 
-            <div class="kitchen-skeleton">
-              <div class="skeleton kitchen-image-skeleton"></div>
+            <article class="kitchen-skeleton">
+
+              <div
+                class="skeleton kitchen-image-skeleton"
+              ></div>
 
               <div class="kitchen-skeleton-content">
-                <div class="skeleton skeleton-line-wide"></div>
-                <div class="skeleton skeleton-line-medium"></div>
-                <div class="skeleton skeleton-line-small"></div>
+
+                <div
+                  class="skeleton skeleton-line-wide"
+                ></div>
+
+                <div
+                  class="skeleton skeleton-line-medium"
+                ></div>
+
+                <div
+                  class="skeleton skeleton-line-small"
+                ></div>
+
               </div>
-            </div>
+
+            </article>
 
           </div>
 
+
+          <!-- EMPTY STATE -->
 
           <div
             class="customer-empty-state hidden"
             id="kitchenEmptyState"
           >
-            <span aria-hidden="true">
+
+            <span
+              class="empty-state-icon"
+              aria-hidden="true"
+            >
               🍽️
             </span>
 
             <h3>
-              Kitchens are being prepared
+              No kitchens available yet
             </h3>
 
             <p>
-              Active nearby kitchens will appear here after
-              discovery integration.
+              Active kitchens within your service location
+              will appear here.
             </p>
+
           </div>
 
         </section>
 
 
+        <!-- PAGE MESSAGE -->
+
         <div
-          class="role-home-message hidden"
+          class="customer-page-message hidden"
           id="roleHomeMessage"
+          role="status"
+          aria-live="polite"
         ></div>
 
       </section>
@@ -381,65 +545,103 @@
         aria-label="Customer navigation"
       >
 
-        <button
+        <a
           class="customer-nav-item active"
-          data-page="HOME"
-          type="button"
+          href="home.html"
           aria-current="page"
         >
-          <span aria-hidden="true">🏠</span>
-          <strong>Home</strong>
-        </button>
+          <span aria-hidden="true">
+            🏠
+          </span>
+
+          <strong>
+            Home
+          </strong>
+        </a>
 
 
-        <button
+        <a
           class="customer-nav-item"
-          data-page="ORDERS"
-          type="button"
+          href="orders.html"
         >
-          <span aria-hidden="true">📦</span>
-          <strong>Orders</strong>
-        </button>
+          <span aria-hidden="true">
+            📦
+          </span>
+
+          <strong>
+            Orders
+          </strong>
+        </a>
 
 
-        <button
+        <a
           class="customer-nav-item"
-          data-page="DINE_IN"
-          type="button"
+          href="dine-in.html"
         >
-          <span aria-hidden="true">🍽️</span>
-          <strong>Dine-In</strong>
-        </button>
+          <span aria-hidden="true">
+            🍽️
+          </span>
+
+          <strong>
+            Dine-In
+          </strong>
+        </a>
 
 
-        <button
+        <a
           class="customer-nav-item"
-          data-page="ACCOUNT"
-          type="button"
+          href="account.html"
         >
-          <span aria-hidden="true">👤</span>
-          <strong>Account</strong>
-        </button>
+          <span aria-hidden="true">
+            👤
+          </span>
+
+          <strong>
+            Account
+          </strong>
+        </a>
 
       </nav>
+
+
+      <!-- REQUIRED SAFE SESSION DATA -->
+
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+
+        <button
+          id="roleLogoutButton"
+          type="button"
+          tabindex="-1"
+        >
+          Logout
+        </button>
+      </div>
 
     </div>
 
   </main>
 
 
-  <script src="../shared/js/storage.js"></script>
-  <script src="../shared/js/cache.js"></script>
-  <script src="../shared/js/api.js"></script>
-  <script src="../shared/js/session.js"></script>
-  <script src="../shared/js/auth.js"></script>
+  <!-- COMMON JAVASCRIPT -->
 
-  <script src="../shared/js/location.js"></script>
-  <script src="../shared/js/service-location.js"></script>
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/location.js"></script>
+  <script src="../../shared/js/service-location.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
 
-  <script src="../shared/js/app-router.js"></script>
-  <script src="../shared/js/role-home.js"></script>
-  <script src="../shared/js/customer-home.js"></script>
+  <!-- CUSTOMER HOME JAVASCRIPT -->
+
+  <script src="../js/home.js"></script>
 
 </body>
 </html>
