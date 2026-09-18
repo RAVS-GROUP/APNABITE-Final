@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <meta
+    name="description"
+    content="Manage your ApnaBite delivery addresses"
+  >
+
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
+
+  <title>Saved Addresses | ApnaBite</title>
+
+  <!-- Shared styles -->
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+  <!-- Customer styles -->
+
+  <link
+    rel="stylesheet"
+    href="../css/customer-common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/addresses.css"
+  >
+</head>
+
+<body data-required-role="Customer">
+
+  <main
+    class="customer-app customer-page"
+    id="customerAddressesPage"
+  >
+
+    <!-- Customer access loader -->
+
+    <div
+      class="customer-page-loader"
+      id="roleHomeLoader"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
+      <p>
+        Loading your addresses...
+      </p>
+    </div>
+
+
+    <!-- Protected page content -->
+
+    <div
+      class="customer-addresses customer-bottom-safe-area hidden"
+      id="roleHomeContent"
+    >
+
+      <!-- Header -->
+
+      <header class="addresses-header">
+
+        <a
+          class="addresses-back-button"
+          href="account.html"
+          aria-label="Back to account"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+        </a>
+
+
+        <div class="addresses-header-title">
+
+          <h1>
+            Saved Addresses
+          </h1>
+
+          <p>
+            Manage your delivery locations
+          </p>
+
+        </div>
+
+
+        <button
+          class="addresses-refresh-button"
+          id="refreshAddressesButton"
+          type="button"
+          aria-label="Refresh addresses"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 11a8.1 8.1 0 0 0-15.5-2"
+            ></path>
+
+            <path d="M4 4v5h5"></path>
+
+            <path
+              d="M4 13a8.1 8.1 0 0 0 15.5 2"
+            ></path>
+
+            <path d="M20 20v-5h-5"></path>
+          </svg>
+        </button>
+
+      </header>
+
+
+      <!-- Required role information -->
+
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+
+        <button
+          id="roleLogoutButton"
+          type="button"
+        >
+          Logout
+        </button>
+      </div>
+
+
+      <!-- Status message -->
+
+      <div
+        class="customer-page-message hidden"
+        id="roleHomeMessage"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- Address information banner -->
+
+      <section
+        class="addresses-intro"
+        aria-labelledby="addressesIntroTitle"
+      >
+
+        <div>
+
+          <span class="addresses-intro-label">
+            Delivery locations
+          </span>
+
+          <h2 id="addressesIntroTitle">
+            Where should we deliver?
+          </h2>
+
+          <p>
+            Select your current location or choose an active
+            ApnaBite service district.
+          </p>
+
+        </div>
+
+
+        <div
+          class="addresses-intro-icon"
+          aria-hidden="true"
+        >
+          📍
+        </div>
+
+      </section>
+
+
+      <!-- Add location actions -->
+
+      <section
+        class="addresses-actions"
+        aria-labelledby="addLocationTitle"
+      >
+
+        <div class="addresses-section-heading">
+
+          <h2 id="addLocationTitle">
+            Add a location
+          </h2>
+
+          <p>
+            Choose how you want to set your delivery location
+          </p>
+
+        </div>
+
+
+        <div class="addresses-action-grid">
+
+          <button
+            class="address-action-card"
+            id="useDeviceLocationButton"
+            type="button"
+          >
+
+            <span
+              class="address-action-icon"
+              aria-hidden="true"
+            >
+              🎯
+            </span>
+
+            <span class="address-action-content">
+
+              <strong>
+                Use current location
+              </strong>
+
+              <small>
+                Detect location from this device
+              </small>
+
+            </span>
+
+            <span
+              class="address-action-arrow"
+              aria-hidden="true"
+            >
+              ›
+            </span>
+
+          </button>
+
+
+          <button
+            class="address-action-card"
+            id="chooseDistrictButton"
+            type="button"
+          >
+
+            <span
+              class="address-action-icon"
+              aria-hidden="true"
+            >
+              🗺️
+            </span>
+
+            <span class="address-action-content">
+
+              <strong>
+                Choose service district
+              </strong>
+
+              <small>
+                Select an active ApnaBite district
+              </small>
+
+            </span>
+
+            <span
+              class="address-action-arrow"
+              aria-hidden="true"
+            >
+              ›
+            </span>
+
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- Current saved location -->
+
+      <section
+        class="saved-addresses-section"
+        aria-labelledby="savedAddressesTitle"
+      >
+
+        <div class="addresses-section-heading">
+
+          <h2 id="savedAddressesTitle">
+            Current delivery location
+          </h2>
+
+          <p>
+            This location is used to show nearby food options
+          </p>
+
+        </div>
+
+
+        <!-- Loading -->
+
+        <div
+          class="addresses-loading hidden"
+          id="addressesLoading"
+          role="status"
+          aria-live="polite"
+        >
+
+          <div class="address-skeleton">
+
+            <span class="address-skeleton-icon"></span>
+
+            <div class="address-skeleton-content">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Saved location card -->
+
+        <article
+          class="saved-address-card hidden"
+          id="savedAddressCard"
+        >
+
+          <div class="saved-address-main">
+
+            <div
+              class="saved-address-icon"
+              id="savedAddressIcon"
+              aria-hidden="true"
+            >
+              📍
+            </div>
+
+
+            <div class="saved-address-content">
+
+              <div class="saved-address-title-row">
+
+                <h3 id="savedAddressTitle">
+                  Delivery location
+                </h3>
+
+                <span
+                  class="saved-address-active-badge"
+                >
+                  Active
+                </span>
+
+              </div>
+
+              <p id="savedAddressDescription">
+                Your saved ApnaBite delivery location
+              </p>
+
+              <small id="savedAddressSource">
+                Saved location
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <div class="saved-address-actions">
+
+            <button
+              class="saved-address-button"
+              id="updateAddressButton"
+              type="button"
+            >
+              Update
+            </button>
+
+            <button
+              class="saved-address-button saved-address-button-danger"
+              id="removeAddressButton"
+              type="button"
+            >
+              Remove
+            </button>
+
+          </div>
+
+        </article>
+
+
+        <!-- Empty location -->
+
+        <div
+          class="addresses-empty hidden"
+          id="addressesEmpty"
+        >
+
+          <div
+            class="addresses-empty-icon"
+            aria-hidden="true"
+          >
+            📌
+          </div>
+
+          <h3>
+            No delivery location saved
+          </h3>
+
+          <p>
+            Add your current location or choose a service
+            district to discover nearby food.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- Manual district dialog -->
+
+      <div
+        class="address-dialog hidden"
+        id="districtDialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="districtDialogTitle"
+      >
+
+        <div
+          class="address-dialog-backdrop"
+          data-close-address-dialog="true"
+        ></div>
+
+
+        <div class="address-dialog-sheet">
+
+          <div class="address-dialog-handle"></div>
+
+
+          <div class="address-dialog-header">
+
+            <div>
+
+              <h2 id="districtDialogTitle">
+                Select service district
+              </h2>
+
+              <p>
+                Choose a district where ApnaBite service is active.
+              </p>
+
+            </div>
+
+
+            <button
+              class="address-dialog-close"
+              id="closeDistrictDialogButton"
+              type="button"
+              aria-label="Close district selection"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <div
+            class="address-dialog-loading hidden"
+            id="districtDialogLoading"
+          >
+            <span
+              class="address-dialog-spinner"
+              aria-hidden="true"
+            ></span>
+
+            <span>
+              Loading service districts...
+            </span>
+          </div>
+
+
+          <div
+            class="address-dialog-form"
+            id="districtDialogForm"
+          >
+
+            <label for="addressDistrictSelect">
+              Service district
+            </label>
+
+            <select
+              class="address-district-select"
+              id="addressDistrictSelect"
+            >
+              <option value="">
+                Select your district
+              </option>
+            </select>
+
+
+            <p
+              class="address-dialog-error hidden"
+              id="districtDialogError"
+              role="alert"
+            ></p>
+
+
+            <button
+              class="app-button app-button-primary"
+              id="confirmDistrictButton"
+              type="button"
+            >
+              Save Delivery Location
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Customer navigation -->
+
+      <nav
+        class="customer-bottom-nav"
+        aria-label="Customer navigation"
+      >
+
+        <a
+          class="customer-nav-item"
+          href="home.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            🏠
+          </span>
+
+          <span>Home</span>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="orders.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            📦
+          </span>
+
+          <span>Orders</span>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="dine-in.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            🍽️
+          </span>
+
+          <span>Dine-In</span>
+        </a>
+
+
+        <a
+          class="customer-nav-item is-active"
+          href="account.html"
+          aria-current="page"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            👤
+          </span>
+
+          <span>Account</span>
+        </a>
+
+      </nav>
+
+    </div>
+
+  </main>
+
+
+  <!-- Shared JavaScript -->
+
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/location.js"></script>
+  <script src="../../shared/js/service-location.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
+
+  <!-- Customer page JavaScript -->
+
+  <script src="../js/addresses.js"></script>
+
+</body>
+</html>
