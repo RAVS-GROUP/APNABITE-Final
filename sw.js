@@ -7,7 +7,7 @@
  */
 
 const CACHE_NAME =
-  "apnabite-static-v3";
+  "apnabite-static-v4";
 
 
 const STATIC_ASSETS = [
