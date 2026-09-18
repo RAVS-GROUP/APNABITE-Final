@@ -15,6 +15,11 @@
   transform: scale(0.99);
 }
 
+.app-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
 .app-button-primary {
   background: var(--color-primary);
   color: #ffffff;
@@ -31,7 +36,7 @@
 }
 
 .app-button:focus-visible,
-.location-input:focus-visible {
+.location-select:focus-visible {
   outline: 3px solid rgba(232, 93, 4, 0.22);
   outline-offset: 2px;
 }
@@ -102,9 +107,7 @@
 
 .location-description {
   max-width: 360px;
-  margin:
-    var(--space-md)
-    auto 0;
+  margin: var(--space-md) auto 0;
   color: var(--color-text-secondary);
   text-align: center;
   font-size: var(--text-md);
@@ -155,6 +158,176 @@
   font-size: var(--text-xs);
   line-height: 1.5;
 }
+
+.location-status {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.location-status-success {
+  border-color: #b9e5ca;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.location-status-error {
+  border-color: #f0c2c2;
+  background: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.button-spinner,
+.manual-location-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+
+/*
+ * MANUAL LOCATION DIALOG
+ */
+
+.dialog-open {
+  overflow: hidden;
+}
+
+.manual-location-dialog {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.manual-location-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 18, 18, 0.5);
+}
+
+.manual-location-sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--app-max-width);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding:
+    var(--space-sm)
+    var(--space-xl)
+    max(var(--space-xl), env(safe-area-inset-bottom));
+  border-radius:
+    var(--radius-xl)
+    var(--radius-xl)
+    0
+    0;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.manual-location-handle {
+  width: 42px;
+  height: 4px;
+  margin: 0 auto var(--space-lg);
+  border-radius: var(--radius-round);
+  background: var(--color-border);
+}
+
+.manual-location-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.manual-location-header h2 {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1.3;
+}
+
+.manual-location-header p {
+  margin: var(--space-sm) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.manual-location-close {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-page);
+  color: var(--color-text);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.manual-location-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 120px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.manual-location-loading .manual-location-spinner {
+  border-color: var(--color-border);
+  border-top-color: var(--color-primary);
+}
+
+.manual-location-form {
+  display: grid;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.manual-location-form label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.location-select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.manual-location-error {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  font-size: var(--text-sm);
+}
+
+
+/*
+ * FOUNDATION COMPONENTS
+ */
 
 .skeleton {
   position: relative;
