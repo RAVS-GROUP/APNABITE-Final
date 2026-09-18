@@ -15,7 +15,7 @@
 
   <meta
     name="description"
-    content="Create your secure ApnaBite account"
+    content="Create your ApnaBite account securely using mobile OTP"
   >
 
   <link
@@ -58,7 +58,10 @@
 
 <body>
 
-  <main class="auth-page">
+  <main
+    class="auth-page"
+    id="registerPage"
+  >
 
     <header class="auth-header">
 
@@ -88,10 +91,8 @@
 
     <section class="auth-content">
 
-      <div
-        class="auth-icon"
-        aria-hidden="true"
-      >
+      <div class="auth-icon" aria-hidden="true">
+
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -113,6 +114,7 @@
           <path d="M19 8v6"></path>
           <path d="M22 11h-6"></path>
         </svg>
+
       </div>
 
 
@@ -123,7 +125,8 @@
         </h1>
 
         <p class="auth-description">
-          Register securely using your mobile number and OTP.
+          Choose your role and verify your mobile number
+          securely using OTP.
         </p>
 
 
@@ -133,37 +136,13 @@
           novalidate
         >
 
-          <label for="registrationMobile">
-            Mobile number
-          </label>
-
-          <div class="mobile-input-wrap">
-
-            <span class="mobile-prefix">
-              +91
-            </span>
-
-            <input
-              id="registrationMobile"
-              class="auth-input mobile-input"
-              type="tel"
-              inputmode="numeric"
-              autocomplete="tel"
-              maxlength="10"
-              placeholder="Enter 10-digit number"
-              required
-            >
-
-          </div>
-
-
-          <label for="registrationRole">
-            Register as
+          <label for="roleInput">
+            I want to join as
           </label>
 
           <select
-            id="registrationRole"
             class="auth-input"
+            id="roleInput"
             required
           >
             <option value="">
@@ -184,26 +163,53 @@
           </select>
 
 
-          <label for="registrationEmail">
-            Email address (optional)
+          <label for="mobileInput">
+            Mobile number
+          </label>
+
+          <div class="mobile-input-wrap">
+
+            <span class="mobile-prefix">
+              +91
+            </span>
+
+            <input
+              id="mobileInput"
+              class="auth-input mobile-input"
+              type="tel"
+              inputmode="numeric"
+              autocomplete="tel"
+              maxlength="10"
+              placeholder="Enter 10-digit number"
+              required
+            >
+
+          </div>
+
+
+          <label for="emailInput">
+            Email
+            <span class="optional-label">
+              (optional)
+            </span>
           </label>
 
           <input
-            id="registrationEmail"
+            id="emailInput"
             class="auth-input"
             type="email"
             autocomplete="email"
-            placeholder="name@example.com"
+            placeholder="you@example.com"
           >
 
 
-          <label for="registrationLanguage">
+          <label for="languageInput">
             Preferred language
           </label>
 
           <select
-            id="registrationLanguage"
             class="auth-input"
+            id="languageInput"
           >
             <option value="en">
               English
@@ -217,10 +223,10 @@
 
           <button
             class="app-button app-button-primary"
-            id="requestRegistrationOtpButton"
+            id="sendRegistrationOtpButton"
             type="submit"
           >
-            Continue with OTP
+            Send Verification OTP
           </button>
 
         </form>
@@ -228,8 +234,11 @@
 
         <p class="auth-description">
           Already registered?
-          <a href="login.html">
-            Login securely
+          <a
+            class="auth-inline-link"
+            href="login.html"
+          >
+            Login
           </a>
         </p>
 
@@ -238,7 +247,7 @@
 
       <div
         class="hidden"
-        id="registrationOtpStep"
+        id="otpStep"
       >
 
         <h1 class="auth-title">
@@ -247,31 +256,31 @@
 
         <p class="auth-description">
           Enter the 6-digit OTP sent for
-          <strong id="registrationMaskedMobile"></strong>.
+          <strong id="maskedMobile"></strong>.
         </p>
 
 
         <div
           class="test-otp-box hidden"
-          id="registrationTestOtpBox"
+          id="testOtpBox"
         >
           Development test OTP:
-          <strong id="registrationTestOtpValue"></strong>
+          <strong id="testOtpValue"></strong>
         </div>
 
 
         <form
           class="auth-form"
-          id="registrationOtpForm"
+          id="otpForm"
           novalidate
         >
 
-          <label for="registrationOtp">
+          <label for="otpInput">
             One-time password
           </label>
 
           <input
-            id="registrationOtp"
+            id="otpInput"
             class="auth-input otp-input"
             type="text"
             inputmode="numeric"
@@ -284,7 +293,7 @@
 
           <button
             class="app-button app-button-primary"
-            id="verifyRegistrationOtpButton"
+            id="verifyRegistrationButton"
             type="submit"
           >
             Verify and Create Account
@@ -297,15 +306,15 @@
 
           <button
             class="auth-text-button"
-            id="editRegistrationButton"
+            id="changeDetailsButton"
             type="button"
           >
-            Edit details
+            Change details
           </button>
 
           <button
             class="auth-text-button"
-            id="resendRegistrationOtpButton"
+            id="resendOtpButton"
             type="button"
             disabled
           >
@@ -319,7 +328,7 @@
 
       <div
         class="auth-success hidden"
-        id="registrationSuccessStep"
+        id="successStep"
       >
 
         <div
@@ -335,9 +344,9 @@
 
         <p
           class="auth-description"
-          id="registrationSuccessMessage"
+          id="successMessage"
         >
-          Your verified ApnaBite account is ready.
+          Your ApnaBite account has been verified successfully.
         </p>
 
 
@@ -345,7 +354,6 @@
           class="app-button app-button-primary"
           id="goToLoginButton"
           type="button"
-          style="margin-top: 24px;"
         >
           Continue to Login
         </button>
@@ -355,7 +363,7 @@
 
       <div
         class="auth-message hidden"
-        id="registrationMessage"
+        id="authMessage"
         role="alert"
         aria-live="polite"
       ></div>
