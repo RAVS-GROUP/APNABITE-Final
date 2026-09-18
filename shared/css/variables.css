@@ -1,1 +1,53 @@
+:root {
+  --app-max-width: 600px;
 
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-xxl: 28px;
+  --space-3xl: 36px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-round: 999px;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-xxl: 28px;
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  --color-primary: #e85d04;
+  --color-primary-dark: #c94d00;
+  --color-primary-soft: #fff3eb;
+
+  --color-text: #222222;
+  --color-text-secondary: #666666;
+  --color-text-muted: #8a8a8a;
+
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-page: #f7f7f7;
+  --color-border: #e7e7e7;
+
+  --color-success: #18864b;
+  --color-success-soft: #eaf8f0;
+  --color-error: #c62828;
+  --color-error-soft: #fff0f0;
+
+  --shadow-card:
+    0 8px 28px rgba(34, 34, 34, 0.08);
+
+  --header-height: 56px;
+  --bottom-nav-height: 60px;
+}
