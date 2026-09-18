@@ -25,8 +25,6 @@
 
   <title>My Orders | ApnaBite</title>
 
-  <!-- Shared styles -->
-
   <link
     rel="stylesheet"
     href="../../shared/css/reset.css"
@@ -52,8 +50,6 @@
     href="../../shared/css/responsive.css"
   >
 
-  <!-- Customer styles -->
-
   <link
     rel="stylesheet"
     href="../css/customer-common.css"
@@ -72,11 +68,6 @@
     id="customerOrdersPage"
   >
 
-    <!--
-      RoleHome uses this loader while validating
-      the current session and Customer role.
-    -->
-
     <div
       class="customer-page-loader"
       id="roleHomeLoader"
@@ -94,14 +85,10 @@
     </div>
 
 
-    <!-- Protected customer content -->
-
     <div
       class="customer-orders customer-bottom-safe-area hidden"
       id="roleHomeContent"
     >
-
-      <!-- Page header -->
 
       <header class="orders-header">
 
@@ -148,24 +135,18 @@
               d="M20 11a8.1 8.1 0 0 0-15.5-2"
             ></path>
 
-            <path
-              d="M4 4v5h5"
-            ></path>
+            <path d="M4 4v5h5"></path>
 
             <path
               d="M4 13a8.1 8.1 0 0 0 15.5 2"
             ></path>
 
-            <path
-              d="M20 20v-5h-5"
-            ></path>
+            <path d="M20 20v-5h-5"></path>
           </svg>
         </button>
 
       </header>
 
-
-      <!-- Hidden role data required by RoleHome -->
 
       <div
         class="hidden"
@@ -183,8 +164,6 @@
       </div>
 
 
-      <!-- Page message -->
-
       <div
         class="customer-page-message hidden"
         id="roleHomeMessage"
@@ -192,8 +171,6 @@
         aria-live="polite"
       ></div>
 
-
-      <!-- Orders summary -->
 
       <section
         class="orders-summary"
@@ -227,8 +204,6 @@
 
       </section>
 
-
-      <!-- Order tabs -->
 
       <nav
         class="orders-tabs"
@@ -268,8 +243,6 @@
       </nav>
 
 
-      <!-- Orders content -->
-
       <section
         class="orders-section"
         aria-labelledby="ordersSectionTitle"
@@ -300,8 +273,6 @@
         </div>
 
 
-        <!-- Loading state -->
-
         <div
           class="orders-loading hidden"
           id="ordersLoading"
@@ -312,15 +283,15 @@
           <div class="order-skeleton">
 
             <div class="order-skeleton-top">
-
               <span></span>
               <span></span>
-
             </div>
 
             <div class="order-skeleton-line"></div>
 
-            <div class="order-skeleton-line order-skeleton-line-short"></div>
+            <div
+              class="order-skeleton-line order-skeleton-line-short"
+            ></div>
 
           </div>
 
@@ -328,30 +299,26 @@
           <div class="order-skeleton">
 
             <div class="order-skeleton-top">
-
               <span></span>
               <span></span>
-
             </div>
 
             <div class="order-skeleton-line"></div>
 
-            <div class="order-skeleton-line order-skeleton-line-short"></div>
+            <div
+              class="order-skeleton-line order-skeleton-line-short"
+            ></div>
 
           </div>
 
         </div>
 
 
-        <!-- Dynamic orders list -->
-
         <div
           class="orders-list hidden"
           id="ordersList"
         ></div>
 
-
-        <!-- Empty state -->
 
         <div
           class="orders-empty"
@@ -385,8 +352,6 @@
 
         </div>
 
-
-        <!-- Request error -->
 
         <div
           class="orders-error hidden"
@@ -423,8 +388,6 @@
       </section>
 
 
-      <!-- Customer bottom navigation -->
-
       <nav
         class="customer-bottom-nav"
         aria-label="Customer navigation"
@@ -441,9 +404,7 @@
             🏠
           </span>
 
-          <span>
-            Home
-          </span>
+          <span>Home</span>
         </a>
 
 
@@ -459,9 +420,7 @@
             📦
           </span>
 
-          <span>
-            Orders
-          </span>
+          <span>Orders</span>
         </a>
 
 
@@ -476,9 +435,7 @@
             🍽️
           </span>
 
-          <span>
-            Dine-In
-          </span>
+          <span>Dine-In</span>
         </a>
 
 
@@ -493,9 +450,7 @@
             👤
           </span>
 
-          <span>
-            Account
-          </span>
+          <span>Account</span>
         </a>
 
       </nav>
@@ -505,8 +460,6 @@
   </main>
 
 
-  <!-- Shared JavaScript -->
-
   <script src="../../shared/js/storage.js"></script>
   <script src="../../shared/js/cache.js"></script>
   <script src="../../shared/js/api.js"></script>
@@ -514,10 +467,11 @@
   <script src="../../shared/js/auth.js"></script>
   <script src="../../shared/js/location.js"></script>
   <script src="../../shared/js/service-location.js"></script>
+
+  <!-- Required before role-home.js -->
+  <script src="../../shared/js/app-router.js"></script>
+
   <script src="../../shared/js/role-home.js"></script>
-
-  <!-- Customer page JavaScript -->
-
   <script src="../js/orders.js"></script>
 
 </body>
