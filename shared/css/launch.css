@@ -1,0 +1,134 @@
+/**
+ * ============================================================
+ * APNABITE FRONTEND
+ * FILE: shared/css/launch.css
+ * PURPOSE: Application splash and launch states
+ * VERSION: 1.0.0
+ * ============================================================
+ */
+
+.launch-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding:
+    calc(var(--space-xl) + env(safe-area-inset-top))
+    var(--space-lg)
+    calc(var(--space-xl) + env(safe-area-inset-bottom));
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #171717;
+  text-align: center;
+}
+
+.launch-splash.launch-exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+.launch-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.launch-logo {
+  width: 88px;
+  height: 88px;
+  margin-bottom: var(--space-lg);
+  border-radius: 24px;
+  background: #ef5b00;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 46px;
+  font-weight: var(--font-bold);
+  box-shadow:
+    0 14px 30px
+    rgba(239, 91, 0, 0.22);
+}
+
+.launch-brand h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: var(--font-bold);
+}
+
+.launch-brand p {
+  margin:
+    var(--space-sm)
+    0
+    0;
+  color: #666666;
+  font-size: var(--text-sm);
+}
+
+.launch-location-status {
+  min-height: 24px;
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  color: #666666;
+  font-size: var(--text-sm);
+}
+
+.launch-location-status svg {
+  width: 20px;
+  height: 20px;
+  color: #ef5b00;
+}
+
+.launch-spinner {
+  width: 24px;
+  height: 24px;
+  margin-top: var(--space-lg);
+  border: 3px solid #f1d5c5;
+  border-top-color: #ef5b00;
+  border-radius: 50%;
+  animation:
+    launch-spin
+    0.75s
+    linear
+    infinite;
+}
+
+@keyframes launch-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 360px) {
+  .launch-logo {
+    width: 76px;
+    height: 76px;
+    border-radius: 20px;
+    font-size: 40px;
+  }
+
+  .launch-brand h1 {
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-spinner {
+    animation-duration: 1.5s;
+  }
+
+  .launch-splash.launch-exit {
+    transition: none;
+  }
+}
