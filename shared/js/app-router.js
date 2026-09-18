@@ -3,23 +3,52 @@
  * APNABITE FRONTEND
  * FILE: shared/js/app-router.js
  * PURPOSE: Central role-based frontend routing
- * VERSION: 1.0.0
+ * VERSION: 1.1.0
  * ============================================================
  */
 
 const AppRouter = {
 
+  /*
+   * ----------------------------------------------------------
+   * ROLE HOME ROUTES
+   *
+   * All role HTML pages remain inside their respective
+   * role/html folders.
+   * ----------------------------------------------------------
+   */
+
   ROLE_ROUTES: {
+
     Customer:
-      "customer/home.html",
+      "customer/html/home.html",
 
     "Food Partner":
-      "food-partner/dashboard.html",
+      "food-partner/html/dashboard.html",
 
     Rider:
-      "rider/dashboard.html"
+      "rider/html/dashboard.html",
+
+    Admin:
+      "admin/html/dashboard.html"
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * FIND APPLICATION ROOT URL
+   *
+   * Examples:
+   *
+   * /APNABITE-Final/index.html
+   * /APNABITE-Final/customer/html/orders.html
+   * /APNABITE-Final/food-partner/html/dashboard.html
+   *
+   * All resolve to:
+   *
+   * /APNABITE-Final/
+   * ----------------------------------------------------------
+   */
 
   getAppBaseUrl() {
 
@@ -28,10 +57,12 @@ const AppRouter = {
         window.location.href
       );
 
+
     const roleFolders = [
       "/customer/",
       "/food-partner/",
-      "/rider/"
+      "/rider/",
+      "/admin/"
     ];
 
 
@@ -58,6 +89,7 @@ const AppRouter = {
         url.search = "";
         url.hash = "";
 
+
         return url;
       }
     }
@@ -72,17 +104,31 @@ const AppRouter = {
     url.search = "";
     url.hash = "";
 
+
     return url;
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * GET ROLE HOME PATH
+   * ----------------------------------------------------------
+   */
 
   getHomePath(role) {
 
     return this.ROLE_ROUTES[
       String(role || "")
+        .trim()
     ] || "";
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * GET ROLE HOME URL
+   * ----------------------------------------------------------
+   */
 
   getHomeUrl(role) {
 
@@ -93,6 +139,7 @@ const AppRouter = {
 
 
     if (!path) {
+
       return "";
     }
 
@@ -104,14 +151,26 @@ const AppRouter = {
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * GET PUBLIC PAGE URL
+   * ----------------------------------------------------------
+   */
+
   getPublicUrl(fileName) {
 
     return new URL(
-      fileName,
+      String(fileName || ""),
       this.getAppBaseUrl()
     ).href;
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * CHECK SUPPORTED ROLE
+   * ----------------------------------------------------------
+   */
 
   isSupportedRole(role) {
 
@@ -122,6 +181,130 @@ const AppRouter = {
     );
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * CHECK WHETHER URL BELONGS TO THIS APPLICATION
+   * ----------------------------------------------------------
+   */
+
+  isInternalAppUrl(value) {
+
+    if (!value) {
+
+      return false;
+    }
+
+
+    try {
+
+      const destination =
+        new URL(
+          value,
+          this.getAppBaseUrl()
+        );
+
+
+      const appBase =
+        this.getAppBaseUrl();
+
+
+      return (
+        destination.origin ===
+          appBase.origin &&
+        destination.pathname.indexOf(
+          appBase.pathname
+        ) === 0
+      );
+
+    } catch (error) {
+
+      return false;
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GET SAFE RETURN URL
+   *
+   * Prevents redirects outside ApnaBite.
+   * ----------------------------------------------------------
+   */
+
+  getSafeReturnUrl(value) {
+
+    if (
+      !this.isInternalAppUrl(
+        value
+      )
+    ) {
+
+      return "";
+    }
+
+
+    const destination =
+      new URL(
+        value,
+        this.getAppBaseUrl()
+      );
+
+
+    const loginUrl =
+      this.getPublicUrl(
+        "login.html"
+      );
+
+
+    /*
+     * Never use the login page itself as a return destination.
+     */
+
+    if (
+      destination.pathname ===
+      new URL(loginUrl).pathname
+    ) {
+
+      return "";
+    }
+
+
+    return destination.href;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GET RETURN URL FROM CURRENT QUERY STRING
+   * ----------------------------------------------------------
+   */
+
+  getRequestedReturnUrl() {
+
+    const currentUrl =
+      new URL(
+        window.location.href
+      );
+
+
+    const returnUrl =
+      currentUrl.searchParams.get(
+        "returnUrl"
+      );
+
+
+    return this.getSafeReturnUrl(
+      returnUrl
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GO TO ROLE HOME
+   * ----------------------------------------------------------
+   */
 
   goToRoleHome(
     role,
@@ -143,19 +326,84 @@ const AppRouter = {
     }
 
 
-    if (replace) {
-
-      window.location.replace(
-        destination
-      );
-
-    } else {
-
-      window.location.href =
-        destination;
-    }
+    this.navigate(
+      destination,
+      replace
+    );
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * GO TO REQUESTED PAGE AFTER LOGIN
+   *
+   * If a valid returnUrl exists, the user returns to that page.
+   * Otherwise, the correct role home page is opened.
+   * ----------------------------------------------------------
+   */
+
+  goAfterLogin(
+    role,
+    replace = true
+  ) {
+
+    const returnUrl =
+      this.getRequestedReturnUrl();
+
+
+    if (returnUrl) {
+
+      this.navigate(
+        returnUrl,
+        replace
+      );
+
+      return {
+        success: true,
+        destination:
+          returnUrl,
+        usedReturnUrl:
+          true
+      };
+    }
+
+
+    const homeUrl =
+      this.getHomeUrl(
+        role
+      );
+
+
+    if (!homeUrl) {
+
+      throw new Error(
+        "Unsupported user role: " +
+        String(role || "")
+      );
+    }
+
+
+    this.navigate(
+      homeUrl,
+      replace
+    );
+
+
+    return {
+      success: true,
+      destination:
+        homeUrl,
+      usedReturnUrl:
+        false
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GO TO ROLE SELECTION
+   * ----------------------------------------------------------
+   */
 
   goToRoleSelection(
     replace = true
@@ -167,23 +415,26 @@ const AppRouter = {
       );
 
 
-    if (replace) {
-
-      window.location.replace(
-        destination
-      );
-
-    } else {
-
-      window.location.href =
-        destination;
-    }
+    this.navigate(
+      destination,
+      replace
+    );
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * GO TO LOGIN
+   *
+   * Protected pages are stored as returnUrl so the user can
+   * return to the same page after successful login.
+   * ----------------------------------------------------------
+   */
+
   goToLogin(
     role = "",
-    replace = true
+    replace = true,
+    returnUrl = ""
   ) {
 
     const url =
@@ -198,7 +449,53 @@ const AppRouter = {
 
       url.searchParams.set(
         "role",
-        role
+        String(role)
+      );
+    }
+
+
+    const requestedReturnUrl =
+      returnUrl ||
+      window.location.href;
+
+
+    const safeReturnUrl =
+      this.getSafeReturnUrl(
+        requestedReturnUrl
+      );
+
+
+    if (safeReturnUrl) {
+
+      url.searchParams.set(
+        "returnUrl",
+        safeReturnUrl
+      );
+    }
+
+
+    this.navigate(
+      url.href,
+      replace
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * CENTRAL NAVIGATION
+   * ----------------------------------------------------------
+   */
+
+  navigate(
+    destination,
+    replace = true
+  ) {
+
+    if (!destination) {
+
+      throw new Error(
+        "Navigation destination is required."
       );
     }
 
@@ -206,20 +503,24 @@ const AppRouter = {
     if (replace) {
 
       window.location.replace(
-        url.href
+        destination
       );
 
     } else {
 
       window.location.href =
-        url.href;
+        destination;
     }
   },
 
 
   /*
+   * ----------------------------------------------------------
+   * APP ROUTER TEST
+   *
    * Browser console:
    * AppRouter.test()
+   * ----------------------------------------------------------
    */
 
   test() {
@@ -244,7 +545,7 @@ const AppRouter = {
           "Customer",
 
         expected:
-          "customer/home.html"
+          "customer/html/home.html"
       },
 
       {
@@ -252,7 +553,7 @@ const AppRouter = {
           "Food Partner",
 
         expected:
-          "food-partner/dashboard.html"
+          "food-partner/html/dashboard.html"
       },
 
       {
@@ -260,7 +561,7 @@ const AppRouter = {
           "Rider",
 
         expected:
-          "rider/dashboard.html"
+          "rider/html/dashboard.html"
       },
 
       {
@@ -268,9 +569,16 @@ const AppRouter = {
           "Admin",
 
         expected:
+          "admin/html/dashboard.html"
+      },
+
+      {
+        role:
+          "Unknown",
+
+        expected:
           ""
       }
-
     ];
 
 
@@ -302,6 +610,40 @@ const AppRouter = {
       );
 
 
+    const baseUrl =
+      this.getAppBaseUrl();
+
+
+    const customerHomeUrl =
+      this.getHomeUrl(
+        "Customer"
+      );
+
+
+    const baseUrlPassed =
+      customerHomeUrl.indexOf(
+        "/customer/html/home.html"
+      ) !== -1;
+
+
+    results.push({
+
+      role:
+        "Customer URL",
+
+      expected:
+        "/customer/html/home.html",
+
+      actual:
+        new URL(
+          customerHomeUrl
+        ).pathname,
+
+      passed:
+        baseUrlPassed
+    });
+
+
     const passed =
       results.every(
         (result) =>
@@ -315,6 +657,12 @@ const AppRouter = {
 
 
     console.log(
+      "Application Base URL:",
+      baseUrl.href
+    );
+
+
+    console.log(
       passed
         ? "App Router Test: PASS"
         : "App Router Test: FAIL"
@@ -322,6 +670,7 @@ const AppRouter = {
 
 
     return {
+
       success:
         passed,
 
@@ -331,8 +680,7 @@ const AppRouter = {
           : "FAIL",
 
       baseUrl:
-        this.getAppBaseUrl()
-          .href,
+        baseUrl.href,
 
       results:
         results
