@@ -1,0 +1,169 @@
+/**
+ * ============================================================
+ * APNABITE FRONTEND
+ * FILE: shared/css/role-home.css
+ * PURPOSE: Shared role home shell
+ * VERSION: 1.0.0
+ * ============================================================
+ */
+
+body {
+  background: #f5f5f5;
+  color: #181818;
+}
+
+.role-home {
+  width: 100%;
+  max-width: var(--app-max-width);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+.role-home-header {
+  padding:
+    calc(var(--space-lg) + env(safe-area-inset-top))
+    var(--space-lg)
+    var(--space-lg);
+  border-bottom: 1px solid #eeeeee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.role-home-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.role-home-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: #ef5b00;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+}
+
+.role-home-brand-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-home-brand-copy strong {
+  font-size: var(--text-md);
+}
+
+.role-home-brand-copy span {
+  color: #777777;
+  font-size: var(--text-xs);
+}
+
+.role-logout-button {
+  min-height: 38px;
+  padding: 0 var(--space-md);
+  border: 1px solid #dddddd;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: #333333;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.role-home-content {
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.role-welcome-card {
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      135deg,
+      #ef5b00,
+      #ff8a3d
+    );
+  color: #ffffff;
+}
+
+.role-welcome-card p {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-sm);
+  opacity: 0.9;
+}
+
+.role-welcome-card h1 {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1.3;
+}
+
+.role-welcome-card small {
+  display: block;
+  margin-top: var(--space-sm);
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.role-module-grid {
+  margin-top: var(--space-xl);
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.role-module-card {
+  min-height: 112px;
+  padding: var(--space-lg);
+  border: 1px solid #eeeeee;
+  border-radius: var(--radius-lg);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.role-module-icon {
+  font-size: 28px;
+}
+
+.role-module-card strong {
+  font-size: var(--text-sm);
+}
+
+.role-module-card span:last-child {
+  color: #888888;
+  font-size: var(--text-xs);
+}
+
+.role-home-message {
+  margin-top: var(--space-xl);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: #fff7f1;
+  color: #914000;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.role-home-loader {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.role-home-loader p {
+  color: #666666;
+  font-size: var(--text-sm);
+}
