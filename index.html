@@ -47,6 +47,11 @@
 
   <link
     rel="stylesheet"
+    href="shared/css/launch.css"
+  >
+
+  <link
+    rel="stylesheet"
     href="shared/css/responsive.css"
   >
 </head>
@@ -55,8 +60,75 @@
 
   <main id="app">
 
+    <!-- APNABITE LAUNCH SPLASH -->
+
+    <section
+      class="launch-splash"
+      id="launchSplash"
+      aria-labelledby="launchBrandName"
+    >
+
+      <div class="launch-brand">
+
+        <div
+          class="launch-logo"
+          aria-hidden="true"
+        >
+          A
+        </div>
+
+        <h1 id="launchBrandName">
+          ApnaBite
+        </h1>
+
+        <p>
+          Apna Swaad, Apni Pasand
+        </p>
+
+      </div>
+
+
+      <div class="launch-location-status">
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"
+          ></path>
+
+          <circle
+            cx="12"
+            cy="10"
+            r="2.5"
+          ></circle>
+        </svg>
+
+        <span id="launchStatusText">
+          Checking your location...
+        </span>
+
+      </div>
+
+
+      <div
+        class="launch-spinner"
+        aria-hidden="true"
+      ></div>
+
+    </section>
+
+
+    <!-- INTERNAL APPLICATION LOADER -->
+
     <div
-      class="app-loader"
+      class="app-loader hidden"
       id="appLoader"
     >
       <div
@@ -68,8 +140,10 @@
     </div>
 
 
+    <!-- LOCATION SELECTION SCREEN -->
+
     <section
-      class="location-screen"
+      class="location-screen hidden"
       id="locationScreen"
       aria-labelledby="locationHeading"
     >
@@ -233,6 +307,8 @@
   <script src="shared/js/formatter.js"></script>
   <script src="shared/js/notifications.js"></script>
   <script src="shared/js/theme.js"></script>
+
+  <script src="shared/js/launch.js"></script>
   <script src="shared/js/app.js"></script>
 
 </body>
