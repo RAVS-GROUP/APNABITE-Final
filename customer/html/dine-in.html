@@ -25,7 +25,7 @@
     href="../../manifest.json"
   >
 
-  <!-- COMMON CSS -->
+  <!-- APPLICATION COMMON CSS -->
 
   <link
     rel="stylesheet"
@@ -52,6 +52,13 @@
     href="../../shared/css/responsive.css"
   >
 
+  <!-- CUSTOMER COMMON CSS -->
+
+  <link
+    rel="stylesheet"
+    href="../css/customer-common.css"
+  >
+
   <!-- DINE-IN PAGE CSS -->
 
   <link
@@ -63,14 +70,14 @@
 <body data-required-role="Customer">
 
   <main
-    class="dine-in-app"
+    class="dine-in-app customer-page"
     id="dineInApp"
   >
 
     <!-- SESSION VALIDATION LOADER -->
 
     <div
-      class="dine-in-page-loader"
+      class="dine-in-page-loader customer-page-loader"
       id="roleHomeLoader"
     >
       <div
@@ -87,7 +94,7 @@
     <!-- DINE-IN PAGE -->
 
     <div
-      class="dine-in-page hidden"
+      class="dine-in-page customer-bottom-safe-area hidden"
       id="roleHomeContent"
     >
 
@@ -105,6 +112,7 @@
           </span>
 
           <div>
+
             <h1>
               Dine-In
             </h1>
@@ -112,6 +120,7 @@
             <p>
               Reserve your table
             </p>
+
           </div>
 
         </div>
@@ -209,6 +218,7 @@
           <div class="dine-in-section-heading">
 
             <div>
+
               <h2 id="bookingPreferenceHeading">
                 Booking preferences
               </h2>
@@ -216,6 +226,7 @@
               <p>
                 Select date, time and guests
               </p>
+
             </div>
 
           </div>
@@ -314,6 +325,7 @@
         <div
           class="dine-in-filter-scroll"
           id="dineInFilters"
+          aria-label="Dine-In filters"
         >
 
           <button
@@ -369,6 +381,7 @@
           <div class="dine-in-section-heading">
 
             <div>
+
               <h2 id="dineInRestaurantHeading">
                 Available restaurants
               </h2>
@@ -376,6 +389,7 @@
               <p id="dineInRestaurantSubtitle">
                 Restaurants accepting Dine-In bookings
               </p>
+
             </div>
 
 
@@ -477,7 +491,7 @@
         </section>
 
 
-        <!-- PAGE MESSAGE -->
+        <!-- DINE-IN MESSAGE -->
 
         <div
           class="dine-in-message hidden"
@@ -490,7 +504,7 @@
         <!-- ROLE GUARD MESSAGE -->
 
         <div
-          class="hidden"
+          class="customer-page-message hidden"
           id="roleHomeMessage"
           role="status"
           aria-live="polite"
@@ -499,7 +513,7 @@
       </section>
 
 
-      <!-- FIXED BOTTOM NAVIGATION -->
+      <!-- CUSTOMER BOTTOM NAVIGATION -->
 
       <nav
         class="customer-bottom-nav"
