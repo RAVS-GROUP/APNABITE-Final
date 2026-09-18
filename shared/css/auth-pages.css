@@ -254,3 +254,17 @@
     align-items: center;
   }
 }
+.optional-label {
+  color: var(--color-text-muted);
+  font-weight: var(--font-normal);
+}
+
+.auth-inline-link {
+  color: var(--color-primary);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+}
+
+.auth-success .app-button {
+  margin-top: var(--space-xl);
+}
