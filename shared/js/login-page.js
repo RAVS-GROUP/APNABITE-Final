@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/login-page.js
- * PURPOSE: Secure OTP login page controller
- * VERSION: 1.0.0
+ * PURPOSE: Secure OTP login and automatic role routing
+ * VERSION: 1.1.0
  * ============================================================
  */
 
@@ -18,11 +18,20 @@ const LoginPage = {
   resendTimer:
     null,
 
+  redirectTimer:
+    null,
+
   resendSeconds:
     0,
 
   elements: {},
 
+
+  /*
+   * ----------------------------------------------------------
+   * INITIALIZE
+   * ----------------------------------------------------------
+   */
 
   init() {
 
@@ -110,12 +119,95 @@ const LoginPage = {
     };
 
 
+    if (!this.hasRequiredElements()) {
+
+      console.error(
+        "Login page elements are missing."
+      );
+
+      return false;
+    }
+
+
+    this.bindEvents();
+
+
+    /*
+     * Already authenticated users do not need
+     * to enter their mobile number again.
+     */
+
+    if (Auth.isLoggedIn()) {
+
+      const user =
+        Auth.getUser();
+
+
+      this.showSuccess(
+        user
+      );
+
+
+      this.scheduleRedirect(
+        user,
+        300
+      );
+    }
+
+
+    console.log(
+      "ApnaBite Login Page initialized."
+    );
+
+
+    return true;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * CHECK REQUIRED ELEMENTS
+   * ----------------------------------------------------------
+   */
+
+  hasRequiredElements() {
+
+    return Boolean(
+      this.elements.mobileStep &&
+      this.elements.otpStep &&
+      this.elements.successStep &&
+      this.elements.mobileForm &&
+      this.elements.otpForm &&
+      this.elements.mobileInput &&
+      this.elements.otpInput &&
+      this.elements.sendOtpButton &&
+      this.elements.verifyOtpButton &&
+      this.elements.changeMobileButton &&
+      this.elements.resendOtpButton &&
+      this.elements.maskedMobile &&
+      this.elements.testOtpBox &&
+      this.elements.testOtpValue &&
+      this.elements.message &&
+      this.elements.successMessage
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * BIND EVENTS
+   * ----------------------------------------------------------
+   */
+
+  bindEvents() {
+
     this.elements.mobileForm
       .addEventListener(
         "submit",
         (event) => {
 
           event.preventDefault();
+
           this.sendOtp();
         }
       );
@@ -127,6 +219,7 @@ const LoginPage = {
         (event) => {
 
           event.preventDefault();
+
           this.verifyAndLogin();
         }
       );
@@ -159,8 +252,14 @@ const LoginPage = {
 
           this.elements.mobileInput.value =
             this.elements.mobileInput.value
-              .replace(/\D/g, "")
-              .slice(0, 10);
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                10
+              );
         }
       );
 
@@ -172,25 +271,24 @@ const LoginPage = {
 
           this.elements.otpInput.value =
             this.elements.otpInput.value
-              .replace(/\D/g, "")
-              .slice(0, 6);
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                6
+              );
         }
       );
-
-
-    if (Auth.isLoggedIn()) {
-
-      this.showSuccess(
-        Auth.getUser()
-      );
-    }
-
-
-    console.log(
-      "ApnaBite Login Page initialized."
-    );
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * SEND LOGIN OTP
+   * ----------------------------------------------------------
+   */
 
   async sendOtp() {
 
@@ -213,7 +311,12 @@ const LoginPage = {
         "Please enter a valid 10-digit mobile number."
       );
 
-      return;
+
+      return {
+        success: false,
+        code:
+          "INVALID_MOBILE"
+      };
     }
 
 
@@ -233,6 +336,7 @@ const LoginPage = {
 
       this.mobile =
         mobile;
+
 
       this.testOtp =
         result.testOtp || "";
@@ -258,7 +362,9 @@ const LoginPage = {
         error:
           error.message,
         code:
-          error.code || ""
+          error.code || "",
+        requestId:
+          error.requestId || ""
       };
 
     } finally {
@@ -271,6 +377,12 @@ const LoginPage = {
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * SHOW OTP STEP
+   * ----------------------------------------------------------
+   */
+
   showOtpStep(result) {
 
     this.elements.mobileStep
@@ -278,10 +390,12 @@ const LoginPage = {
         "hidden"
       );
 
+
     this.elements.successStep
       .classList.add(
         "hidden"
       );
+
 
     this.elements.otpStep
       .classList.remove(
@@ -296,11 +410,15 @@ const LoginPage = {
         );
 
 
-    if (result.testOtp) {
+    if (
+      result &&
+      result.testOtp
+    ) {
 
       this.elements.testOtpValue
         .textContent =
           result.testOtp;
+
 
       this.elements.testOtpBox
         .classList.remove(
@@ -308,6 +426,11 @@ const LoginPage = {
         );
 
     } else {
+
+      this.elements.testOtpValue
+        .textContent =
+          "";
+
 
       this.elements.testOtpBox
         .classList.add(
@@ -319,24 +442,60 @@ const LoginPage = {
     this.elements.otpInput.value =
       "";
 
+
     this.elements.otpInput.focus();
 
 
     this.startResendTimer(
-      result.resendAfterSeconds ||
-      60
+      result &&
+      result.resendAfterSeconds
+        ? result.resendAfterSeconds
+        : 60
     );
   },
 
 
-  async verifyAndLogin() {
+  /*
+   * ----------------------------------------------------------
+   * VERIFY OTP AND LOGIN
+   *
+   * options.redirect:
+   * true  = normal page flow
+   * false = integration test without navigation
+   * ----------------------------------------------------------
+   */
+
+  async verifyAndLogin(
+    options = {}
+  ) {
 
     const otp =
       this.elements.otpInput.value
-        .replace(/\D/g, "");
+        .replace(
+          /\D/g,
+          ""
+        );
 
 
     this.clearMessage();
+
+
+    if (!this.mobile) {
+
+      this.showError(
+        "Please enter your mobile number again."
+      );
+
+
+      this.showMobileStep();
+
+
+      return {
+        success: false,
+        code:
+          "MOBILE_REQUIRED"
+      };
+    }
 
 
     if (
@@ -349,7 +508,12 @@ const LoginPage = {
         "Please enter the complete 6-digit OTP."
       );
 
-      return;
+
+      return {
+        success: false,
+        code:
+          "INVALID_OTP_FORMAT"
+      };
     }
 
 
@@ -377,9 +541,44 @@ const LoginPage = {
         );
 
 
+      if (
+        !login ||
+        login.success !== true ||
+        login.authenticated !== true ||
+        !login.user
+      ) {
+
+        throw Auth.createError(
+          "Login could not be completed.",
+          "LOGIN_FAILED"
+        );
+      }
+
+
       this.showSuccess(
         login.user
       );
+
+
+      /*
+       * Normal login:
+       *
+       * - Protected returnUrl exists:
+       *   return to that exact page.
+       *
+       * - No returnUrl:
+       *   open the correct role home page.
+       */
+
+      if (
+        options.redirect !== false
+      ) {
+
+        this.scheduleRedirect(
+          login.user,
+          650
+        );
+      }
 
 
       return {
@@ -387,7 +586,9 @@ const LoginPage = {
         verification:
           verification,
         login:
-          login
+          login,
+        redirectScheduled:
+          options.redirect !== false
       };
 
     } catch (error) {
@@ -403,7 +604,9 @@ const LoginPage = {
         error:
           error.message,
         code:
-          error.code || ""
+          error.code || "",
+        requestId:
+          error.requestId || ""
       };
 
     } finally {
@@ -416,10 +619,97 @@ const LoginPage = {
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * AUTOMATIC ROUTING AFTER LOGIN
+   * ----------------------------------------------------------
+   */
+
+  scheduleRedirect(
+    user,
+    delay = 650
+  ) {
+
+    window.clearTimeout(
+      this.redirectTimer
+    );
+
+
+    const role =
+      user &&
+      user.role
+        ? user.role
+        : Auth.getRole();
+
+
+    this.redirectTimer =
+      window.setTimeout(
+        () => {
+
+          try {
+
+            if (
+              AppRouter.isSupportedRole(
+                role
+              )
+            ) {
+
+              AppRouter.goAfterLogin(
+                role,
+                true
+              );
+
+              return;
+            }
+
+
+            AppRouter.goToRoleSelection(
+              true
+            );
+
+          } catch (error) {
+
+            console.error(
+              "Post-login routing failed:",
+              error
+            );
+
+
+            this.showError(
+              "Login completed, but the next page could not be opened."
+            );
+          }
+        },
+        delay
+      );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SHOW MOBILE STEP
+   * ----------------------------------------------------------
+   */
+
   showMobileStep() {
 
     this.stopResendTimer();
+
+
+    window.clearTimeout(
+      this.redirectTimer
+    );
+
+
     this.clearMessage();
+
+
+    this.mobile =
+      "";
+
+
+    this.testOtp =
+      "";
 
 
     this.elements.otpStep
@@ -427,10 +717,12 @@ const LoginPage = {
         "hidden"
       );
 
+
     this.elements.successStep
       .classList.add(
         "hidden"
       );
+
 
     this.elements.mobileStep
       .classList.remove(
@@ -441,9 +733,27 @@ const LoginPage = {
     this.elements.otpInput.value =
       "";
 
+
+    this.elements.testOtpValue
+      .textContent =
+        "";
+
+
+    this.elements.testOtpBox
+      .classList.add(
+        "hidden"
+      );
+
+
     this.elements.mobileInput.focus();
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * SHOW SUCCESS
+   * ----------------------------------------------------------
+   */
 
   showSuccess(user) {
 
@@ -456,10 +766,12 @@ const LoginPage = {
         "hidden"
       );
 
+
     this.elements.otpStep
       .classList.add(
         "hidden"
       );
+
 
     this.elements.successStep
       .classList.remove(
@@ -468,7 +780,8 @@ const LoginPage = {
 
 
     const role =
-      user && user.role
+      user &&
+      user.role
         ? user.role
         : "User";
 
@@ -477,9 +790,15 @@ const LoginPage = {
       .textContent =
         "Secure login completed for " +
         role +
-        ".";
+        ". Opening your ApnaBite page...";
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * RESEND TIMER
+   * ----------------------------------------------------------
+   */
 
   startResendTimer(seconds) {
 
@@ -487,19 +806,19 @@ const LoginPage = {
 
 
     this.resendSeconds =
-      Number(seconds) || 60;
+      Number(
+        seconds
+      ) || 60;
 
 
     this.updateResendButton();
 
 
     this.resendTimer =
-      setInterval(
+      window.setInterval(
         () => {
 
           this.resendSeconds -= 1;
-
-          this.updateResendButton();
 
 
           if (
@@ -508,14 +827,22 @@ const LoginPage = {
 
             this.stopResendTimer();
 
+
             this.elements.resendOtpButton
               .disabled =
                 false;
 
+
             this.elements.resendOtpButton
               .textContent =
                 "Resend OTP";
+
+
+            return;
           }
+
+
+          this.updateResendButton();
         },
         1000
       );
@@ -527,6 +854,7 @@ const LoginPage = {
     this.elements.resendOtpButton
       .disabled =
         true;
+
 
     this.elements.resendOtpButton
       .textContent =
@@ -540,9 +868,10 @@ const LoginPage = {
 
     if (this.resendTimer) {
 
-      clearInterval(
+      window.clearInterval(
         this.resendTimer
       );
+
 
       this.resendTimer =
         null;
@@ -550,26 +879,51 @@ const LoginPage = {
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * BUTTON LOADING
+   * ----------------------------------------------------------
+   */
+
   setButtonLoading(
     button,
     loading
   ) {
 
+    if (!button) {
+      return;
+    }
+
+
     button.disabled =
       loading;
+
 
     button.classList.toggle(
       "auth-loading",
       loading
     );
+
+
+    button.setAttribute(
+      "aria-busy",
+      String(loading)
+    );
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * MESSAGE
+   * ----------------------------------------------------------
+   */
 
   showError(message) {
 
     this.elements.message
       .textContent =
         message;
+
 
     this.elements.message
       .classList.remove(
@@ -584,6 +938,7 @@ const LoginPage = {
       .textContent =
         "";
 
+
     this.elements.message
       .classList.add(
         "hidden"
@@ -591,12 +946,21 @@ const LoginPage = {
   },
 
 
+  /*
+   * ----------------------------------------------------------
+   * MASK MOBILE
+   * ----------------------------------------------------------
+   */
+
   maskMobile(mobile) {
 
     return (
       "+91 ******" +
-      String(mobile)
-        .slice(-4)
+      String(
+        mobile || ""
+      ).slice(
+        -4
+      )
     );
   },
 
@@ -604,6 +968,9 @@ const LoginPage = {
   /*
    * ----------------------------------------------------------
    * PAGE INTEGRATION TEST
+   *
+   * This test disables navigation so the final result
+   * can be inspected in the browser console.
    *
    * Browser console:
    * LoginPage.test()
@@ -617,7 +984,7 @@ const LoginPage = {
     );
 
     console.log(
-      "APNABITE LOGIN PAGE TEST"
+      "APNABITE LOGIN PAGE ROUTING TEST"
     );
 
     console.log(
@@ -626,6 +993,11 @@ const LoginPage = {
 
 
     try {
+
+      window.clearTimeout(
+        this.redirectTimer
+      );
+
 
       if (Auth.isLoggedIn()) {
 
@@ -646,7 +1018,7 @@ const LoginPage = {
 
       if (
         !otpResult ||
-        !otpResult.success ||
+        otpResult.success !== true ||
         !otpResult.testOtp
       ) {
 
@@ -661,22 +1033,110 @@ const LoginPage = {
 
 
       const loginResult =
-        await this.verifyAndLogin();
+        await this.verifyAndLogin({
+          redirect:
+            false
+        });
+
+
+      const user =
+        Auth.getUser();
+
+
+      const homePath =
+        user
+          ? AppRouter.getHomePath(
+              user.role
+            )
+          : "";
+
+
+      const expectedHome =
+        "customer/html/home.html";
 
 
       const passed =
         loginResult.success === true &&
         Auth.isLoggedIn() === true &&
+        user !== null &&
+        user.role === "Customer" &&
+        homePath === expectedHome &&
         this.elements.successStep
           .classList.contains(
             "hidden"
           ) === false;
 
 
+      const results = [
+
+        {
+          test:
+            "Authenticated",
+          expected:
+            true,
+          actual:
+            Auth.isLoggedIn(),
+          passed:
+            Auth.isLoggedIn() === true
+        },
+
+        {
+          test:
+            "User role",
+          expected:
+            "Customer",
+          actual:
+            user
+              ? user.role
+              : "",
+          passed:
+            Boolean(
+              user &&
+              user.role ===
+                "Customer"
+            )
+        },
+
+        {
+          test:
+            "Customer home path",
+          expected:
+            expectedHome,
+          actual:
+            homePath,
+          passed:
+            homePath ===
+              expectedHome
+        },
+
+        {
+          test:
+            "Success screen",
+          expected:
+            true,
+          actual:
+            !this.elements.successStep
+              .classList.contains(
+                "hidden"
+              ),
+          passed:
+            !this.elements.successStep
+              .classList.contains(
+                "hidden"
+              )
+        }
+      ];
+
+
+      console.table(
+        results
+      );
+
+
       console.log(
         passed
-          ? "Login Page Test: PASS"
-          : "Login Page Test: FAIL"
+          ? "Login Page Routing Test: PASS"
+          : "Login Page Routing Test: FAIL"
       );
 
 
@@ -690,20 +1150,25 @@ const LoginPage = {
         authenticated:
           Auth.isLoggedIn(),
         user:
-          Auth.getUser()
+          user,
+        homePath:
+          homePath,
+        results:
+          results
       };
 
     } catch (error) {
 
       console.error(
-        "Login Page Test: FAIL",
+        "Login Page Routing Test: FAIL",
         error
       );
 
 
       return {
         success: false,
-        status: "FAIL",
+        status:
+          "FAIL",
         error:
           error.message,
         code:
@@ -715,6 +1180,12 @@ const LoginPage = {
 };
 
 
+/*
+ * ------------------------------------------------------------
+ * INITIALIZE
+ * ------------------------------------------------------------
+ */
+
 document.addEventListener(
   "DOMContentLoaded",
   () => {
@@ -723,6 +1194,12 @@ document.addEventListener(
   }
 );
 
+
+/*
+ * ------------------------------------------------------------
+ * SERVICE WORKER REGISTRATION
+ * ------------------------------------------------------------
+ */
 
 if (
   "serviceWorker" in navigator
@@ -733,7 +1210,18 @@ if (
     () => {
 
       navigator.serviceWorker
-        .register("./sw.js");
+        .register(
+          "./sw.js"
+        )
+        .catch(
+          (error) => {
+
+            console.error(
+              "Login service worker registration failed:",
+              error
+            );
+          }
+        );
     }
   );
 }
