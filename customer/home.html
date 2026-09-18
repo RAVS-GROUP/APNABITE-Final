@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#ffffff">
+
+  <title>Customer Home | ApnaBite</title>
+
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../shared/css/reset.css">
+  <link rel="stylesheet" href="../shared/css/variables.css">
+  <link rel="stylesheet" href="../shared/css/common.css">
+  <link rel="stylesheet" href="../shared/css/components.css">
+  <link rel="stylesheet" href="../shared/css/role-home.css">
+  <link rel="stylesheet" href="../shared/css/responsive.css">
+</head>
+
+<body data-required-role="Customer">
+
+  <main class="role-home">
+
+    <div
+      class="role-home-loader"
+      id="roleHomeLoader"
+    >
+      <div class="loader-spinner"></div>
+      <p>Opening Customer Home...</p>
+    </div>
+
+
+    <div
+      class="hidden"
+      id="roleHomeContent"
+    >
+
+      <header class="role-home-header">
+
+        <div class="role-home-brand">
+          <div class="role-home-logo">A</div>
+
+          <div class="role-home-brand-copy">
+            <strong>ApnaBite</strong>
+            <span>Customer</span>
+          </div>
+        </div>
+
+        <button
+          class="role-logout-button"
+          id="roleLogoutButton"
+          type="button"
+        >
+          Logout
+        </button>
+
+      </header>
+
+
+      <section class="role-home-content">
+
+        <div class="role-welcome-card">
+          <p>Welcome</p>
+
+          <h1 id="roleHomeUserRole">
+            Customer
+          </h1>
+
+          <small id="roleHomeUserMobile">
+            Verified user
+          </small>
+        </div>
+
+
+        <div class="role-module-grid">
+
+          <div class="role-module-card">
+            <span class="role-module-icon">🍲</span>
+            <strong>Nearby Food</strong>
+            <span>Coming next</span>
+          </div>
+
+          <div class="role-module-card">
+            <span class="role-module-icon">🔎</span>
+            <strong>Search</strong>
+            <span>Coming next</span>
+          </div>
+
+          <div class="role-module-card">
+            <span class="role-module-icon">🛒</span>
+            <strong>Cart</strong>
+            <span>Coming next</span>
+          </div>
+
+          <div class="role-module-card">
+            <span class="role-module-icon">📦</span>
+            <strong>My Orders</strong>
+            <span>Coming next</span>
+          </div>
+
+        </div>
+
+
+        <div
+          class="role-home-message hidden"
+          id="roleHomeMessage"
+        ></div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <script src="../shared/js/storage.js"></script>
+  <script src="../shared/js/api.js"></script>
+  <script src="../shared/js/session.js"></script>
+  <script src="../shared/js/auth.js"></script>
+  <script src="../shared/js/app-router.js"></script>
+  <script src="../shared/js/role-home.js"></script>
+
+</body>
+</html>
