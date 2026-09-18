@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <meta
+    name="description"
+    content="Discover and book Dine-In restaurants on ApnaBite"
+  >
+
+  <title>Dine-In | ApnaBite</title>
+
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
+
+  <!-- COMMON CSS -->
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+  <!-- DINE-IN PAGE CSS -->
+
+  <link
+    rel="stylesheet"
+    href="../css/dine-in.css"
+  >
+</head>
+
+<body data-required-role="Customer">
+
+  <main
+    class="dine-in-app"
+    id="dineInApp"
+  >
+
+    <!-- SESSION VALIDATION LOADER -->
+
+    <div
+      class="dine-in-page-loader"
+      id="roleHomeLoader"
+    >
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
+      <p>
+        Loading Dine-In...
+      </p>
+    </div>
+
+
+    <!-- DINE-IN PAGE -->
+
+    <div
+      class="dine-in-page hidden"
+      id="roleHomeContent"
+    >
+
+      <!-- HEADER -->
+
+      <header class="dine-in-header">
+
+        <div class="dine-in-header-copy">
+
+          <span
+            class="dine-in-header-icon"
+            aria-hidden="true"
+          >
+            🍽️
+          </span>
+
+          <div>
+            <h1>
+              Dine-In
+            </h1>
+
+            <p>
+              Reserve your table
+            </p>
+          </div>
+
+        </div>
+
+
+        <button
+          class="dine-in-location-button"
+          id="dineInLocationButton"
+          type="button"
+          aria-label="View or update location"
+        >
+          <span aria-hidden="true">
+            📍
+          </span>
+
+          <strong id="dineInLocationText">
+            Location
+          </strong>
+        </button>
+
+      </header>
+
+
+      <!-- MAIN CONTENT -->
+
+      <section class="dine-in-main">
+
+        <!-- INTRODUCTION -->
+
+        <section class="dine-in-hero">
+
+          <div>
+
+            <span class="dine-in-label">
+              APNABITE DINE-IN
+            </span>
+
+            <h2>
+              Find a table near you
+            </h2>
+
+            <p>
+              Explore restaurants currently accepting
+              Dine-In bookings.
+            </p>
+
+          </div>
+
+          <span
+            class="dine-in-hero-emoji"
+            aria-hidden="true"
+          >
+            🍴
+          </span>
+
+        </section>
+
+
+        <!-- SEARCH -->
+
+        <div class="dine-in-search">
+
+          <span aria-hidden="true">
+            🔍
+          </span>
+
+          <input
+            id="dineInSearchInput"
+            type="search"
+            inputmode="search"
+            autocomplete="off"
+            placeholder="Search restaurant or cuisine"
+            aria-label="Search restaurant or cuisine"
+          >
+
+          <button
+            class="dine-in-search-clear hidden"
+            id="dineInSearchClearButton"
+            type="button"
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <!-- BOOKING PREFERENCES -->
+
+        <section
+          class="dine-in-section"
+          aria-labelledby="bookingPreferenceHeading"
+        >
+
+          <div class="dine-in-section-heading">
+
+            <div>
+              <h2 id="bookingPreferenceHeading">
+                Booking preferences
+              </h2>
+
+              <p>
+                Select date, time and guests
+              </p>
+            </div>
+
+          </div>
+
+
+          <div class="booking-preference-grid">
+
+            <label class="booking-field">
+
+              <span>
+                Date
+              </span>
+
+              <input
+                id="dineInDateInput"
+                type="date"
+              >
+
+            </label>
+
+
+            <label class="booking-field">
+
+              <span>
+                Time
+              </span>
+
+              <input
+                id="dineInTimeInput"
+                type="time"
+              >
+
+            </label>
+
+
+            <label class="booking-field booking-field-guests">
+
+              <span>
+                Guests
+              </span>
+
+              <select id="dineInGuestInput">
+
+                <option value="1">
+                  1 Guest
+                </option>
+
+                <option value="2" selected>
+                  2 Guests
+                </option>
+
+                <option value="3">
+                  3 Guests
+                </option>
+
+                <option value="4">
+                  4 Guests
+                </option>
+
+                <option value="5">
+                  5 Guests
+                </option>
+
+                <option value="6">
+                  6 Guests
+                </option>
+
+                <option value="7">
+                  7 Guests
+                </option>
+
+                <option value="8">
+                  8 Guests
+                </option>
+
+              </select>
+
+            </label>
+
+          </div>
+
+
+          <button
+            class="app-button dine-in-search-button"
+            id="findDineInButton"
+            type="button"
+          >
+            Find Available Restaurants
+          </button>
+
+        </section>
+
+
+        <!-- QUICK FILTERS -->
+
+        <div
+          class="dine-in-filter-scroll"
+          id="dineInFilters"
+        >
+
+          <button
+            class="dine-in-filter active"
+            data-filter="ALL"
+            type="button"
+          >
+            All
+          </button>
+
+          <button
+            class="dine-in-filter"
+            data-filter="NEARBY"
+            type="button"
+          >
+            Nearby
+          </button>
+
+          <button
+            class="dine-in-filter"
+            data-filter="OFFERS"
+            type="button"
+          >
+            Offers
+          </button>
+
+          <button
+            class="dine-in-filter"
+            data-filter="TOP_RATED"
+            type="button"
+          >
+            Top Rated
+          </button>
+
+          <button
+            class="dine-in-filter"
+            data-filter="PURE_VEG"
+            type="button"
+          >
+            Pure Veg
+          </button>
+
+        </div>
+
+
+        <!-- ELIGIBLE RESTAURANTS -->
+
+        <section
+          class="dine-in-section"
+          aria-labelledby="dineInRestaurantHeading"
+        >
+
+          <div class="dine-in-section-heading">
+
+            <div>
+              <h2 id="dineInRestaurantHeading">
+                Available restaurants
+              </h2>
+
+              <p id="dineInRestaurantSubtitle">
+                Restaurants accepting Dine-In bookings
+              </p>
+            </div>
+
+
+            <button
+              class="dine-in-refresh-button"
+              id="refreshDineInButton"
+              type="button"
+            >
+              Refresh
+            </button>
+
+          </div>
+
+
+          <!-- LOADING SKELETON -->
+
+          <div
+            class="dine-in-restaurant-list"
+            id="dineInRestaurantList"
+          >
+
+            <article class="dine-in-restaurant-skeleton">
+
+              <div
+                class="skeleton dine-in-image-skeleton"
+              ></div>
+
+              <div class="dine-in-skeleton-content">
+
+                <div
+                  class="skeleton dine-in-line-wide"
+                ></div>
+
+                <div
+                  class="skeleton dine-in-line-medium"
+                ></div>
+
+                <div
+                  class="skeleton dine-in-line-small"
+                ></div>
+
+              </div>
+
+            </article>
+
+
+            <article class="dine-in-restaurant-skeleton">
+
+              <div
+                class="skeleton dine-in-image-skeleton"
+              ></div>
+
+              <div class="dine-in-skeleton-content">
+
+                <div
+                  class="skeleton dine-in-line-wide"
+                ></div>
+
+                <div
+                  class="skeleton dine-in-line-medium"
+                ></div>
+
+                <div
+                  class="skeleton dine-in-line-small"
+                ></div>
+
+              </div>
+
+            </article>
+
+          </div>
+
+
+          <!-- EMPTY STATE -->
+
+          <div
+            class="dine-in-empty-state hidden"
+            id="dineInEmptyState"
+          >
+
+            <span
+              class="dine-in-empty-icon"
+              aria-hidden="true"
+            >
+              🍽️
+            </span>
+
+            <h3>
+              No Dine-In restaurants available
+            </h3>
+
+            <p>
+              Restaurants that activate Dine-In service
+              in your area will appear here.
+            </p>
+
+          </div>
+
+        </section>
+
+
+        <!-- PAGE MESSAGE -->
+
+        <div
+          class="dine-in-message hidden"
+          id="dineInMessage"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- ROLE GUARD MESSAGE -->
+
+        <div
+          class="hidden"
+          id="roleHomeMessage"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+      </section>
+
+
+      <!-- FIXED BOTTOM NAVIGATION -->
+
+      <nav
+        class="customer-bottom-nav"
+        aria-label="Customer navigation"
+      >
+
+        <a
+          class="customer-nav-item"
+          href="home.html"
+        >
+          <span aria-hidden="true">
+            🏠
+          </span>
+
+          <strong>
+            Home
+          </strong>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="orders.html"
+        >
+          <span aria-hidden="true">
+            📦
+          </span>
+
+          <strong>
+            Orders
+          </strong>
+        </a>
+
+
+        <a
+          class="customer-nav-item active"
+          href="dine-in.html"
+          aria-current="page"
+        >
+          <span aria-hidden="true">
+            🍽️
+          </span>
+
+          <strong>
+            Dine-In
+          </strong>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="account.html"
+        >
+          <span aria-hidden="true">
+            👤
+          </span>
+
+          <strong>
+            Account
+          </strong>
+        </a>
+
+      </nav>
+
+
+      <!-- REQUIRED SAFE SESSION ELEMENTS -->
+
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+
+        <button
+          id="roleLogoutButton"
+          type="button"
+          tabindex="-1"
+        >
+          Logout
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- COMMON JAVASCRIPT -->
+
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/location.js"></script>
+  <script src="../../shared/js/service-location.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
+
+  <!-- DINE-IN JAVASCRIPT -->
+
+  <script src="../js/dine-in.js"></script>
+
+</body>
+</html>
