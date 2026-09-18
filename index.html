@@ -18,31 +18,231 @@
     content="ApnaBite - Apna Swaad, Apni Pasand"
   >
 
-  <link rel="manifest" href="manifest.json">
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
 
   <title>ApnaBite</title>
 
-  <link rel="stylesheet" href="shared/css/reset.css">
-  <link rel="stylesheet" href="shared/css/variables.css">
-  <link rel="stylesheet" href="shared/css/common.css">
-  <link rel="stylesheet" href="shared/css/components.css">
-  <link rel="stylesheet" href="shared/css/responsive.css">
+  <link
+    rel="stylesheet"
+    href="shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/responsive.css"
+  >
 </head>
 
 <body>
 
   <main id="app">
-    <div class="app-loader" id="appLoader">
-      <div class="loader-spinner"></div>
+
+    <div
+      class="app-loader"
+      id="appLoader"
+    >
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
       <p>Loading ApnaBite...</p>
     </div>
+
+
+    <section
+      class="location-screen"
+      id="locationScreen"
+      aria-labelledby="locationHeading"
+    >
+
+      <header class="location-brand">
+
+        <div
+          class="location-brand-mark"
+          aria-hidden="true"
+        >
+          A
+        </div>
+
+        <span class="location-brand-name">
+          ApnaBite
+        </span>
+
+      </header>
+
+
+      <div class="location-content">
+
+        <div
+          class="location-illustration"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"
+            ></path>
+
+            <circle
+              cx="12"
+              cy="10"
+              r="2.5"
+            ></circle>
+          </svg>
+        </div>
+
+
+        <h1
+          class="location-heading"
+          id="locationHeading"
+        >
+          Find food near you
+        </h1>
+
+
+        <p class="location-description">
+          Select your location to discover nearby home kitchens,
+          food partners and available meals.
+        </p>
+
+
+        <div class="location-actions">
+
+          <button
+            class="app-button app-button-primary"
+            id="useCurrentLocationButton"
+            type="button"
+          >
+            <span class="location-button-content">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                ></circle>
+
+                <path
+                  d="M12 2v3"
+                ></path>
+
+                <path
+                  d="M12 19v3"
+                ></path>
+
+                <path
+                  d="M2 12h3"
+                ></path>
+
+                <path
+                  d="M19 12h3"
+                ></path>
+              </svg>
+
+              <span>
+                Use Current Location
+              </span>
+
+            </span>
+          </button>
+
+
+          <div class="location-divider">
+            or
+          </div>
+
+
+          <button
+            class="app-button app-button-secondary"
+            id="enterLocationButton"
+            type="button"
+          >
+            <span class="location-button-content">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 6h16"
+                ></path>
+
+                <path
+                  d="M4 12h16"
+                ></path>
+
+                <path
+                  d="M4 18h10"
+                ></path>
+              </svg>
+
+              <span>
+                Enter Location Manually
+              </span>
+
+            </span>
+          </button>
+
+        </div>
+
+
+        <p class="location-note">
+          Your location is used only to show relevant nearby
+          food options and delivery availability.
+        </p>
+
+      </div>
+
+    </section>
+
   </main>
+
 
   <script src="shared/js/storage.js"></script>
   <script src="shared/js/cache.js"></script>
+
+  <script src="shared/js/api.js"></script>
   <script src="shared/js/session.js"></script>
   <script src="shared/js/auth.js"></script>
-  <script src="shared/js/api.js"></script>
+
   <script src="shared/js/location.js"></script>
   <script src="shared/js/cart.js"></script>
   <script src="shared/js/validation.js"></script>
