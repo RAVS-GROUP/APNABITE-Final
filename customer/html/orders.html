@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <meta
+    name="description"
+    content="View and manage your ApnaBite orders"
+  >
+
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
+
+  <title>My Orders | ApnaBite</title>
+
+  <!-- Shared styles -->
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+  <!-- Customer styles -->
+
+  <link
+    rel="stylesheet"
+    href="../css/customer-common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/orders.css"
+  >
+</head>
+
+<body>
+
+  <main
+    class="customer-app customer-page"
+    id="customerOrdersPage"
+  >
+
+    <!--
+      RoleHome uses this loader while validating
+      the current session and Customer role.
+    -->
+
+    <div
+      class="customer-page-loader"
+      id="roleHomeLoader"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
+      <p>
+        Loading your orders...
+      </p>
+    </div>
+
+
+    <!-- Protected customer content -->
+
+    <div
+      class="customer-orders customer-bottom-safe-area hidden"
+      id="roleHomeContent"
+    >
+
+      <!-- Page header -->
+
+      <header class="orders-header">
+
+        <div class="orders-header-brand">
+
+          <div
+            class="orders-brand-mark"
+            aria-hidden="true"
+          >
+            A
+          </div>
+
+          <div>
+
+            <h1>
+              My Orders
+            </h1>
+
+            <p>
+              Track and manage your food orders
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="orders-refresh-button"
+          id="refreshOrdersButton"
+          type="button"
+          aria-label="Refresh orders"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 11a8.1 8.1 0 0 0-15.5-2"
+            ></path>
+
+            <path
+              d="M4 4v5h5"
+            ></path>
+
+            <path
+              d="M4 13a8.1 8.1 0 0 0 15.5 2"
+            ></path>
+
+            <path
+              d="M20 20v-5h-5"
+            ></path>
+          </svg>
+        </button>
+
+      </header>
+
+
+      <!-- Hidden role data required by RoleHome -->
+
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+
+        <button
+          id="roleLogoutButton"
+          type="button"
+        >
+          Logout
+        </button>
+      </div>
+
+
+      <!-- Page message -->
+
+      <div
+        class="customer-page-message hidden"
+        id="roleHomeMessage"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- Orders summary -->
+
+      <section
+        class="orders-summary"
+        aria-labelledby="ordersSummaryTitle"
+      >
+
+        <div>
+
+          <span class="orders-summary-label">
+            Your food journey
+          </span>
+
+          <h2 id="ordersSummaryTitle">
+            All your orders in one place
+          </h2>
+
+          <p>
+            Follow active deliveries and review your previous
+            ApnaBite orders.
+          </p>
+
+        </div>
+
+
+        <div
+          class="orders-summary-icon"
+          aria-hidden="true"
+        >
+          📦
+        </div>
+
+      </section>
+
+
+      <!-- Order tabs -->
+
+      <nav
+        class="orders-tabs"
+        aria-label="Order status filters"
+      >
+
+        <button
+          class="orders-tab is-active"
+          id="activeOrdersTab"
+          type="button"
+          data-order-filter="ACTIVE"
+          aria-pressed="true"
+        >
+          Active
+        </button>
+
+        <button
+          class="orders-tab"
+          id="pastOrdersTab"
+          type="button"
+          data-order-filter="PAST"
+          aria-pressed="false"
+        >
+          Past
+        </button>
+
+        <button
+          class="orders-tab"
+          id="cancelledOrdersTab"
+          type="button"
+          data-order-filter="CANCELLED"
+          aria-pressed="false"
+        >
+          Cancelled
+        </button>
+
+      </nav>
+
+
+      <!-- Orders content -->
+
+      <section
+        class="orders-section"
+        aria-labelledby="ordersSectionTitle"
+      >
+
+        <div class="orders-section-header">
+
+          <div>
+
+            <h2 id="ordersSectionTitle">
+              Active orders
+            </h2>
+
+            <p id="ordersSectionDescription">
+              Orders currently being prepared or delivered
+            </p>
+
+          </div>
+
+
+          <span
+            class="orders-count"
+            id="ordersCount"
+          >
+            0
+          </span>
+
+        </div>
+
+
+        <!-- Loading state -->
+
+        <div
+          class="orders-loading hidden"
+          id="ordersLoading"
+          role="status"
+          aria-live="polite"
+        >
+
+          <div class="order-skeleton">
+
+            <div class="order-skeleton-top">
+
+              <span></span>
+              <span></span>
+
+            </div>
+
+            <div class="order-skeleton-line"></div>
+
+            <div class="order-skeleton-line order-skeleton-line-short"></div>
+
+          </div>
+
+
+          <div class="order-skeleton">
+
+            <div class="order-skeleton-top">
+
+              <span></span>
+              <span></span>
+
+            </div>
+
+            <div class="order-skeleton-line"></div>
+
+            <div class="order-skeleton-line order-skeleton-line-short"></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Dynamic orders list -->
+
+        <div
+          class="orders-list hidden"
+          id="ordersList"
+        ></div>
+
+
+        <!-- Empty state -->
+
+        <div
+          class="orders-empty"
+          id="ordersEmpty"
+        >
+
+          <div
+            class="orders-empty-icon"
+            id="ordersEmptyIcon"
+            aria-hidden="true"
+          >
+            🧾
+          </div>
+
+          <h3 id="ordersEmptyTitle">
+            No active orders
+          </h3>
+
+          <p id="ordersEmptyDescription">
+            Your active orders will appear here after you place
+            an order.
+          </p>
+
+          <a
+            class="orders-browse-button"
+            id="browseFoodButton"
+            href="home.html"
+          >
+            Browse Food
+          </a>
+
+        </div>
+
+
+        <!-- Request error -->
+
+        <div
+          class="orders-error hidden"
+          id="ordersError"
+          role="alert"
+          aria-live="polite"
+        >
+
+          <div
+            class="orders-error-icon"
+            aria-hidden="true"
+          >
+            !
+          </div>
+
+          <h3>
+            Unable to load orders
+          </h3>
+
+          <p id="ordersErrorMessage">
+            Please check your connection and try again.
+          </p>
+
+          <button
+            class="orders-retry-button"
+            id="retryOrdersButton"
+            type="button"
+          >
+            Try Again
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- Customer bottom navigation -->
+
+      <nav
+        class="customer-bottom-nav"
+        aria-label="Customer navigation"
+      >
+
+        <a
+          class="customer-nav-item"
+          href="home.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            🏠
+          </span>
+
+          <span>
+            Home
+          </span>
+        </a>
+
+
+        <a
+          class="customer-nav-item is-active"
+          href="orders.html"
+          aria-current="page"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            📦
+          </span>
+
+          <span>
+            Orders
+          </span>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="dine-in.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            🍽️
+          </span>
+
+          <span>
+            Dine-In
+          </span>
+        </a>
+
+
+        <a
+          class="customer-nav-item"
+          href="account.html"
+        >
+          <span
+            class="customer-nav-icon"
+            aria-hidden="true"
+          >
+            👤
+          </span>
+
+          <span>
+            Account
+          </span>
+        </a>
+
+      </nav>
+
+    </div>
+
+  </main>
+
+
+  <!-- Shared JavaScript -->
+
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/location.js"></script>
+  <script src="../../shared/js/service-location.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
+
+  <!-- Customer page JavaScript -->
+
+  <script src="../js/orders.js"></script>
+
+</body>
+</html>
