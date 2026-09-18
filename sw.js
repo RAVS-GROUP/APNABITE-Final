@@ -2,18 +2,21 @@
  * ============================================================
  * APNABITE SERVICE WORKER
  * FILE: sw.js
- * VERSION: 3.0.0
+ * VERSION: 4.0.0
  * ============================================================
  */
 
 const CACHE_NAME =
-  "apnabite-static-v4";
+  "apnabite-static-v5";
 
 
 const STATIC_ASSETS = [
 
   "./",
   "./index.html",
+  "./login.html",
+  "./register.html",
+  "./role-selection.html",
   "./manifest.json",
 
   "./shared/css/reset.css",
@@ -21,6 +24,9 @@ const STATIC_ASSETS = [
   "./shared/css/common.css",
   "./shared/css/components.css",
   "./shared/css/responsive.css",
+  "./shared/css/auth-pages.css",
+  "./shared/css/role-selection.css",
+  "./shared/css/launch.css",
 
   "./shared/js/storage.js",
   "./shared/js/cache.js",
@@ -35,7 +41,11 @@ const STATIC_ASSETS = [
   "./shared/js/formatter.js",
   "./shared/js/notifications.js",
   "./shared/js/theme.js",
-  "./shared/js/app.js"
+  "./shared/js/launch.js",
+  "./shared/js/app.js",
+  "./shared/js/login-page.js",
+  "./shared/js/register-page.js",
+  "./shared/js/role-selection.js"
 
 ];
 
@@ -110,30 +120,37 @@ self.addEventListener(
     const request =
       event.request;
 
+
     if (
       request.method !== "GET"
     ) {
+
       return;
     }
+
 
     const requestUrl =
       new URL(
         request.url
       );
 
+
     if (
       requestUrl.origin !==
       self.location.origin
     ) {
+
       return;
     }
+
 
     event.respondWith(
 
       fetch(
         request,
         {
-          cache: "no-cache"
+          cache:
+            "no-cache"
         }
       )
 
@@ -150,17 +167,23 @@ self.addEventListener(
               const responseClone =
                 networkResponse.clone();
 
+
               caches
-                .open(CACHE_NAME)
+                .open(
+                  CACHE_NAME
+                )
 
-                .then((cache) => {
+                .then(
+                  (cache) => {
 
-                  return cache.put(
-                    request,
-                    responseClone
-                  );
-                });
+                    return cache.put(
+                      request,
+                      responseClone
+                    );
+                  }
+                );
             }
+
 
             return networkResponse;
           }
@@ -174,10 +197,12 @@ self.addEventListener(
                 request
               );
 
+
             if (cachedResponse) {
 
               return cachedResponse;
             }
+
 
             if (
               request.mode ===
@@ -189,18 +214,23 @@ self.addEventListener(
                   "./index.html"
                 );
 
+
               if (cachedIndex) {
 
                 return cachedIndex;
               }
             }
 
+
             return new Response(
               "ApnaBite is currently offline.",
               {
-                status: 503,
+                status:
+                  503,
+
                 statusText:
                   "Service Unavailable",
+
                 headers: {
                   "Content-Type":
                     "text/plain;charset=utf-8"
