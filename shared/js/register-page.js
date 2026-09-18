@@ -2,7 +2,7 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/register-page.js
- * PURPOSE: Secure OTP registration page controller
+ * PURPOSE: Secure OTP registration page
  * VERSION: 1.0.0
  * ============================================================
  */
@@ -35,12 +35,12 @@ const RegisterPage = {
 
       otpStep:
         document.getElementById(
-          "registrationOtpStep"
+          "otpStep"
         ),
 
       successStep:
         document.getElementById(
-          "registrationSuccessStep"
+          "successStep"
         ),
 
       registrationForm:
@@ -50,82 +50,82 @@ const RegisterPage = {
 
       otpForm:
         document.getElementById(
-          "registrationOtpForm"
+          "otpForm"
         ),
 
-      mobile:
+      roleInput:
         document.getElementById(
-          "registrationMobile"
+          "roleInput"
         ),
 
-      role:
+      mobileInput:
         document.getElementById(
-          "registrationRole"
+          "mobileInput"
         ),
 
-      email:
+      emailInput:
         document.getElementById(
-          "registrationEmail"
+          "emailInput"
         ),
 
-      language:
+      languageInput:
         document.getElementById(
-          "registrationLanguage"
+          "languageInput"
         ),
 
-      otp:
+      otpInput:
         document.getElementById(
-          "registrationOtp"
+          "otpInput"
         ),
 
-      requestButton:
+      sendOtpButton:
         document.getElementById(
-          "requestRegistrationOtpButton"
+          "sendRegistrationOtpButton"
         ),
 
       verifyButton:
         document.getElementById(
-          "verifyRegistrationOtpButton"
+          "verifyRegistrationButton"
         ),
 
-      editButton:
+      changeDetailsButton:
         document.getElementById(
-          "editRegistrationButton"
+          "changeDetailsButton"
         ),
 
-      resendButton:
+      resendOtpButton:
         document.getElementById(
-          "resendRegistrationOtpButton"
+          "resendOtpButton"
+        ),
+
+      goToLoginButton:
+        document.getElementById(
+          "goToLoginButton"
         ),
 
       maskedMobile:
         document.getElementById(
-          "registrationMaskedMobile"
+          "maskedMobile"
         ),
 
       testOtpBox:
         document.getElementById(
-          "registrationTestOtpBox"
+          "testOtpBox"
         ),
 
       testOtpValue:
         document.getElementById(
-          "registrationTestOtpValue"
+          "testOtpValue"
         ),
 
       successMessage:
         document.getElementById(
-          "registrationSuccessMessage"
+          "successMessage"
         ),
 
       message:
         document.getElementById(
-          "registrationMessage"
-        ),
-
-      loginButton:
-        document.getElementById(
-          "goToLoginButton"
+          "authMessage"
         )
     };
 
@@ -136,7 +136,7 @@ const RegisterPage = {
         (event) => {
 
           event.preventDefault();
-          this.requestOtp();
+          this.sendOtp();
         }
       );
 
@@ -152,7 +152,7 @@ const RegisterPage = {
       );
 
 
-    this.elements.editButton
+    this.elements.changeDetailsButton
       .addEventListener(
         "click",
         () => {
@@ -162,17 +162,17 @@ const RegisterPage = {
       );
 
 
-    this.elements.resendButton
+    this.elements.resendOtpButton
       .addEventListener(
         "click",
         () => {
 
-          this.requestOtp();
+          this.sendOtp();
         }
       );
 
 
-    this.elements.loginButton
+    this.elements.goToLoginButton
       .addEventListener(
         "click",
         () => {
@@ -183,26 +183,26 @@ const RegisterPage = {
       );
 
 
-    this.elements.mobile
+    this.elements.mobileInput
       .addEventListener(
         "input",
         () => {
 
-          this.elements.mobile.value =
-            this.elements.mobile.value
+          this.elements.mobileInput.value =
+            this.elements.mobileInput.value
               .replace(/\D/g, "")
               .slice(0, 10);
         }
       );
 
 
-    this.elements.otp
+    this.elements.otpInput
       .addEventListener(
         "input",
         () => {
 
-          this.elements.otp.value =
-            this.elements.otp.value
+          this.elements.otpInput.value =
+            this.elements.otpInput.value
               .replace(/\D/g, "")
               .slice(0, 6);
         }
@@ -215,29 +215,40 @@ const RegisterPage = {
   },
 
 
-  getFormData() {
+  getRegistrationData() {
 
     return {
+
       mobile:
         Auth.normalizeMobile(
-          this.elements.mobile.value
+          this.elements.mobileInput.value
         ),
 
       role:
-        this.elements.role.value,
+        this.elements.roleInput.value,
 
       email:
-        this.elements.email.value
+        this.elements.emailInput.value
           .trim(),
 
       preferredLanguage:
-        this.elements.language.value ||
+        this.elements.languageInput.value ||
         "en"
     };
   },
 
 
-  validateForm(data) {
+  validateData(data) {
+
+    if (!data.role) {
+
+      return {
+        valid: false,
+        message:
+          "Please select how you want to join ApnaBite."
+      };
+    }
+
 
     if (
       !Auth.isValidMobile(
@@ -253,22 +264,10 @@ const RegisterPage = {
     }
 
 
-    if (!data.role) {
-
-      return {
-        valid: false,
-        message:
-          "Please select your role."
-      };
-    }
-
-
     if (
       data.email &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        .test(
-          data.email
-        )
+        .test(data.email)
     ) {
 
       return {
@@ -285,19 +284,19 @@ const RegisterPage = {
   },
 
 
-  async requestOtp() {
+  async sendOtp() {
+
+    this.clearMessage();
+
 
     const data =
-      this.getFormData();
+      this.getRegistrationData();
 
 
     const validation =
-      this.validateForm(
+      this.validateData(
         data
       );
-
-
-    this.clearMessage();
 
 
     if (!validation.valid) {
@@ -313,7 +312,7 @@ const RegisterPage = {
 
 
     this.setButtonLoading(
-      this.elements.requestButton,
+      this.elements.sendOtpButton,
       true
     );
 
@@ -345,7 +344,7 @@ const RegisterPage = {
 
       this.showError(
         error.message ||
-        "Unable to send registration OTP."
+        "Unable to send verification OTP."
       );
 
 
@@ -360,7 +359,7 @@ const RegisterPage = {
     } finally {
 
       this.setButtonLoading(
-        this.elements.requestButton,
+        this.elements.sendOtpButton,
         false
       );
     }
@@ -412,10 +411,10 @@ const RegisterPage = {
     }
 
 
-    this.elements.otp.value =
+    this.elements.otpInput.value =
       "";
 
-    this.elements.otp.focus();
+    this.elements.otpInput.focus();
 
 
     this.startResendTimer(
@@ -428,23 +427,11 @@ const RegisterPage = {
   async verifyAndRegister() {
 
     const otp =
-      this.elements.otp.value
+      this.elements.otpInput.value
         .replace(/\D/g, "");
 
 
     this.clearMessage();
-
-
-    if (
-      !this.registrationData
-    ) {
-
-      this.showError(
-        "Registration details are missing."
-      );
-
-      return;
-    }
 
 
     if (
@@ -571,9 +558,11 @@ const RegisterPage = {
 
     this.elements.successMessage
       .textContent =
-        "Verified " +
-        user.role +
-        " account created successfully.";
+        (
+          user.role ||
+          "User"
+        ) +
+        " account verified successfully.";
   },
 
 
@@ -604,11 +593,11 @@ const RegisterPage = {
 
             this.stopResendTimer();
 
-            this.elements.resendButton
+            this.elements.resendOtpButton
               .disabled =
                 false;
 
-            this.elements.resendButton
+            this.elements.resendOtpButton
               .textContent =
                 "Resend OTP";
           }
@@ -620,11 +609,11 @@ const RegisterPage = {
 
   updateResendButton() {
 
-    this.elements.resendButton
+    this.elements.resendOtpButton
       .disabled =
         true;
 
-    this.elements.resendButton
+    this.elements.resendOtpButton
       .textContent =
         "Resend OTP in " +
         this.resendSeconds +
@@ -655,4 +644,195 @@ const RegisterPage = {
       loading;
 
     button.classList.toggle(
-      "auth
+      "auth-loading",
+      loading
+    );
+  },
+
+
+  showError(message) {
+
+    this.elements.message
+      .textContent =
+        message;
+
+    this.elements.message
+      .classList.remove(
+        "hidden"
+      );
+  },
+
+
+  clearMessage() {
+
+    this.elements.message
+      .textContent =
+        "";
+
+    this.elements.message
+      .classList.add(
+        "hidden"
+      );
+  },
+
+
+  maskMobile(mobile) {
+
+    return (
+      "+91 ******" +
+      String(mobile)
+        .slice(-4)
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * PAGE INTEGRATION TEST
+   *
+   * Browser console:
+   * RegisterPage.test()
+   * ----------------------------------------------------------
+   */
+
+  async test() {
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE REGISTRATION PAGE TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    const testMobile =
+      "9" +
+      String(
+        Date.now()
+      ).slice(-9);
+
+
+    try {
+
+      this.showRegistrationStep();
+
+
+      this.elements.roleInput.value =
+        "Customer";
+
+      this.elements.mobileInput.value =
+        testMobile;
+
+      this.elements.emailInput.value =
+        "register-page-" +
+        Date.now() +
+        "@apnabite.test";
+
+      this.elements.languageInput.value =
+        "en";
+
+
+      const otpResult =
+        await this.sendOtp();
+
+
+      if (
+        !otpResult ||
+        !otpResult.success ||
+        !otpResult.testOtp
+      ) {
+
+        throw new Error(
+          "Registration page OTP request failed."
+        );
+      }
+
+
+      this.elements.otpInput.value =
+        otpResult.testOtp;
+
+
+      const registrationResult =
+        await this.verifyAndRegister();
+
+
+      const passed =
+        registrationResult.success ===
+          true &&
+        this.elements.successStep
+          .classList.contains(
+            "hidden"
+          ) === false;
+
+
+      console.log(
+        passed
+          ? "Registration Page Test: PASS"
+          : "Registration Page Test: FAIL"
+      );
+
+
+      return {
+        success:
+          passed,
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+        testMobile:
+          testMobile,
+        result:
+          registrationResult
+      };
+
+    } catch (error) {
+
+      console.error(
+        "Registration Page Test: FAIL",
+        error
+      );
+
+
+      return {
+        success: false,
+        status: "FAIL",
+        testMobile:
+          testMobile,
+        error:
+          error.message,
+        code:
+          error.code || ""
+      };
+    }
+  }
+
+};
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    RegisterPage.init();
+  }
+);
+
+
+if (
+  "serviceWorker" in navigator
+) {
+
+  window.addEventListener(
+    "load",
+    () => {
+
+      navigator.serviceWorker
+        .register("./sw.js");
+    }
+  );
+}
