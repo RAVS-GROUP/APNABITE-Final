@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <meta
+    name="description"
+    content="Choose how you want to use ApnaBite"
+  >
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+  <title>Choose Role | ApnaBite</title>
+
+  <link
+    rel="stylesheet"
+    href="shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/role-selection.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="shared/css/responsive.css"
+  >
+</head>
+
+<body>
+
+  <main
+    class="role-page"
+    id="roleSelectionPage"
+  >
+
+    <header class="role-header">
+
+      <div class="role-brand">
+
+        <div
+          class="role-brand-mark"
+          aria-hidden="true"
+        >
+          A
+        </div>
+
+        <div>
+          <strong>ApnaBite</strong>
+          <span>Apna Swaad, Apni Pasand</span>
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <section class="role-content">
+
+      <div class="role-heading">
+
+        <p class="role-eyebrow">
+          Welcome to ApnaBite
+        </p>
+
+        <h1>
+          How would you like to continue?
+        </h1>
+
+        <p>
+          Select your role to open the correct ApnaBite experience.
+        </p>
+
+      </div>
+
+
+      <div
+        class="role-grid"
+        id="roleGrid"
+      >
+
+        <button
+          class="role-card"
+          data-role="Customer"
+          type="button"
+        >
+
+          <span
+            class="role-emoji role-emoji-customer"
+            aria-hidden="true"
+          >
+            🍽️
+          </span>
+
+          <span class="role-card-copy">
+
+            <strong>Customer</strong>
+
+            <small>
+              Discover kitchens, order food and track deliveries.
+            </small>
+
+          </span>
+
+          <span
+            class="role-check"
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+
+        </button>
+
+
+        <button
+          class="role-card"
+          data-role="Food Partner"
+          type="button"
+        >
+
+          <span
+            class="role-emoji role-emoji-chef"
+            aria-hidden="true"
+          >
+            👨‍🍳
+          </span>
+
+          <span class="role-card-copy">
+
+            <strong>Food Partner</strong>
+
+            <small>
+              Manage your kitchen, menu, orders and earnings.
+            </small>
+
+          </span>
+
+          <span
+            class="role-check"
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+
+        </button>
+
+
+        <button
+          class="role-card"
+          data-role="Rider"
+          type="button"
+        >
+
+          <span
+            class="role-emoji role-emoji-rider"
+            aria-hidden="true"
+          >
+            🛵
+          </span>
+
+          <span class="role-card-copy">
+
+            <strong>Delivery Partner</strong>
+
+            <small>
+              Accept deliveries, navigate safely and track earnings.
+            </small>
+
+          </span>
+
+          <span
+            class="role-check"
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+
+        </button>
+
+      </div>
+
+
+      <div
+        class="role-actions hidden"
+        id="roleActions"
+      >
+
+        <p id="selectedRoleText">
+          Selected role:
+        </p>
+
+        <button
+          class="app-button role-primary-button"
+          id="roleLoginButton"
+          type="button"
+        >
+          Login
+        </button>
+
+        <button
+          class="app-button role-secondary-button"
+          id="roleRegisterButton"
+          type="button"
+        >
+          Create New Account
+        </button>
+
+      </div>
+
+
+      <div
+        class="role-message hidden"
+        id="roleMessage"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+    </section>
+
+
+    <footer class="role-footer">
+      You can change your role before login.
+    </footer>
+
+  </main>
+
+
+  <script src="shared/js/storage.js"></script>
+  <script src="shared/js/role-selection.js"></script>
+
+</body>
+</html>
