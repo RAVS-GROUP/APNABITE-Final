@@ -3,7 +3,7 @@
  * APNABITE FRONTEND
  * FILE: shared/js/api.js
  * PURPOSE: Central API communication layer
- * VERSION: 1.0.0
+ * VERSION: 1.1.0
  * ============================================================
  *
  * RESPONSIBILITIES:
@@ -11,15 +11,15 @@
  * 2. Standard API request structure
  * 3. Request ID generation
  * 4. Duplicate request protection
- * 5. Request timeout
+ * 5. Action-specific request timeout
  * 6. Response validation
  * 7. Standard error handling
- * 8. API health testing
+ * 8. API health and configuration testing
  *
  * IMPORTANT:
  * - No secrets are stored here.
  * - Sensitive calculations remain on backend.
- * - Frontend receives only required API data.
+ * - OTP requests are not automatically retried.
  * ============================================================
  */
 
@@ -30,30 +30,62 @@ const API = {
    * LIVE APNABITE APPS SCRIPT WEB APP
    * ----------------------------------------------------------
    */
+
   BASE_URL:
     "https://script.google.com/macros/s/AKfycbzM-Y1Lc5G24lEmB4wVbK7dK0kD8ZjuEr_rCXM8Wt_qYrROdj2LTlvnZcDSbZY000AVsQ/exec",
 
 
   /*
    * ----------------------------------------------------------
-   * REQUEST SETTINGS
+   * REQUEST TIMEOUT SETTINGS
+   * ----------------------------------------------------------
+   *
+   * Health:
+   * Lightweight connectivity check.
+   *
+   * Default:
+   * Normal application requests.
+   *
+   * Auth:
+   * Google Apps Script cold starts and mobile networks can
+   * require additional time for OTP/session operations.
    * ----------------------------------------------------------
    */
 
-  REQUEST_TIMEOUT_MS: 10000,
+  HEALTH_REQUEST_TIMEOUT_MS:
+    15000,
+
+  DEFAULT_REQUEST_TIMEOUT_MS:
+    20000,
+
+  AUTH_REQUEST_TIMEOUT_MS:
+    30000,
+
+
+  /*
+   * ----------------------------------------------------------
+   * LONG-RUNNING AUTHENTICATION ACTIONS
+   * ----------------------------------------------------------
+   */
+
+  AUTH_ACTIONS: [
+    "request_otp",
+    "verify_otp",
+    "register",
+    "login",
+    "validate_session",
+    "logout"
+  ],
 
 
   /*
    * ----------------------------------------------------------
    * DUPLICATE REQUEST PROTECTION
-   *
-   * Same action + same payload already running:
-   * return the existing Promise instead of creating
-   * another API call.
    * ----------------------------------------------------------
    */
 
-  pendingRequests: new Map(),
+  pendingRequests:
+    new Map(),
 
 
   /*
@@ -62,15 +94,20 @@ const API = {
    * ----------------------------------------------------------
    */
 
-  async request(action, payload = {}) {
+  async request(
+    action,
+    payload = {},
+    options = {}
+  ) {
 
     if (
       !action ||
       typeof action !== "string"
     ) {
 
-      throw new Error(
-        "API action is required."
+      throw this.createClientError(
+        "API action is required.",
+        "ACTION_REQUIRED"
       );
     }
 
@@ -81,48 +118,76 @@ const API = {
       Array.isArray(payload)
     ) {
 
-      throw new Error(
-        "API payload must be an object."
+      throw this.createClientError(
+        "API payload must be an object.",
+        "INVALID_PAYLOAD"
       );
     }
 
 
-    /*
-     * Create complete request body.
-     */
+    if (
+      options === null ||
+      typeof options !== "object" ||
+      Array.isArray(options)
+    ) {
+
+      throw this.createClientError(
+        "API request options must be an object.",
+        "INVALID_OPTIONS"
+      );
+    }
+
+
+    const normalizedAction =
+      action.trim();
+
+
+    if (!normalizedAction) {
+
+      throw this.createClientError(
+        "API action is required.",
+        "ACTION_REQUIRED"
+      );
+    }
+
+
     const requestBody = {
 
-      action: action,
+      action:
+        normalizedAction,
 
-      payload: payload,
+      payload:
+        payload,
 
-      requestId: this.createRequestId()
+      requestId:
+        options.requestId ||
+        this.createRequestId()
 
     };
 
 
-    /*
-     * Create duplicate-request key.
-     *
-     * Example:
-     * login:{"mobile":"9876543210"}
-     */
     const requestKey =
       this.createRequestKey(
-        action,
+        normalizedAction,
         payload
       );
 
 
     /*
-     * If same request is already running,
-     * return the existing Promise.
+     * If an identical request is already running,
+     * return its existing Promise.
      */
+
     if (
       this.pendingRequests.has(
         requestKey
       )
     ) {
+
+      console.warn(
+        "Duplicate API request prevented:",
+        normalizedAction
+      );
 
       return this.pendingRequests.get(
         requestKey
@@ -130,18 +195,20 @@ const API = {
     }
 
 
-    /*
-     * Start request.
-     */
-    const requestPromise =
-      this.executeRequest(
-        requestBody
+    const timeoutMs =
+      this.resolveTimeout(
+        normalizedAction,
+        options.timeoutMs
       );
 
 
-    /*
-     * Store active request.
-     */
+    const requestPromise =
+      this.executeRequest(
+        requestBody,
+        timeoutMs
+      );
+
+
     this.pendingRequests.set(
       requestKey,
       requestPromise
@@ -154,10 +221,6 @@ const API = {
 
     } finally {
 
-      /*
-       * Remove request after completion,
-       * success OR failure.
-       */
       this.pendingRequests.delete(
         requestKey
       );
@@ -167,28 +230,84 @@ const API = {
 
   /*
    * ----------------------------------------------------------
+   * RESOLVE REQUEST TIMEOUT
+   * ----------------------------------------------------------
+   */
+
+  resolveTimeout(
+    action,
+    customTimeout
+  ) {
+
+    const parsedCustomTimeout =
+      Number(
+        customTimeout
+      );
+
+
+    if (
+      Number.isFinite(
+        parsedCustomTimeout
+      ) &&
+      parsedCustomTimeout >= 1000
+    ) {
+
+      return parsedCustomTimeout;
+    }
+
+
+    if (
+      action === "health"
+    ) {
+
+      return this
+        .HEALTH_REQUEST_TIMEOUT_MS;
+    }
+
+
+    if (
+      this.AUTH_ACTIONS.includes(
+        action
+      )
+    ) {
+
+      return this
+        .AUTH_REQUEST_TIMEOUT_MS;
+    }
+
+
+    return this
+      .DEFAULT_REQUEST_TIMEOUT_MS;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
    * EXECUTE HTTP REQUEST
    * ----------------------------------------------------------
    */
 
-  async executeRequest(requestBody) {
+  async executeRequest(
+    requestBody,
+    timeoutMs
+  ) {
 
     const controller =
       new AbortController();
 
 
-    /*
-     * Automatic timeout.
-     */
     const timeoutId =
-      setTimeout(
-        function() {
+      window.setTimeout(
+        () => {
 
           controller.abort();
-
         },
-        this.REQUEST_TIMEOUT_MS
+        timeoutMs
       );
+
+
+    const startedAt =
+      Date.now();
 
 
     try {
@@ -198,15 +317,17 @@ const API = {
           this.BASE_URL,
           {
 
-            method: "POST",
+            method:
+              "POST",
 
             headers: {
 
               /*
                * text/plain is intentional.
-               * Apps Script Web App handles this reliably
-               * for our JSON request body.
+               * Apps Script accepts the JSON request body
+               * without unnecessary CORS preflight.
                */
+
               "Content-Type":
                 "text/plain;charset=utf-8"
 
@@ -218,28 +339,46 @@ const API = {
               ),
 
             signal:
-              controller.signal
+              controller.signal,
+
+            cache:
+              "no-store",
+
+            redirect:
+              "follow"
 
           }
         );
 
 
-      /*
-       * HTTP-level validation.
-       */
       if (!response.ok) {
 
-        throw new Error(
-          "API request failed. HTTP status: " +
-          response.status
-        );
+        const httpError =
+          new Error(
+            "API request failed. HTTP status: " +
+            response.status
+          );
+
+
+        httpError.code =
+          "HTTP_ERROR";
+
+        httpError.httpStatus =
+          response.status;
+
+        httpError.requestId =
+          requestBody.requestId;
+
+        httpError.action =
+          requestBody.action;
+
+
+        throw httpError;
       }
 
 
-      /*
-       * Parse JSON response.
-       */
       let result;
+
 
       try {
 
@@ -248,43 +387,32 @@ const API = {
 
       } catch (error) {
 
-        throw new Error(
-          "API returned an invalid response."
-        );
+        const responseError =
+          new Error(
+            "ApnaBite server returned an invalid response."
+          );
+
+
+        responseError.code =
+          "INVALID_JSON_RESPONSE";
+
+        responseError.requestId =
+          requestBody.requestId;
+
+        responseError.action =
+          requestBody.action;
+
+
+        throw responseError;
       }
 
 
-      /*
-       * Basic response structure validation.
-       */
-      if (
-        !result ||
-        typeof result !== "object"
-      ) {
-
-        throw new Error(
-          "Invalid API response."
-        );
-      }
+      this.validateResponse(
+        result,
+        requestBody
+      );
 
 
-      /*
-       * Backend must return success flag.
-       */
-      if (
-        typeof result.success !==
-        "boolean"
-      ) {
-
-        throw new Error(
-          "Invalid API response format."
-        );
-      }
-
-
-      /*
-       * Backend business/API error.
-       */
       if (!result.success) {
 
         const errorCode =
@@ -307,51 +435,55 @@ const API = {
           );
 
 
-        /*
-         * Preserve backend error information
-         * for future UI handling.
-         */
         apiError.code =
           errorCode;
 
-
         apiError.requestId =
-          result.requestId || "";
+          result.requestId ||
+          requestBody.requestId;
+
+        apiError.action =
+          requestBody.action;
 
 
         throw apiError;
       }
 
 
-      /*
-       * Successful response.
-       */
-      return result;
+      result.durationMs =
+        Date.now() -
+        startedAt;
 
+
+      return result;
 
     } catch (error) {
 
-      /*
-       * Convert AbortController timeout
-       * into a user-friendly error.
-       */
       if (
         error &&
-        error.name === "AbortError"
+        error.name ===
+          "AbortError"
       ) {
 
         const timeoutError =
           new Error(
-            "Request timed out. Please try again."
+            this.getTimeoutMessage(
+              requestBody.action
+            )
           );
 
 
         timeoutError.code =
           "REQUEST_TIMEOUT";
 
-
         timeoutError.requestId =
           requestBody.requestId;
+
+        timeoutError.action =
+          requestBody.action;
+
+        timeoutError.timeoutMs =
+          timeoutMs;
 
 
         throw timeoutError;
@@ -359,8 +491,10 @@ const API = {
 
 
       /*
-       * Preserve already-created API errors.
+       * Preserve errors already created by API layer
+       * or returned by backend.
        */
+
       if (
         error &&
         error.code
@@ -370,36 +504,174 @@ const API = {
       }
 
 
-      /*
-       * Network / unknown error.
-       */
       const networkError =
         new Error(
-          error &&
-          error.message
-            ? error.message
-            : "Unable to connect to ApnaBite."
+          "Unable to connect to ApnaBite. Please check your internet connection and try again."
         );
 
 
       networkError.code =
         "NETWORK_ERROR";
 
-
       networkError.requestId =
         requestBody.requestId;
+
+      networkError.action =
+        requestBody.action;
+
+      networkError.originalMessage =
+        error && error.message
+          ? error.message
+          : "";
 
 
       throw networkError;
 
-
     } finally {
 
-      clearTimeout(
+      window.clearTimeout(
         timeoutId
       );
-
     }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * RESPONSE VALIDATION
+   * ----------------------------------------------------------
+   */
+
+  validateResponse(
+    result,
+    requestBody
+  ) {
+
+    if (
+      !result ||
+      typeof result !== "object" ||
+      Array.isArray(result)
+    ) {
+
+      const error =
+        new Error(
+          "Invalid API response."
+        );
+
+
+      error.code =
+        "INVALID_API_RESPONSE";
+
+      error.requestId =
+        requestBody.requestId;
+
+      error.action =
+        requestBody.action;
+
+
+      throw error;
+    }
+
+
+    if (
+      typeof result.success !==
+        "boolean"
+    ) {
+
+      const error =
+        new Error(
+          "Invalid API response format."
+        );
+
+
+      error.code =
+        "INVALID_RESPONSE_FORMAT";
+
+      error.requestId =
+        requestBody.requestId;
+
+      error.action =
+        requestBody.action;
+
+
+      throw error;
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * ACTION-SPECIFIC TIMEOUT MESSAGE
+   * ----------------------------------------------------------
+   */
+
+  getTimeoutMessage(action) {
+
+    if (
+      action === "request_otp"
+    ) {
+
+      return (
+        "OTP request is taking longer than expected. " +
+        "Please check your internet connection before trying again."
+      );
+    }
+
+
+    if (
+      action === "verify_otp"
+    ) {
+
+      return (
+        "OTP verification is taking longer than expected. " +
+        "Please check your connection and try again."
+      );
+    }
+
+
+    if (
+      this.AUTH_ACTIONS.includes(
+        action
+      )
+    ) {
+
+      return (
+        "Secure login request is taking longer than expected. " +
+        "Please try again."
+      );
+    }
+
+
+    return (
+      "Request is taking longer than expected. " +
+      "Please try again."
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * CLIENT ERROR
+   * ----------------------------------------------------------
+   */
+
+  createClientError(
+    message,
+    code
+  ) {
+
+    const error =
+      new Error(
+        message
+      );
+
+
+    error.code =
+      code ||
+      "CLIENT_ERROR";
+
+
+    return error;
   },
 
 
@@ -416,6 +688,7 @@ const API = {
 
     let payloadString;
 
+
     try {
 
       payloadString =
@@ -427,7 +700,6 @@ const API = {
 
       payloadString =
         String(payload);
-
     }
 
 
@@ -478,10 +750,9 @@ const API = {
 
   /*
    * ----------------------------------------------------------
-   * FRONTEND API TEST
+   * TEST 1 — API HEALTH
    *
-   * Browser console test:
-   *
+   * Browser console:
    * API.testHealth()
    * ----------------------------------------------------------
    */
@@ -519,49 +790,41 @@ const API = {
       );
 
 
-      if (
+      const passed =
         result &&
         result.success === true &&
         result.data &&
         result.data.status ===
-          "API_RUNNING"
-      ) {
-
-        console.log(
-          "Frontend API Test: PASS"
-        );
+          "API_RUNNING";
 
 
-        return {
-          success: true,
-          status: "PASS",
-          result: result
-        };
-
-      }
-
-
-      console.error(
-        "Frontend API Test: FAIL"
+      console.log(
+        passed
+          ? "Frontend API Test: PASS"
+          : "Frontend API Test: FAIL"
       );
 
 
       return {
-        success: false,
-        status: "FAIL",
-        result: result
-      };
+        success:
+          passed,
 
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+
+        durationMs:
+          result.durationMs,
+
+        result:
+          result
+      };
 
     } catch (error) {
 
       console.error(
-        "Frontend API Test: FAIL"
-      );
-
-
-      console.error(
-        "Error:",
+        "Frontend API Test: FAIL",
         error
       );
 
@@ -569,12 +832,153 @@ const API = {
       return {
         success: false,
         status: "FAIL",
-        error: error.message,
-        code: error.code || "",
+        error:
+          error.message,
+        code:
+          error.code || "",
         requestId:
           error.requestId || ""
       };
     }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * TEST 2 — TIMEOUT CONFIGURATION
+   *
+   * Browser console:
+   * API.testTimeoutConfiguration()
+   * ----------------------------------------------------------
+   */
+
+  testTimeoutConfiguration() {
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE API TIMEOUT CONFIGURATION TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    const tests = [
+
+      {
+        action:
+          "health",
+
+        expected:
+          15000
+      },
+
+      {
+        action:
+          "search_service_locations",
+
+        expected:
+          20000
+      },
+
+      {
+        action:
+          "request_otp",
+
+        expected:
+          30000
+      },
+
+      {
+        action:
+          "verify_otp",
+
+        expected:
+          30000
+      },
+
+      {
+        action:
+          "login",
+
+        expected:
+          30000
+      },
+
+      {
+        action:
+          "validate_session",
+
+        expected:
+          30000
+      }
+
+    ];
+
+
+    const results =
+      tests.map(
+        (test) => {
+
+          const actual =
+            this.resolveTimeout(
+              test.action
+            );
+
+
+          return {
+            action:
+              test.action,
+
+            expected:
+              test.expected,
+
+            actual:
+              actual,
+
+            passed:
+              actual ===
+              test.expected
+          };
+        }
+      );
+
+
+    const passed =
+      results.every(
+        (result) =>
+          result.passed
+      );
+
+
+    console.table(
+      results
+    );
+
+
+    console.log(
+      passed
+        ? "API Timeout Configuration Test: PASS"
+        : "API Timeout Configuration Test: FAIL"
+    );
+
+
+    return {
+      success:
+        passed,
+
+      status:
+        passed
+          ? "PASS"
+          : "FAIL",
+
+      results:
+        results
+    };
   }
 
 };
