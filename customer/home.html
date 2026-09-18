@@ -10,99 +10,360 @@
 
   <meta name="theme-color" content="#ffffff">
 
-  <title>Customer Home | ApnaBite</title>
+  <meta
+    name="description"
+    content="Discover nearby food and home kitchens on ApnaBite"
+  >
+
+  <title>Home | ApnaBite</title>
 
   <link rel="manifest" href="../manifest.json">
+
   <link rel="stylesheet" href="../shared/css/reset.css">
   <link rel="stylesheet" href="../shared/css/variables.css">
   <link rel="stylesheet" href="../shared/css/common.css">
   <link rel="stylesheet" href="../shared/css/components.css">
   <link rel="stylesheet" href="../shared/css/role-home.css">
+  <link rel="stylesheet" href="../shared/css/customer-home.css">
   <link rel="stylesheet" href="../shared/css/responsive.css">
 </head>
 
 <body data-required-role="Customer">
 
-  <main class="role-home">
+  <main class="customer-app">
+
+    <!-- SESSION VALIDATION LOADER -->
 
     <div
       class="role-home-loader"
       id="roleHomeLoader"
     >
       <div class="loader-spinner"></div>
-      <p>Opening Customer Home...</p>
+
+      <p>
+        Preparing your ApnaBite home...
+      </p>
     </div>
 
 
+    <!-- CUSTOMER HOME -->
+
     <div
-      class="hidden"
+      class="customer-home hidden"
       id="roleHomeContent"
     >
 
-      <header class="role-home-header">
-
-        <div class="role-home-brand">
-          <div class="role-home-logo">A</div>
-
-          <div class="role-home-brand-copy">
-            <strong>ApnaBite</strong>
-            <span>Customer</span>
-          </div>
-        </div>
+      <header class="customer-header">
 
         <button
-          class="role-logout-button"
-          id="roleLogoutButton"
+          class="customer-location-button"
+          id="customerLocationButton"
           type="button"
+          aria-label="View or update location"
         >
-          Logout
+
+          <span
+            class="customer-location-icon"
+            aria-hidden="true"
+          >
+            📍
+          </span>
+
+          <span class="customer-location-copy">
+
+            <small>
+              Delivering to
+            </small>
+
+            <strong id="customerLocationText">
+              Current location
+            </strong>
+
+          </span>
+
+          <span aria-hidden="true">
+            ▾
+          </span>
+
+        </button>
+
+
+        <button
+          class="customer-icon-button"
+          id="notificationButton"
+          type="button"
+          aria-label="Notifications"
+        >
+          🔔
+
+          <span
+            class="notification-dot hidden"
+            id="notificationDot"
+          ></span>
         </button>
 
       </header>
 
 
-      <section class="role-home-content">
+      <section class="customer-main">
 
-        <div class="role-welcome-card">
-          <p>Welcome</p>
+        <!-- SEARCH -->
 
-          <h1 id="roleHomeUserRole">
-            Customer
-          </h1>
+        <div class="customer-search-wrap">
 
-          <small id="roleHomeUserMobile">
-            Verified user
-          </small>
+          <span aria-hidden="true">
+            🔍
+          </span>
+
+          <input
+            id="customerSearchInput"
+            type="search"
+            autocomplete="off"
+            placeholder="Search food, dish or kitchen"
+            aria-label="Search food, dish or kitchen"
+          >
+
+          <button
+            class="search-clear-button hidden"
+            id="searchClearButton"
+            type="button"
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <!-- FOOD TYPE -->
+
+        <div
+          class="food-type-filter"
+          id="foodTypeFilter"
+          aria-label="Food preference"
+        >
+
+          <button
+            class="food-type-chip active"
+            data-food-type="ALL"
+            type="button"
+          >
+            All
+          </button>
+
+          <button
+            class="food-type-chip"
+            data-food-type="VEG"
+            type="button"
+          >
+            <span class="veg-symbol"></span>
+            Veg
+          </button>
+
+          <button
+            class="food-type-chip"
+            data-food-type="NON_VEG"
+            type="button"
+          >
+            <span class="non-veg-symbol"></span>
+            Non-Veg
+          </button>
+
         </div>
 
 
-        <div class="role-module-grid">
+        <!-- CATEGORIES -->
 
-          <div class="role-module-card">
-            <span class="role-module-icon">🍲</span>
-            <strong>Nearby Food</strong>
-            <span>Coming next</span>
+        <section class="customer-section">
+
+          <div class="customer-section-heading">
+
+            <div>
+              <h2>What would you like?</h2>
+              <p>Browse by food category</p>
+            </div>
+
           </div>
 
-          <div class="role-module-card">
-            <span class="role-module-icon">🔎</span>
-            <strong>Search</strong>
-            <span>Coming next</span>
+
+          <div class="category-scroll">
+
+            <button
+              class="category-item"
+              data-category="Home Food"
+              type="button"
+            >
+              <span>🏠</span>
+              <strong>Home Food</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Meals"
+              type="button"
+            >
+              <span>🍱</span>
+              <strong>Meals</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Tiffin"
+              type="button"
+            >
+              <span>🥘</span>
+              <strong>Tiffin</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Snacks"
+              type="button"
+            >
+              <span>🥟</span>
+              <strong>Snacks</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Bakery"
+              type="button"
+            >
+              <span>🧁</span>
+              <strong>Bakery</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Sweets"
+              type="button"
+            >
+              <span>🍬</span>
+              <strong>Sweets</strong>
+            </button>
+
           </div>
 
-          <div class="role-module-card">
-            <span class="role-module-icon">🛒</span>
-            <strong>Cart</strong>
-            <span>Coming next</span>
+        </section>
+
+
+        <!-- OFFERS -->
+
+        <section class="customer-section">
+
+          <div class="customer-section-heading">
+
+            <div>
+              <h2>Offers for you</h2>
+              <p>Available deals and rewards</p>
+            </div>
+
           </div>
 
-          <div class="role-module-card">
-            <span class="role-module-icon">📦</span>
-            <strong>My Orders</strong>
-            <span>Coming next</span>
+
+          <div
+            class="offer-banner"
+            id="customerOfferBanner"
+          >
+
+            <div>
+              <span class="offer-label">
+                APNABITE
+              </span>
+
+              <h3>
+                Fresh food near you
+              </h3>
+
+              <p>
+                Local kitchens and offers will appear here.
+              </p>
+            </div>
+
+            <span
+              class="offer-emoji"
+              aria-hidden="true"
+            >
+              🍲
+            </span>
+
           </div>
 
-        </div>
+        </section>
+
+
+        <!-- NEARBY KITCHENS -->
+
+        <section class="customer-section">
+
+          <div class="customer-section-heading">
+
+            <div>
+              <h2>Nearby kitchens</h2>
+              <p id="nearbyKitchenSubtitle">
+                Based on your selected location
+              </p>
+            </div>
+
+            <button
+              class="section-text-button"
+              id="refreshKitchensButton"
+              type="button"
+            >
+              Refresh
+            </button>
+
+          </div>
+
+
+          <div
+            class="kitchen-list"
+            id="kitchenList"
+          >
+
+            <div class="kitchen-skeleton">
+              <div class="skeleton kitchen-image-skeleton"></div>
+
+              <div class="kitchen-skeleton-content">
+                <div class="skeleton skeleton-line-wide"></div>
+                <div class="skeleton skeleton-line-medium"></div>
+                <div class="skeleton skeleton-line-small"></div>
+              </div>
+            </div>
+
+
+            <div class="kitchen-skeleton">
+              <div class="skeleton kitchen-image-skeleton"></div>
+
+              <div class="kitchen-skeleton-content">
+                <div class="skeleton skeleton-line-wide"></div>
+                <div class="skeleton skeleton-line-medium"></div>
+                <div class="skeleton skeleton-line-small"></div>
+              </div>
+            </div>
+
+          </div>
+
+
+          <div
+            class="customer-empty-state hidden"
+            id="kitchenEmptyState"
+          >
+            <span aria-hidden="true">
+              🍽️
+            </span>
+
+            <h3>
+              Kitchens are being prepared
+            </h3>
+
+            <p>
+              Active nearby kitchens will appear here after
+              discovery integration.
+            </p>
+          </div>
+
+        </section>
 
 
         <div
@@ -112,17 +373,73 @@
 
       </section>
 
+
+      <!-- FIXED BOTTOM NAVIGATION -->
+
+      <nav
+        class="customer-bottom-nav"
+        aria-label="Customer navigation"
+      >
+
+        <button
+          class="customer-nav-item active"
+          data-page="HOME"
+          type="button"
+          aria-current="page"
+        >
+          <span aria-hidden="true">🏠</span>
+          <strong>Home</strong>
+        </button>
+
+
+        <button
+          class="customer-nav-item"
+          data-page="ORDERS"
+          type="button"
+        >
+          <span aria-hidden="true">📦</span>
+          <strong>Orders</strong>
+        </button>
+
+
+        <button
+          class="customer-nav-item"
+          data-page="DINE_IN"
+          type="button"
+        >
+          <span aria-hidden="true">🍽️</span>
+          <strong>Dine-In</strong>
+        </button>
+
+
+        <button
+          class="customer-nav-item"
+          data-page="ACCOUNT"
+          type="button"
+        >
+          <span aria-hidden="true">👤</span>
+          <strong>Account</strong>
+        </button>
+
+      </nav>
+
     </div>
 
   </main>
 
 
   <script src="../shared/js/storage.js"></script>
+  <script src="../shared/js/cache.js"></script>
   <script src="../shared/js/api.js"></script>
   <script src="../shared/js/session.js"></script>
   <script src="../shared/js/auth.js"></script>
+
+  <script src="../shared/js/location.js"></script>
+  <script src="../shared/js/service-location.js"></script>
+
   <script src="../shared/js/app-router.js"></script>
   <script src="../shared/js/role-home.js"></script>
+  <script src="../shared/js/customer-home.js"></script>
 
 </body>
 </html>
