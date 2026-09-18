@@ -2,13 +2,12 @@
  * ============================================================
  * APNABITE SERVICE WORKER
  * FILE: sw.js
- * PURPOSE: App shell caching with update-safe network strategy
- * VERSION: 2.0.0
+ * VERSION: 3.0.0
  * ============================================================
  */
 
 const CACHE_NAME =
-  "apnabite-static-v2";
+  "apnabite-static-v3";
 
 
 const STATIC_ASSETS = [
@@ -29,6 +28,7 @@ const STATIC_ASSETS = [
   "./shared/js/session.js",
   "./shared/js/auth.js",
   "./shared/js/location.js",
+  "./shared/js/service-location.js",
   "./shared/js/location-ui.js",
   "./shared/js/cart.js",
   "./shared/js/validation.js",
@@ -39,12 +39,6 @@ const STATIC_ASSETS = [
 
 ];
 
-
-/*
- * ------------------------------------------------------------
- * INSTALL
- * ------------------------------------------------------------
- */
 
 self.addEventListener(
   "install",
@@ -70,14 +64,6 @@ self.addEventListener(
   }
 );
 
-
-/*
- * ------------------------------------------------------------
- * ACTIVATE
- *
- * Delete every previous ApnaBite cache version.
- * ------------------------------------------------------------
- */
 
 self.addEventListener(
   "activate",
@@ -117,19 +103,6 @@ self.addEventListener(
 );
 
 
-/*
- * ------------------------------------------------------------
- * FETCH
- *
- * NETWORK-FIRST:
- * - Online users receive current CSS/JS immediately.
- * - Successful responses refresh the cache.
- *
- * CACHE FALLBACK:
- * - Previously cached app files remain available offline.
- * ------------------------------------------------------------
- */
-
 self.addEventListener(
   "fetch",
   (event) => {
@@ -148,9 +121,6 @@ self.addEventListener(
         request.url
       );
 
-    /*
-     * Do not intercept external-origin requests.
-     */
     if (
       requestUrl.origin !==
       self.location.origin
@@ -172,8 +142,7 @@ self.addEventListener(
 
             if (
               networkResponse &&
-              networkResponse.status ===
-                200 &&
+              networkResponse.status === 200 &&
               networkResponse.type !==
                 "opaque"
             ) {
@@ -210,9 +179,6 @@ self.addEventListener(
               return cachedResponse;
             }
 
-            /*
-             * Offline navigation fallback.
-             */
             if (
               request.mode ===
               "navigate"
