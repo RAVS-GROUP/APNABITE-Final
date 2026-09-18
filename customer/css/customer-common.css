@@ -3,7 +3,7 @@
  * APNABITE CUSTOMER
  * FILE: customer/css/customer-common.css
  * PURPOSE: Common styles for all Customer pages
- * VERSION: 1.0.0
+ * VERSION: 1.1.0
  * ============================================================
  */
 
@@ -20,6 +20,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
+
   background: #ffffff;
 }
 
@@ -31,19 +32,22 @@
  */
 
 .customer-page-loader {
-  min-height: 100vh;
-  min-height: 100dvh;
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
+
+  min-height: 100vh;
+  min-height: 100dvh;
 }
+
 
 .customer-page-loader p {
   margin: 0;
+
   color: #666666;
+
   font-size: var(--text-sm);
 }
 
@@ -56,17 +60,16 @@
 
 .customer-page-message {
   margin-top: var(--space-xl);
-
   padding: var(--space-md);
 
-  border-radius: var(--radius-md);
+  color: #914000;
+  text-align: center;
 
   background: #fff7f1;
-  color: #914000;
+  border-radius: var(--radius-md);
 
   font-size: var(--text-sm);
   line-height: 1.45;
-  text-align: center;
 }
 
 
@@ -78,24 +81,28 @@
 
 .customer-bottom-nav {
   position: fixed !important;
-  left: 50%;
   bottom: 0;
+  left: 50%;
   z-index: 100;
+
+  display: grid !important;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
 
   width: 100%;
   max-width: var(--app-max-width);
-
   min-height: 62px;
 
   padding:
-    6px
-    var(--space-sm)
+    5px
+    8px
     calc(
-      6px +
+      5px +
       env(safe-area-inset-bottom)
     );
-
-  border-top: 1px solid #e8e8e8;
 
   background:
     rgba(
@@ -105,15 +112,7 @@
       0.98
     );
 
-  display: grid !important;
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0, 1fr)
-    );
-
-  transform:
-    translateX(-50%);
+  border-top: 1px solid #e8e8e8;
 
   box-shadow:
     0 -4px 16px
@@ -124,31 +123,45 @@
       0.06
     );
 
-  backdrop-filter:
-    blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  transform: translateX(-50%);
 }
 
+
+/*
+ * ------------------------------------------------------------
+ * NAVIGATION ITEM
+ * ------------------------------------------------------------
+ */
+
 .customer-nav-item {
-  min-width: 0;
-  min-height: 50px;
-
-  padding: 3px;
-
-  border: 0;
-  background: transparent;
-
   display: flex !important;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
+
+  min-width: 0;
+  min-height: 48px;
+  padding: 3px 2px;
 
   color: #777777 !important;
-
+  text-align: center;
   text-decoration: none !important;
+
+  background: transparent;
+  border: 0;
+
+  font-family: inherit;
+
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+
+  -webkit-tap-highlight-color:
+    transparent;
 }
+
 
 .customer-nav-item:link,
 .customer-nav-item:visited,
@@ -157,27 +170,104 @@
   text-decoration: none !important;
 }
 
-.customer-nav-item > span {
+
+/*
+ * Navigation icon only.
+ */
+
+.customer-nav-icon {
   display: block;
 
-  font-size: 19px;
-  line-height: 1;
+  font-size: 18px !important;
+  line-height: 1 !important;
 }
 
-.customer-nav-item strong {
-  display: block;
 
-  font-size: 10px;
-  font-weight: var(--font-medium);
+/*
+ * Navigation text label.
+ *
+ * This selector excludes the icon span.
+ */
+
+.customer-nav-item
+  > span:not(.customer-nav-icon) {
+  display: block;
+  overflow: hidden;
+
+  max-width: 100%;
+
+  font-size: 10px !important;
+  font-weight: 500;
   line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+
+/*
+ * Compatibility for pages using strong labels.
+ */
+
+.customer-nav-item > strong {
+  display: block;
+  overflow: hidden;
+
+  max-width: 100%;
+
+  font-size: 10px !important;
+  font-weight: 500;
+  line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * ACTIVE NAVIGATION ITEM
+ *
+ * Current pages use is-active.
+ * active remains supported for older pages.
+ * ------------------------------------------------------------
+ */
+
+.customer-nav-item.is-active,
 .customer-nav-item.active {
   color: #ef5b00 !important;
 }
 
-.customer-nav-item.active strong {
-  font-weight: var(--font-bold);
+
+.customer-nav-item.is-active
+  > span:not(.customer-nav-icon),
+.customer-nav-item.active
+  > span:not(.customer-nav-icon),
+.customer-nav-item.is-active
+  > strong,
+.customer-nav-item.active
+  > strong {
+  color: #ef5b00 !important;
+  font-weight: 700;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * TAP AND FOCUS STATES
+ * ------------------------------------------------------------
+ */
+
+.customer-nav-item:active {
+  background: #fff7f1;
+  border-radius: 10px;
+}
+
+
+.customer-nav-item:focus-visible {
+  outline: 2px solid #ef5b00;
+  outline-offset: -2px;
+  border-radius: 10px;
 }
 
 
@@ -198,6 +288,34 @@
 
 /*
  * ------------------------------------------------------------
+ * SMALL MOBILE
+ * ------------------------------------------------------------
+ */
+
+@media (max-width: 360px) {
+
+  .customer-bottom-nav {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+
+  .customer-nav-icon {
+    font-size: 17px !important;
+  }
+
+
+  .customer-nav-item
+    > span:not(.customer-nav-icon),
+  .customer-nav-item
+    > strong {
+    font-size: 9px !important;
+  }
+}
+
+
+/*
+ * ------------------------------------------------------------
  * DESKTOP PREVIEW
  * ------------------------------------------------------------
  */
@@ -213,5 +331,19 @@
         0,
         0.06
       );
+  }
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * REDUCED MOTION
+ * ------------------------------------------------------------
+ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .customer-nav-item {
+    transition: none;
   }
 }
