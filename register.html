@@ -67,8 +67,8 @@
 
       <a
         class="auth-back"
-        href="index.html"
-        aria-label="Back to location"
+        href="role-selection.html"
+        aria-label="Back to role selection"
       >
         ←
       </a>
@@ -91,7 +91,10 @@
 
     <section class="auth-content">
 
-      <div class="auth-icon" aria-hidden="true">
+      <div
+        class="auth-icon"
+        aria-hidden="true"
+      >
 
         <svg
           viewBox="0 0 24 24"
@@ -118,6 +121,8 @@
       </div>
 
 
+      <!-- REGISTRATION DETAILS -->
+
       <div id="registrationStep">
 
         <h1 class="auth-title">
@@ -125,8 +130,8 @@
         </h1>
 
         <p class="auth-description">
-          Choose your role and verify your mobile number
-          securely using OTP.
+          Choose your role and verify your mobile number.
+          You will be logged in automatically after registration.
         </p>
 
 
@@ -181,6 +186,7 @@
               autocomplete="tel"
               maxlength="10"
               placeholder="Enter 10-digit number"
+              aria-describedby="authMessage"
               required
             >
 
@@ -234,6 +240,7 @@
 
         <p class="auth-description">
           Already registered?
+
           <a
             class="auth-inline-link"
             href="login.html"
@@ -244,6 +251,8 @@
 
       </div>
 
+
+      <!-- OTP VERIFICATION -->
 
       <div
         class="hidden"
@@ -326,6 +335,8 @@
       </div>
 
 
+      <!-- REGISTRATION SUCCESS -->
+
       <div
         class="auth-success hidden"
         id="successStep"
@@ -346,7 +357,7 @@
           class="auth-description"
           id="successMessage"
         >
-          Your ApnaBite account has been verified successfully.
+          Your verified ApnaBite account is ready.
         </p>
 
 
@@ -355,11 +366,13 @@
           id="goToLoginButton"
           type="button"
         >
-          Continue to Login
+          Continue to Home
         </button>
 
       </div>
 
+
+      <!-- PAGE MESSAGE -->
 
       <div
         class="auth-message hidden"
@@ -382,6 +395,7 @@
   <script src="shared/js/api.js"></script>
   <script src="shared/js/session.js"></script>
   <script src="shared/js/auth.js"></script>
+  <script src="shared/js/app-router.js"></script>
   <script src="shared/js/register-page.js"></script>
 
 </body>
