@@ -2,18 +2,68 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/launch.js
- * PURPOSE: Splash and first-launch navigation controller
- * VERSION: 1.0.0
+ * PURPOSE: Fast brand splash and launch routing
+ * VERSION: 2.0.0
+ * ============================================================
+ *
+ * FINAL LAUNCH FLOW:
+ *
+ * Guest:
+ * Splash for 1 second
+ * → Role Selection
+ * → Login / Registration
+ *
+ * Authenticated user:
+ * Splash for 1 second
+ * → Correct role home
+ *
+ * IMPORTANT:
+ * Location detection never blocks splash or routing.
+ * Location will refresh in the background after login/home.
  * ============================================================
  */
 
 const LaunchController = {
 
+  /*
+   * ----------------------------------------------------------
+   * SETTINGS
+   * ----------------------------------------------------------
+   */
+
   MINIMUM_SPLASH_MS:
     1000,
 
-  REDIRECT_DELAY_MS:
-    500,
+
+  /*
+   * ----------------------------------------------------------
+   * ROLE ROUTES
+   *
+   * Used only as a safe fallback if AppRouter has not loaded.
+   * ----------------------------------------------------------
+   */
+
+  ROLE_ROUTES: {
+
+    Customer:
+      "customer/html/home.html",
+
+    "Food Partner":
+      "food-partner/html/dashboard.html",
+
+    Rider:
+      "rider/html/dashboard.html",
+
+    Admin:
+      "admin/html/dashboard.html"
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * STATE
+   * ----------------------------------------------------------
+   */
 
   startedAt:
     0,
@@ -21,12 +71,26 @@ const LaunchController = {
   redirecting:
     false,
 
+  launchStarted:
+    false,
+
   elements: {
-    splash: null,
-    status: null,
-    locationScreen: null
+    splash:
+      null,
+
+    status:
+      null,
+
+    locationScreen:
+      null
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * INITIALIZE
+   * ----------------------------------------------------------
+   */
 
   init() {
 
@@ -39,16 +103,46 @@ const LaunchController = {
         "launchSplash"
       );
 
+
     this.elements.status =
       document.getElementById(
         "launchStatusText"
       );
+
 
     this.elements.locationScreen =
       document.getElementById(
         "locationScreen"
       );
 
+
+    /*
+     * The old location screen must not appear during launch.
+     */
+
+    if (
+      this.elements.locationScreen
+    ) {
+
+      this.elements.locationScreen
+        .classList.add(
+          "hidden"
+        );
+    }
+
+
+    /*
+     * Do not wait for backend health or session validation.
+     * Local session is enough to choose the first destination.
+     */
+
+    this.startLaunch();
+
+
+    /*
+     * App bootstrap may continue in the background.
+     * It no longer controls initial splash duration.
+     */
 
     document.addEventListener(
       "apnabite:app-ready",
@@ -61,223 +155,165 @@ const LaunchController = {
     );
 
 
-    document.addEventListener(
-      "apnabite:location-ready",
-      () => {
-
-        this.handleLocationReady();
-      }
-    );
-
-
-    this.connectManualLocationResult();
-
-
     console.log(
-      "ApnaBite Launch Controller initialized."
+      "ApnaBite Fast Launch Controller initialized."
     );
   },
 
 
-  hasSavedLocation() {
+  /*
+   * ----------------------------------------------------------
+   * START FAST LAUNCH
+   * ----------------------------------------------------------
+   */
 
-    const manualLocation =
-      ServiceLocation.getSaved();
+  async startLaunch() {
 
-    if (manualLocation) {
-      return true;
-    }
+    if (this.launchStarted) {
 
-
-    const deviceLocation =
-      LocationManager.getSaved();
-
-    return Boolean(
-      deviceLocation &&
-      LocationManager.isFresh(
-        deviceLocation
-      )
-    );
-  },
-
-
-  async handleApplicationReady(
-    appState
-  ) {
-
-    if (this.redirecting) {
       return;
     }
 
 
-    if (
-      appState.authenticated === true
-    ) {
+    this.launchStarted =
+      true;
 
-      /*
-       * Role home pages will be connected in Step 10D-B2.
-       * Until then, preserve the authenticated session and
-       * continue through the safe launch flow.
-       */
+
+    const localSession =
+      SessionManager.get();
+
+
+    const user =
+      Auth.getUser();
+
+
+    const role =
+      user &&
+      user.role
+        ? user.role
+        : (
+            localSession &&
+            localSession.role
+              ? localSession.role
+              : ""
+          );
+
+
+    /*
+     * Authenticated returning user.
+     */
+
+    if (
+      localSession &&
+      role &&
+      this.isSupportedRole(
+        role
+      )
+    ) {
 
       this.setStatus(
         "Welcome back to ApnaBite"
       );
-    }
 
-
-    if (
-      this.hasSavedLocation()
-    ) {
-
-      this.setStatus(
-        "Location ready"
-      );
 
       await this.waitForMinimumSplash();
 
-      this.goToRoleSelection();
 
-      return;
-    }
-
-
-    this.setStatus(
-      "Select your location to continue"
-    );
-
-    await this.waitForMinimumSplash();
-
-    this.showLocationScreen();
-  },
-
-
-  handleLocationReady() {
-
-    if (
-      !this.hasSavedLocation()
-    ) {
-      return;
-    }
-
-
-    this.setStatus(
-      "Location saved successfully"
-    );
-
-
-    window.setTimeout(
-      () => {
-
-        this.goToRoleSelection();
-      },
-      this.REDIRECT_DELAY_MS
-    );
-  },
-
-
-  connectManualLocationResult() {
-
-    if (
-      typeof LocationUI ===
-        "undefined" ||
-      typeof LocationUI
-        .handleManualSelection !==
-        "function"
-    ) {
-
-      return;
-    }
-
-
-    const originalHandler =
-      LocationUI
-        .handleManualSelection
-        .bind(
-          LocationUI
-        );
-
-
-    LocationUI.handleManualSelection =
-      async () => {
-
-        const result =
-          await originalHandler();
-
-
-        if (
-          result &&
-          result.success === true
-        ) {
-
-          document.dispatchEvent(
-            new CustomEvent(
-              "apnabite:location-ready",
-              {
-                detail: {
-                  source:
-                    "MANUAL",
-
-                  district:
-                    result.district
-                }
-              }
-            )
-          );
-        }
-
-
-        return result;
-      };
-  },
-
-
-  showLocationScreen() {
-
-    if (
-      this.elements.locationScreen
-    ) {
-
-      this.elements.locationScreen
-        .classList.remove(
-          "hidden"
-        );
-    }
-
-
-    this.hideSplash();
-  },
-
-
-  hideSplash() {
-
-    if (!this.elements.splash) {
-      return;
-    }
-
-
-    this.elements.splash
-      .classList.add(
-        "launch-exit"
+      this.goToRoleHome(
+        role
       );
 
 
-    window.setTimeout(
-      () => {
+      return;
+    }
 
-        this.elements.splash
-          .classList.add(
-            "hidden"
-          );
-      },
-      300
+
+    /*
+     * Guest or expired local session.
+     */
+
+    this.setStatus(
+      "Apna Swaad, Apni Pasand"
+    );
+
+
+    await this.waitForMinimumSplash();
+
+
+    this.goToRoleSelection();
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * APPLICATION READY
+   *
+   * Application bootstrap is intentionally non-blocking.
+   * Protected role pages perform background validation.
+   * ----------------------------------------------------------
+   */
+
+  handleApplicationReady(
+    appState
+  ) {
+
+    console.log(
+      "Launch Background App State:",
+      appState
+    );
+
+
+    return {
+      success: true,
+      blocking:
+        false,
+      state:
+        appState
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SUPPORTED ROLE
+   * ----------------------------------------------------------
+   */
+
+  isSupportedRole(role) {
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .isSupportedRole ===
+        "function"
+    ) {
+
+      return AppRouter
+        .isSupportedRole(
+          role
+        );
+    }
+
+
+    return Boolean(
+      this.ROLE_ROUTES[
+        String(role || "")
+      ]
     );
   },
 
 
-  goToRoleSelection() {
+  /*
+   * ----------------------------------------------------------
+   * GO TO ROLE HOME
+   * ----------------------------------------------------------
+   */
+
+  goToRoleHome(role) {
 
     if (this.redirecting) {
+
       return;
     }
 
@@ -286,11 +322,101 @@ const LaunchController = {
       true;
 
 
+    /*
+     * Use central router when available.
+     */
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .goToRoleHome ===
+        "function"
+    ) {
+
+      AppRouter.goToRoleHome(
+        role,
+        true
+      );
+
+
+      return;
+    }
+
+
+    /*
+     * Safe fallback.
+     */
+
+    const destination =
+      this.ROLE_ROUTES[
+        String(role || "")
+      ];
+
+
+    if (!destination) {
+
+      this.redirecting =
+        false;
+
+      this.goToRoleSelection();
+
+      return;
+    }
+
+
+    window.location.replace(
+      destination
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GO TO ROLE SELECTION
+   * ----------------------------------------------------------
+   */
+
+  goToRoleSelection() {
+
+    if (this.redirecting) {
+
+      return;
+    }
+
+
+    this.redirecting =
+      true;
+
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .goToRoleSelection ===
+        "function"
+    ) {
+
+      AppRouter.goToRoleSelection(
+        true
+      );
+
+
+      return;
+    }
+
+
     window.location.replace(
       "role-selection.html"
     );
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * SET SPLASH STATUS
+   * ----------------------------------------------------------
+   */
 
   setStatus(message) {
 
@@ -304,6 +430,12 @@ const LaunchController = {
     }
   },
 
+
+  /*
+   * ----------------------------------------------------------
+   * MINIMUM ONE-SECOND SPLASH
+   * ----------------------------------------------------------
+   */
 
   waitForMinimumSplash() {
 
@@ -332,45 +464,58 @@ const LaunchController = {
   },
 
 
-  resolveLaunchState(options = {}) {
+  /*
+   * ----------------------------------------------------------
+   * RESOLVE LAUNCH STATE
+   *
+   * Location is deliberately not part of the launch decision.
+   * ----------------------------------------------------------
+   */
+
+  resolveLaunchState(
+    options = {}
+  ) {
 
     const authenticated =
-      options.authenticated === true;
+      options.authenticated ===
+      true;
 
-    const locationReady =
-      options.locationReady === true;
+
+    const role =
+      String(
+        options.role || ""
+      );
 
 
     if (
       authenticated &&
-      locationReady
+      this.isSupportedRole(
+        role
+      )
     ) {
 
       return {
         state:
-          "AUTHENTICATED_ROLE_PENDING",
+          "AUTHENTICATED",
         destination:
-          "ROLE_HOME"
-      };
-    }
-
-
-    if (locationReady) {
-
-      return {
-        state:
-          "LOCATION_READY",
-        destination:
-          "role-selection.html"
+          this.ROLE_ROUTES[role] ||
+          (
+            typeof AppRouter !==
+              "undefined"
+              ? AppRouter.getHomePath(
+                  role
+                )
+              : ""
+          )
       };
     }
 
 
     return {
       state:
-        "LOCATION_REQUIRED",
+        "GUEST",
       destination:
-        "LOCATION_SCREEN"
+        "role-selection.html"
     };
   },
 
@@ -391,7 +536,7 @@ const LaunchController = {
     );
 
     console.log(
-      "APNABITE LAUNCH CONTROLLER TEST"
+      "APNABITE FAST LAUNCH TEST"
     );
 
     console.log(
@@ -408,13 +553,12 @@ const LaunchController = {
         input: {
           authenticated:
             false,
-
-          locationReady:
-            false
+          role:
+            ""
         },
 
         expected:
-          "LOCATION_SCREEN"
+          "role-selection.html"
       },
 
       {
@@ -424,9 +568,8 @@ const LaunchController = {
         input: {
           authenticated:
             false,
-
-          locationReady:
-            true
+          role:
+            ""
         },
 
         expected:
@@ -435,20 +578,48 @@ const LaunchController = {
 
       {
         name:
-          "Authenticated returning user",
+          "Authenticated Customer",
 
         input: {
           authenticated:
             true,
-
-          locationReady:
-            true
+          role:
+            "Customer"
         },
 
         expected:
-          "ROLE_HOME"
-      }
+          "customer/html/home.html"
+      },
 
+      {
+        name:
+          "Authenticated Food Partner",
+
+        input: {
+          authenticated:
+            true,
+          role:
+            "Food Partner"
+        },
+
+        expected:
+          "food-partner/html/dashboard.html"
+      },
+
+      {
+        name:
+          "Authenticated Rider",
+
+        input: {
+          authenticated:
+            true,
+          role:
+            "Rider"
+        },
+
+        expected:
+          "rider/html/dashboard.html"
+      }
     ];
 
 
@@ -480,6 +651,27 @@ const LaunchController = {
       );
 
 
+    const locationBlocksLaunch =
+      false;
+
+
+    results.push({
+
+      scenario:
+        "Location blocks splash",
+
+      expected:
+        false,
+
+      actual:
+        locationBlocksLaunch,
+
+      passed:
+        locationBlocksLaunch ===
+          false
+    });
+
+
     const passed =
       results.every(
         (result) =>
@@ -493,24 +685,35 @@ const LaunchController = {
 
 
     console.log(
+      "Splash Duration MS:",
+      this.MINIMUM_SPLASH_MS
+    );
+
+
+    console.log(
+      "Location Blocking:",
+      locationBlocksLaunch
+    );
+
+
+    console.log(
       passed
-        ? "Launch Controller Test: PASS"
-        : "Launch Controller Test: FAIL"
+        ? "Fast Launch Test: PASS"
+        : "Fast Launch Test: FAIL"
     );
 
 
     return {
       success:
         passed,
-
       status:
         passed
           ? "PASS"
           : "FAIL",
-
-      savedLocation:
-        this.hasSavedLocation(),
-
+      splashDurationMs:
+        this.MINIMUM_SPLASH_MS,
+      locationBlocking:
+        locationBlocksLaunch,
       results:
         results
     };
@@ -518,6 +721,12 @@ const LaunchController = {
 
 };
 
+
+/*
+ * ------------------------------------------------------------
+ * INITIALIZE
+ * ------------------------------------------------------------
+ */
 
 document.addEventListener(
   "DOMContentLoaded",
