@@ -2,70 +2,44 @@
  * ============================================================
  * APNABITE SERVICE WORKER
  * FILE: sw.js
- * PURPOSE: Fast PWA loading and offline support
- * VERSION: 7.0.0
+ * PURPOSE: Fast application shell and safe offline support
+ * VERSION: 8.0.0
  * ============================================================
  */
 
 const CACHE_NAME =
-  "apnabite-static-v7";
+  "apnabite-static-v8";
 
+
+/*
+ * ------------------------------------------------------------
+ * MINIMUM APPLICATION SHELL
+ *
+ * Sirf guaranteed launch files pre-cache honge.
+ * Other pages open hone par automatically runtime-cache honge.
+ * ------------------------------------------------------------
+ */
 
 const STATIC_ASSETS = [
 
   "./",
   "./index.html",
-  "./login.html",
-  "./register.html",
-  "./role-selection.html",
   "./manifest.json",
+
+  "./shared/assets/images/apnabite-logo.webp",
 
   "./shared/css/reset.css",
   "./shared/css/variables.css",
   "./shared/css/common.css",
   "./shared/css/components.css",
-  "./shared/css/auth-pages.css",
+  "./shared/css/launch.css",
   "./shared/css/responsive.css",
 
   "./shared/js/storage.js",
-  "./shared/js/cache.js",
-  "./shared/js/api.js",
   "./shared/js/session.js",
-  "./shared/js/auth.js",
   "./shared/js/app-router.js",
-  "./shared/js/role-home.js",
-  "./shared/js/location.js",
-  "./shared/js/service-location.js",
-  "./shared/js/location-ui.js",
-  "./shared/js/cart.js",
-  "./shared/js/validation.js",
-  "./shared/js/formatter.js",
-  "./shared/js/notifications.js",
-  "./shared/js/theme.js",
-  "./shared/js/launch.js",
-  "./shared/js/app.js",
-  "./shared/js/login-page.js",
-  "./shared/js/register-page.js",
-  "./shared/js/role-selection.js",
+  "./shared/js/launch.js"
 
-  "./customer/html/home.html",
-  "./customer/html/orders.html",
-  "./customer/html/dine-in.html",
-  "./customer/html/account.html",
-  "./customer/html/addresses.html",
-
-  "./customer/css/customer-common.css",
-  "./customer/css/home.css",
-  "./customer/css/orders.css",
-  "./customer/css/dine-in.css",
-  "./customer/css/account.css",
-  "./customer/css/addresses.css",
-
-  "./customer/js/home.js",
-  "./customer/js/orders.js",
-  "./customer/js/dine-in.js",
-  "./customer/js/account.js",
-  "./customer/js/addresses.js"
 ];
 
 
@@ -77,7 +51,7 @@ const STATIC_ASSETS = [
 
 self.addEventListener(
   "install",
-  (event) => {
+  function(event) {
 
     event.waitUntil(
 
@@ -87,61 +61,16 @@ self.addEventListener(
         )
 
         .then(
-          async (cache) => {
+          function(cache) {
 
-            const results =
-              await Promise.allSettled(
-
-                STATIC_ASSETS.map(
-                  (asset) => {
-
-                    return cache.add(
-                      new Request(
-                        asset,
-                        {
-                          cache:
-                            "reload"
-                        }
-                      )
-                    );
-                  }
-                )
-              );
-
-
-            const failedAssets = [];
-
-
-            results.forEach(
-              (result, index) => {
-
-                if (
-                  result.status ===
-                  "rejected"
-                ) {
-
-                  failedAssets.push(
-                    STATIC_ASSETS[index]
-                  );
-                }
-              }
+            return cache.addAll(
+              STATIC_ASSETS
             );
-
-
-            if (
-              failedAssets.length > 0
-            ) {
-
-              console.warn(
-                "ApnaBite cache files skipped:",
-                failedAssets
-              );
-            }
           }
         )
 
         .then(
-          () => {
+          function() {
 
             return self.skipWaiting();
           }
@@ -154,12 +83,14 @@ self.addEventListener(
 /*
  * ------------------------------------------------------------
  * ACTIVATE
+ *
+ * Remove only older ApnaBite caches.
  * ------------------------------------------------------------
  */
 
 self.addEventListener(
   "activate",
-  (event) => {
+  function(event) {
 
     event.waitUntil(
 
@@ -167,18 +98,18 @@ self.addEventListener(
         .keys()
 
         .then(
-          (cacheNames) => {
+          function(cacheNames) {
 
             return Promise.all(
 
               cacheNames
                 .filter(
-                  (cacheName) => {
+                  function(cacheName) {
 
                     return (
-                      cacheName.indexOf(
-                        "apnabite-static-"
-                      ) === 0 &&
+                      cacheName.startsWith(
+                        "apnabite-"
+                      ) &&
                       cacheName !==
                         CACHE_NAME
                     );
@@ -186,7 +117,7 @@ self.addEventListener(
                 )
 
                 .map(
-                  (cacheName) => {
+                  function(cacheName) {
 
                     return caches.delete(
                       cacheName
@@ -198,7 +129,7 @@ self.addEventListener(
         )
 
         .then(
-          () => {
+          function() {
 
             return self.clients.claim();
           }
@@ -210,97 +141,167 @@ self.addEventListener(
 
 /*
  * ------------------------------------------------------------
- * MESSAGE CONTROL
+ * FETCH
  * ------------------------------------------------------------
  */
 
 self.addEventListener(
-  "message",
-  (event) => {
+  "fetch",
+  function(event) {
+
+    const request =
+      event.request;
+
 
     if (
-      event.data &&
-      event.data.type ===
-        "SKIP_WAITING"
+      request.method !== "GET"
     ) {
 
-      self.skipWaiting();
+      return;
     }
+
+
+    const requestUrl =
+      new URL(
+        request.url
+      );
+
+
+    /*
+     * Google Apps Script and all external API requests
+     * are never intercepted or cached.
+     */
+
+    if (
+      requestUrl.origin !==
+      self.location.origin
+    ) {
+
+      return;
+    }
+
+
+    /*
+     * Navigation requests:
+     * network-first ensures latest deployed HTML.
+     */
+
+    if (
+      request.mode === "navigate"
+    ) {
+
+      event.respondWith(
+        handleNavigationRequest(
+          request
+        )
+      );
+
+      return;
+    }
+
+
+    /*
+     * Same-origin CSS, JS, images and other static files:
+     * cached response first, network update in background.
+     */
+
+    event.respondWith(
+      handleStaticRequest(
+        request
+      )
+    );
   }
 );
 
 
 /*
  * ------------------------------------------------------------
- * NORMALIZED CACHE KEY
- *
- * A URL string is intentionally used here.
- * Creating a new Request with mode "navigate" causes browsers
- * to reject navigation and return ERR_FAILED.
+ * NAVIGATION REQUEST
  * ------------------------------------------------------------
  */
 
-function getCacheKey(request) {
-
-  const url =
-    new URL(
-      request.url
-    );
-
-
-  url.search =
-    "";
-
-
-  return url.href;
-}
-
-
-/*
- * ------------------------------------------------------------
- * SAVE SUCCESSFUL RESPONSE
- * ------------------------------------------------------------
- */
-
-async function updateCache(
-  request,
-  response
+async function handleNavigationRequest(
+  request
 ) {
 
-  if (
-    !response ||
-    response.status !== 200 ||
-    response.type === "opaque"
-  ) {
+  try {
 
-    return;
+    const networkResponse =
+      await fetch(
+        request,
+        {
+          cache:
+            "no-cache"
+        }
+      );
+
+
+    if (
+      networkResponse &&
+      networkResponse.ok
+    ) {
+
+      const cache =
+        await caches.open(
+          CACHE_NAME
+        );
+
+
+      await cache.put(
+        getCacheKey(
+          request
+        ),
+        networkResponse.clone()
+      );
+    }
+
+
+    return networkResponse;
+
+  } catch (error) {
+
+    const cachedPage =
+      await caches.match(
+        getCacheKey(
+          request
+        )
+      );
+
+
+    if (cachedPage) {
+
+      return cachedPage;
+    }
+
+
+    const cachedIndex =
+      await caches.match(
+        new URL(
+          "./index.html",
+          self.location.href
+        ).href
+      );
+
+
+    if (cachedIndex) {
+
+      return cachedIndex;
+    }
+
+
+    return createOfflineResponse();
   }
-
-
-  const cache =
-    await caches.open(
-      CACHE_NAME
-    );
-
-
-  await cache.put(
-    getCacheKey(
-      request
-    ),
-    response.clone()
-  );
 }
 
 
 /*
  * ------------------------------------------------------------
- * STALE-WHILE-REVALIDATE
+ * STATIC REQUEST
  * ------------------------------------------------------------
  */
 
-async function staleWhileRevalidate(
-  request,
-  event
+async function handleStaticRequest(
+  request
 ) {
 
   const cacheKey =
@@ -325,12 +326,26 @@ async function staleWhileRevalidate(
     )
 
       .then(
-        async (networkResponse) => {
+        async function(networkResponse) {
 
-          await updateCache(
-            request,
-            networkResponse
-          );
+          if (
+            networkResponse &&
+            networkResponse.ok &&
+            networkResponse.type !==
+              "opaque"
+          ) {
+
+            const cache =
+              await caches.open(
+                CACHE_NAME
+              );
+
+
+            await cache.put(
+              cacheKey,
+              networkResponse.clone()
+            );
+          }
 
 
           return networkResponse;
@@ -338,14 +353,7 @@ async function staleWhileRevalidate(
       )
 
       .catch(
-        (error) => {
-
-          console.warn(
-            "Background network refresh failed:",
-            request.url,
-            error
-          );
-
+        function() {
 
           return null;
         }
@@ -354,211 +362,72 @@ async function staleWhileRevalidate(
 
   if (cachedResponse) {
 
-    event.waitUntil(
-      networkPromise
-    );
-
-
     return cachedResponse;
   }
 
 
-  return networkPromise;
+  const networkResponse =
+    await networkPromise;
+
+
+  if (networkResponse) {
+
+    return networkResponse;
+  }
+
+
+  return createOfflineResponse();
 }
 
 
 /*
  * ------------------------------------------------------------
- * OFFLINE NAVIGATION FALLBACK
+ * NORMALIZED CACHE KEY
+ *
+ * Query strings such as ?v=123 are removed so duplicate
+ * cached copies are not created.
  * ------------------------------------------------------------
  */
 
-async function getNavigationFallback(
-  request
-) {
+function getCacheKey(request) {
 
-  const requestedPage =
-    await caches.match(
-      getCacheKey(
-        request
-      )
-    );
-
-
-  if (requestedPage) {
-
-    return requestedPage;
-  }
-
-
-  const indexUrl =
+  const url =
     new URL(
-      "./index.html",
-      self.location.href
-    ).href;
-
-
-  const cachedIndex =
-    await caches.match(
-      indexUrl
+      request.url
     );
 
 
-  if (cachedIndex) {
+  url.search = "";
+  url.hash = "";
 
-    return cachedIndex;
-  }
 
+  return url.href;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * OFFLINE RESPONSE
+ * ------------------------------------------------------------
+ */
+
+function createOfflineResponse() {
 
   return new Response(
-    "ApnaBite is currently offline.",
+    "ApnaBite is currently offline. Please check your internet connection and try again.",
     {
-      status:
-        503,
+      status: 503,
+
       statusText:
         "Service Unavailable",
+
       headers: {
         "Content-Type":
-          "text/plain;charset=utf-8"
+          "text/plain;charset=utf-8",
+
+        "Cache-Control":
+          "no-store"
       }
     }
   );
 }
-
-
-/*
- * ------------------------------------------------------------
- * FETCH
- * ------------------------------------------------------------
- */
-
-self.addEventListener(
-  "fetch",
-  (event) => {
-
-    const request =
-      event.request;
-
-
-    if (
-      request.method !== "GET"
-    ) {
-
-      return;
-    }
-
-
-    const requestUrl =
-      new URL(
-        request.url
-      );
-
-
-    /*
-     * Do not cache Apps Script API or external requests.
-     */
-
-    if (
-      requestUrl.origin !==
-      self.location.origin
-    ) {
-
-      return;
-    }
-
-
-    /*
-     * HTML navigation.
-     */
-
-    if (
-      request.mode === "navigate"
-    ) {
-
-      event.respondWith(
-
-        staleWhileRevalidate(
-          request,
-          event
-        )
-
-          .then(
-            (response) => {
-
-              if (response) {
-
-                return response;
-              }
-
-
-              return getNavigationFallback(
-                request
-              );
-            }
-          )
-
-          .catch(
-            () => {
-
-              return getNavigationFallback(
-                request
-              );
-            }
-          )
-      );
-
-
-      return;
-    }
-
-
-    /*
-     * Static application assets.
-     */
-
-    const cacheableDestinations = [
-      "style",
-      "script",
-      "image",
-      "font",
-      "manifest"
-    ];
-
-
-    if (
-      cacheableDestinations.includes(
-        request.destination
-      )
-    ) {
-
-      event.respondWith(
-
-        staleWhileRevalidate(
-          request,
-          event
-        )
-
-          .then(
-            (response) => {
-
-              if (response) {
-
-                return response;
-              }
-
-
-              return new Response(
-                "",
-                {
-                  status:
-                    504,
-                  statusText:
-                    "Gateway Timeout"
-                }
-              );
-            }
-          )
-      );
-    }
-  }
-);
