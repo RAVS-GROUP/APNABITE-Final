@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/launch.js
- * PURPOSE: Fast splash and session-based launch routing
- * VERSION: 2.1.0
+ * PURPOSE: Fast splash and safe launch routing
+ * VERSION: 2.2.0
  * ============================================================
  */
 
@@ -64,11 +64,6 @@ const LaunchController = {
       );
 
 
-    /*
-     * Splash par loading text aur spinner nahi dikhayenge.
-     * Sirf ApnaBite branding approximately one second rahegi.
-     */
-
     if (
       this.elements.status &&
       this.elements.status.parentElement
@@ -93,11 +88,6 @@ const LaunchController = {
       "ApnaBite Fast Launch initialized."
     );
 
-
-    /*
-     * Launch routing backend, API health check or location
-     * detection ka wait nahi karti.
-     */
 
     this.startRouting();
   },
@@ -152,42 +142,128 @@ const LaunchController = {
       this.getLocalSession();
 
 
-    if (!session) {
+    /*
+     * Valid authenticated users always go to
+     * their own role home.
+     */
 
-      return this.getPublicUrl(
-        "role-selection.html"
-      );
+    if (session) {
+
+      const role =
+        this.getSessionRole(
+          session
+        );
+
+
+      if (
+        role &&
+        this.isSupportedRole(
+          role
+        )
+      ) {
+
+        return this.getRoleHomeUrl(
+          role
+        );
+      }
     }
 
 
-    const role =
-      this.getSessionRole(
-        session
-      );
+    /*
+     * Safe post-registration route:
+     *
+     * index.html?source=register&next=login&role=Customer
+     *
+     * Only the fixed "login" destination is supported.
+     * Arbitrary external redirect URLs are never accepted.
+     */
+
+    const launchRequest =
+      this.getLaunchRequest();
 
 
     if (
-      !role ||
-      !this.isSupportedRole(
-        role
-      )
+      launchRequest.next ===
+        "login"
     ) {
 
-      return this.getPublicUrl(
-        "role-selection.html"
+      return this.getLoginUrl(
+        launchRequest.role
       );
     }
 
 
-    return this.getRoleHomeUrl(
-      role
+    /*
+     * Normal guest launch.
+     */
+
+    return this.getPublicUrl(
+      "role-selection.html"
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * GET LOCAL SESSION
+   * LAUNCH QUERY REQUEST
+   * ----------------------------------------------------------
+   */
+
+  getLaunchRequest() {
+
+    const parameters =
+      new URLSearchParams(
+        window.location.search
+      );
+
+
+    const next =
+      String(
+        parameters.get(
+          "next"
+        ) || ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const role =
+      String(
+        parameters.get(
+          "role"
+        ) || ""
+      )
+        .trim();
+
+
+    return {
+      source:
+        String(
+          parameters.get(
+            "source"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase(),
+
+      next:
+        next === "login"
+          ? "login"
+          : "",
+
+      role:
+        this.isSupportedRole(
+          role
+        )
+          ? role
+          : ""
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * LOCAL SESSION
    * ----------------------------------------------------------
    */
 
@@ -223,7 +299,7 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * GET SESSION ROLE
+   * SESSION ROLE
    * ----------------------------------------------------------
    */
 
@@ -311,6 +387,7 @@ const LaunchController = {
 
 
       if (routerUrl) {
+
         return routerUrl;
       }
     }
@@ -338,7 +415,74 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * FALLBACK ROLE PATH
+   * LOGIN URL
+   * ----------------------------------------------------------
+   */
+
+  getLoginUrl(role = "") {
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .getPublicUrl ===
+        "function"
+    ) {
+
+      const url =
+        new URL(
+          AppRouter.getPublicUrl(
+            "login.html"
+          )
+        );
+
+
+      if (
+        role &&
+        this.isSupportedRole(
+          role
+        )
+      ) {
+
+        url.searchParams.set(
+          "role",
+          role
+        );
+      }
+
+
+      return url.href;
+    }
+
+
+    const url =
+      new URL(
+        "login.html",
+        window.location.href
+      );
+
+
+    if (
+      role &&
+      this.isSupportedRole(
+        role
+      )
+    ) {
+
+      url.searchParams.set(
+        "role",
+        role
+      );
+    }
+
+
+    return url.href;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * FALLBACK ROLE PATHS
    * ----------------------------------------------------------
    */
 
@@ -425,7 +569,7 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * ROUTING TEST
+   * TEST
    *
    * Browser console:
    * LaunchController.test()
@@ -447,11 +591,12 @@ const LaunchController = {
     );
 
 
-    const tests = [
+    const routeTests = [
 
       {
         role:
           "Customer",
+
         expected:
           "customer/html/home.html"
       },
@@ -459,6 +604,7 @@ const LaunchController = {
       {
         role:
           "Food Partner",
+
         expected:
           "food-partner/html/dashboard.html"
       },
@@ -466,6 +612,7 @@ const LaunchController = {
       {
         role:
           "Rider",
+
         expected:
           "rider/html/dashboard.html"
       },
@@ -473,6 +620,7 @@ const LaunchController = {
       {
         role:
           "Admin",
+
         expected:
           "admin/html/dashboard.html"
       },
@@ -480,6 +628,7 @@ const LaunchController = {
       {
         role:
           "",
+
         expected:
           ""
       }
@@ -488,7 +637,7 @@ const LaunchController = {
 
 
     const results =
-      tests.map(
+      routeTests.map(
         (test) => {
 
           const actual =
@@ -514,6 +663,37 @@ const LaunchController = {
           };
         }
       );
+
+
+    const loginUrl =
+      this.getLoginUrl(
+        "Customer"
+      );
+
+
+    const registrationRoutePassed =
+      loginUrl.includes(
+        "/login.html"
+      ) &&
+      loginUrl.includes(
+        "role=Customer"
+      );
+
+
+    results.push({
+
+      role:
+        "Registration handoff",
+
+      expected:
+        "login.html?role=Customer",
+
+      actual:
+        loginUrl,
+
+      passed:
+        registrationRoutePassed
+    });
 
 
     const passed =
@@ -553,6 +733,9 @@ const LaunchController = {
       waitsForLocation:
         false,
 
+      registrationHandoff:
+        registrationRoutePassed,
+
       destination:
         this.resolveDestination(),
 
@@ -566,13 +749,13 @@ const LaunchController = {
 
 /*
  * ------------------------------------------------------------
- * START IMMEDIATELY WHEN DOM IS AVAILABLE
+ * INITIALIZE
  * ------------------------------------------------------------
  */
 
 if (
   document.readyState ===
-  "loading"
+    "loading"
 ) {
 
   document.addEventListener(
