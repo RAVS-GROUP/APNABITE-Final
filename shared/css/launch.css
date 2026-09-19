@@ -2,130 +2,292 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/css/launch.css
- * PURPOSE: Application splash and launch states
- * VERSION: 1.0.0
+ * PURPOSE: Branded lightweight food application splash
+ * VERSION: 2.1.0
  * ============================================================
+ */
+
+
+/*
+ * ------------------------------------------------------------
+ * SPLASH CONTAINER
+ * ------------------------------------------------------------
  */
 
 .launch-splash {
   position: fixed;
   inset: 0;
   z-index: 1000;
+
+  width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+
   padding:
-    calc(var(--space-xl) + env(safe-area-inset-top))
-    var(--space-lg)
-    calc(var(--space-xl) + env(safe-area-inset-bottom));
-  background: #ffffff;
+    calc(
+      24px +
+      env(safe-area-inset-top)
+    )
+    18px
+    calc(
+      24px +
+      env(safe-area-inset-bottom)
+    );
+
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      #ffffff 0%,
+      #fffaf6 55%,
+      #fff5ed 100%
+    );
+
+  color: #171717;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * SOFT BACKGROUND GLOW
+ * ------------------------------------------------------------
+ */
+
+.launch-splash::before {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+
+  width: min(78vw, 370px);
+  height: min(78vw, 370px);
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(239, 91, 0, 0.10) 0%,
+      rgba(239, 91, 0, 0.04) 45%,
+      rgba(239, 91, 0, 0) 72%
+    );
+
+  transform:
+    translate(-50%, -50%);
+
+  pointer-events: none;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * BRAND CONTAINER
+ * ------------------------------------------------------------
+ */
+
+.launch-brand {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  color: #171717;
-  text-align: center;
+  justify-content: center;
+
+  animation:
+    launch-brand-enter
+    320ms
+    ease-out
+    both;
 }
+
+
+/*
+ * ------------------------------------------------------------
+ * ACTUAL APNABITE LOGO
+ * ------------------------------------------------------------
+ */
+
+.launch-logo-image {
+  display: block;
+
+  width: min(88vw, 390px);
+  height: auto;
+  max-height: 48vh;
+
+  margin: 0;
+
+  object-fit: contain;
+
+  border: 0;
+
+  filter:
+    drop-shadow(
+      0 12px 18px
+      rgba(11, 47, 102, 0.08)
+    );
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * OLD PLACEHOLDER LOGO
+ *
+ * Hidden because actual logo image is now connected.
+ * ------------------------------------------------------------
+ */
+
+.launch-logo {
+  display: none;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * UNUSED TEXT ELEMENTS
+ *
+ * The actual logo already contains brand name and tagline.
+ * ------------------------------------------------------------
+ */
+
+.launch-brand h1,
+.launch-brand p {
+  display: none;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * NO BLOCKING LOADING UI
+ * ------------------------------------------------------------
+ */
+
+.launch-location-status,
+.launch-spinner {
+  display: none !important;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * SPLASH EXIT
+ * ------------------------------------------------------------
+ */
 
 .launch-splash.launch-exit {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+
   transition:
-    opacity 0.25s ease,
-    visibility 0.25s ease;
+    opacity 160ms ease,
+    visibility 160ms ease;
 }
 
-.launch-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
-.launch-logo {
-  width: 88px;
-  height: 88px;
-  margin-bottom: var(--space-lg);
-  border-radius: 24px;
-  background: #ef5b00;
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  font-size: 46px;
-  font-weight: var(--font-bold);
-  box-shadow:
-    0 14px 30px
-    rgba(239, 91, 0, 0.22);
-}
+/*
+ * ------------------------------------------------------------
+ * BRAND ENTRY ANIMATION
+ * ------------------------------------------------------------
+ */
 
-.launch-brand h1 {
-  margin: 0;
-  font-size: 32px;
-  line-height: 1.2;
-  font-weight: var(--font-bold);
-}
+@keyframes launch-brand-enter {
 
-.launch-brand p {
-  margin:
-    var(--space-sm)
-    0
-    0;
-  color: #666666;
-  font-size: var(--text-sm);
-}
+  from {
+    opacity: 0;
+    transform:
+      translateY(6px)
+      scale(0.985);
+  }
 
-.launch-location-status {
-  min-height: 24px;
-  margin-top: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  color: #666666;
-  font-size: var(--text-sm);
-}
-
-.launch-location-status svg {
-  width: 20px;
-  height: 20px;
-  color: #ef5b00;
-}
-
-.launch-spinner {
-  width: 24px;
-  height: 24px;
-  margin-top: var(--space-lg);
-  border: 3px solid #f1d5c5;
-  border-top-color: #ef5b00;
-  border-radius: 50%;
-  animation:
-    launch-spin
-    0.75s
-    linear
-    infinite;
-}
-
-@keyframes launch-spin {
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
   }
 }
+
+
+/*
+ * ------------------------------------------------------------
+ * SMALL MOBILE DEVICES
+ * ------------------------------------------------------------
+ */
 
 @media (max-width: 360px) {
-  .launch-logo {
-    width: 76px;
-    height: 76px;
-    border-radius: 20px;
-    font-size: 40px;
+
+  .launch-splash {
+    padding:
+      calc(
+        18px +
+        env(safe-area-inset-top)
+      )
+      14px
+      calc(
+        18px +
+        env(safe-area-inset-bottom)
+      );
   }
 
-  .launch-brand h1 {
-    font-size: 28px;
+  .launch-logo-image {
+    width: min(90vw, 330px);
+    max-height: 44vh;
   }
 }
 
+
+/*
+ * ------------------------------------------------------------
+ * SHORT MOBILE SCREENS
+ * ------------------------------------------------------------
+ */
+
+@media (max-height: 600px) {
+
+  .launch-logo-image {
+    width: min(76vw, 315px);
+    max-height: 52vh;
+  }
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * TABLET AND DESKTOP PREVIEW
+ * ------------------------------------------------------------
+ */
+
+@media (min-width: 601px) {
+
+  .launch-logo-image {
+    width: min(56vw, 430px);
+    max-height: 52vh;
+  }
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * REDUCED MOTION ACCESSIBILITY
+ * ------------------------------------------------------------
+ */
+
 @media (prefers-reduced-motion: reduce) {
-  .launch-spinner {
-    animation-duration: 1.5s;
+
+  .launch-brand {
+    animation: none;
   }
 
   .launch-splash.launch-exit {
