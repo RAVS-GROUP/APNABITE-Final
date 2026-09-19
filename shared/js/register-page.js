@@ -1,31 +1,30 @@
 /**
  * ============================================================
  * APNABITE FRONTEND
- * FILE: shared/js/launch.js
- * PURPOSE: Fast splash and safe launch routing
- * VERSION: 2.2.0
+ * FILE: shared/js/register-page.js
+ * PURPOSE: Secure OTP registration and splash handoff
+ * VERSION: 1.1.0
  * ============================================================
  */
 
-const LaunchController = {
+const RegisterPage = {
 
-  SPLASH_DURATION_MS:
-    1000,
+  registrationData:
+    null,
 
-  started:
-    false,
+  testOtp:
+    "",
 
-  redirecting:
-    false,
+  resendTimer:
+    null,
 
-  startedAt:
+  redirectTimer:
+    null,
+
+  resendSeconds:
     0,
 
-  elements: {
-    splash: null,
-    status: null,
-    spinner: null
-  },
+  elements: {},
 
 
   /*
@@ -36,390 +35,723 @@ const LaunchController = {
 
   init() {
 
-    if (this.started) {
-      return;
+    this.elements = {
+
+      registrationStep:
+        document.getElementById(
+          "registrationStep"
+        ),
+
+      otpStep:
+        document.getElementById(
+          "otpStep"
+        ),
+
+      successStep:
+        document.getElementById(
+          "successStep"
+        ),
+
+      registrationForm:
+        document.getElementById(
+          "registrationForm"
+        ),
+
+      otpForm:
+        document.getElementById(
+          "otpForm"
+        ),
+
+      roleInput:
+        document.getElementById(
+          "roleInput"
+        ),
+
+      mobileInput:
+        document.getElementById(
+          "mobileInput"
+        ),
+
+      emailInput:
+        document.getElementById(
+          "emailInput"
+        ),
+
+      languageInput:
+        document.getElementById(
+          "languageInput"
+        ),
+
+      otpInput:
+        document.getElementById(
+          "otpInput"
+        ),
+
+      sendOtpButton:
+        document.getElementById(
+          "sendRegistrationOtpButton"
+        ),
+
+      verifyButton:
+        document.getElementById(
+          "verifyRegistrationButton"
+        ),
+
+      changeDetailsButton:
+        document.getElementById(
+          "changeDetailsButton"
+        ),
+
+      resendOtpButton:
+        document.getElementById(
+          "resendOtpButton"
+        ),
+
+      goToLoginButton:
+        document.getElementById(
+          "goToLoginButton"
+        ),
+
+      maskedMobile:
+        document.getElementById(
+          "maskedMobile"
+        ),
+
+      testOtpBox:
+        document.getElementById(
+          "testOtpBox"
+        ),
+
+      testOtpValue:
+        document.getElementById(
+          "testOtpValue"
+        ),
+
+      successMessage:
+        document.getElementById(
+          "successMessage"
+        ),
+
+      message:
+        document.getElementById(
+          "authMessage"
+        )
+    };
+
+
+    if (!this.hasRequiredElements()) {
+
+      console.error(
+        "Registration page elements are missing."
+      );
+
+      return false;
     }
 
 
-    this.started =
-      true;
-
-    this.startedAt =
-      Date.now();
-
-
-    this.elements.splash =
-      document.getElementById(
-        "launchSplash"
-      );
-
-    this.elements.status =
-      document.getElementById(
-        "launchStatusText"
-      );
-
-    this.elements.spinner =
-      document.querySelector(
-        ".launch-spinner"
-      );
-
-
-    if (
-      this.elements.status &&
-      this.elements.status.parentElement
-    ) {
-
-      this.elements.status
-        .parentElement
-        .style.display =
-          "none";
-    }
-
-
-    if (this.elements.spinner) {
-
-      this.elements.spinner
-        .style.display =
-          "none";
-    }
+    this.bindEvents();
 
 
     console.log(
-      "ApnaBite Fast Launch initialized."
+      "ApnaBite Registration Page initialized."
     );
 
 
-    this.startRouting();
+    return true;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * START ROUTING
+   * REQUIRED ELEMENTS
    * ----------------------------------------------------------
    */
 
-  startRouting() {
+  hasRequiredElements() {
 
-    const destination =
-      this.resolveDestination();
-
-
-    const elapsed =
-      Date.now() -
-      this.startedAt;
-
-
-    const remaining =
-      Math.max(
-        0,
-        this.SPLASH_DURATION_MS -
-        elapsed
-      );
-
-
-    window.setTimeout(
-      () => {
-
-        this.redirect(
-          destination
-        );
-      },
-      remaining
+    return Boolean(
+      this.elements.registrationStep &&
+      this.elements.otpStep &&
+      this.elements.successStep &&
+      this.elements.registrationForm &&
+      this.elements.otpForm &&
+      this.elements.roleInput &&
+      this.elements.mobileInput &&
+      this.elements.emailInput &&
+      this.elements.languageInput &&
+      this.elements.otpInput &&
+      this.elements.sendOtpButton &&
+      this.elements.verifyButton &&
+      this.elements.changeDetailsButton &&
+      this.elements.resendOtpButton &&
+      this.elements.goToLoginButton &&
+      this.elements.maskedMobile &&
+      this.elements.testOtpBox &&
+      this.elements.testOtpValue &&
+      this.elements.successMessage &&
+      this.elements.message
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * RESOLVE DESTINATION
+   * BIND EVENTS
    * ----------------------------------------------------------
    */
 
-  resolveDestination() {
+  bindEvents() {
 
-    const session =
-      this.getLocalSession();
+    this.elements.registrationForm
+      .addEventListener(
+        "submit",
+        (event) => {
 
+          event.preventDefault();
 
-    /*
-     * Valid authenticated users always go to
-     * their own role home.
-     */
-
-    if (session) {
-
-      const role =
-        this.getSessionRole(
-          session
-        );
-
-
-      if (
-        role &&
-        this.isSupportedRole(
-          role
-        )
-      ) {
-
-        return this.getRoleHomeUrl(
-          role
-        );
-      }
-    }
-
-
-    /*
-     * Safe post-registration route:
-     *
-     * index.html?source=register&next=login&role=Customer
-     *
-     * Only the fixed "login" destination is supported.
-     * Arbitrary external redirect URLs are never accepted.
-     */
-
-    const launchRequest =
-      this.getLaunchRequest();
-
-
-    if (
-      launchRequest.next ===
-        "login"
-    ) {
-
-      return this.getLoginUrl(
-        launchRequest.role
+          this.sendOtp();
+        }
       );
-    }
+
+
+    this.elements.otpForm
+      .addEventListener(
+        "submit",
+        (event) => {
+
+          event.preventDefault();
+
+          this.verifyAndRegister();
+        }
+      );
+
+
+    this.elements.changeDetailsButton
+      .addEventListener(
+        "click",
+        () => {
+
+          this.showRegistrationStep();
+        }
+      );
+
+
+    this.elements.resendOtpButton
+      .addEventListener(
+        "click",
+        () => {
+
+          this.sendOtp();
+        }
+      );
 
 
     /*
-     * Normal guest launch.
+     * Success screen button also passes through
+     * the common splash before opening Login.
      */
 
-    return this.getPublicUrl(
-      "role-selection.html"
-    );
+    this.elements.goToLoginButton
+      .addEventListener(
+        "click",
+        () => {
+
+          window.clearTimeout(
+            this.redirectTimer
+          );
+
+
+          this.openRegistrationSplash();
+        }
+      );
+
+
+    this.elements.mobileInput
+      .addEventListener(
+        "input",
+        () => {
+
+          this.elements.mobileInput.value =
+            this.elements.mobileInput.value
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                10
+              );
+        }
+      );
+
+
+    this.elements.otpInput
+      .addEventListener(
+        "input",
+        () => {
+
+          this.elements.otpInput.value =
+            this.elements.otpInput.value
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                6
+              );
+        }
+      );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LAUNCH QUERY REQUEST
+   * REGISTRATION DATA
    * ----------------------------------------------------------
    */
 
-  getLaunchRequest() {
-
-    const parameters =
-      new URLSearchParams(
-        window.location.search
-      );
-
-
-    const next =
-      String(
-        parameters.get(
-          "next"
-        ) || ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    const role =
-      String(
-        parameters.get(
-          "role"
-        ) || ""
-      )
-        .trim();
-
+  getRegistrationData() {
 
     return {
-      source:
-        String(
-          parameters.get(
-            "source"
-          ) || ""
-        )
-          .trim()
-          .toLowerCase(),
 
-      next:
-        next === "login"
-          ? "login"
-          : "",
+      mobile:
+        Auth.normalizeMobile(
+          this.elements.mobileInput.value
+        ),
 
       role:
-        this.isSupportedRole(
-          role
-        )
-          ? role
-          : ""
+        this.elements.roleInput.value,
+
+      email:
+        this.elements.emailInput.value
+          .trim(),
+
+      preferredLanguage:
+        this.elements.languageInput.value ||
+        "en"
     };
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOCAL SESSION
+   * VALIDATE DATA
    * ----------------------------------------------------------
    */
 
-  getLocalSession() {
+  validateData(data) {
+
+    if (!data.role) {
+
+      return {
+        valid: false,
+
+        message:
+          "Please select how you want to join ApnaBite."
+      };
+    }
+
+
+    if (
+      !Auth.isValidMobile(
+        data.mobile
+      )
+    ) {
+
+      return {
+        valid: false,
+
+        message:
+          "Please enter a valid 10-digit mobile number."
+      };
+    }
+
+
+    if (
+      data.email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        .test(
+          data.email
+        )
+    ) {
+
+      return {
+        valid: false,
+
+        message:
+          "Please enter a valid email address."
+      };
+    }
+
+
+    return {
+      valid: true
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SEND REGISTRATION OTP
+   * ----------------------------------------------------------
+   */
+
+  async sendOtp() {
+
+    this.clearMessage();
+
+
+    const data =
+      this.getRegistrationData();
+
+
+    const validation =
+      this.validateData(
+        data
+      );
+
+
+    if (!validation.valid) {
+
+      this.showError(
+        validation.message
+      );
+
+
+      return {
+        success: false,
+
+        code:
+          "REGISTRATION_DATA_INVALID"
+      };
+    }
+
+
+    this.setButtonLoading(
+      this.elements.sendOtpButton,
+      true
+    );
+
 
     try {
 
-      if (
-        typeof SessionManager ===
-          "undefined" ||
-        typeof SessionManager.get !==
-          "function"
-      ) {
-
-        return null;
-      }
+      const result =
+        await Auth
+          .requestRegistrationOtp(
+            data.mobile
+          );
 
 
-      return SessionManager.get();
+      this.registrationData =
+        data;
+
+
+      this.testOtp =
+        result.testOtp || "";
+
+
+      this.showOtpStep(
+        result
+      );
+
+
+      return result;
 
     } catch (error) {
 
-      console.warn(
-        "Local session could not be restored:",
-        error
+      this.showError(
+        error.message ||
+        "Unable to send verification OTP."
       );
 
 
-      return null;
+      return {
+        success: false,
+
+        error:
+          error.message,
+
+        code:
+          error.code || "",
+
+        requestId:
+          error.requestId || ""
+      };
+
+    } finally {
+
+      this.setButtonLoading(
+        this.elements.sendOtpButton,
+        false
+      );
     }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * SESSION ROLE
+   * SHOW OTP STEP
    * ----------------------------------------------------------
    */
 
-  getSessionRole(session) {
+  showOtpStep(result) {
 
-    if (!session) {
-      return "";
-    }
-
-
-    if (session.role) {
-
-      return String(
-        session.role
+    this.elements.registrationStep
+      .classList.add(
+        "hidden"
       );
-    }
+
+
+    this.elements.successStep
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.otpStep
+      .classList.remove(
+        "hidden"
+      );
+
+
+    this.elements.maskedMobile
+      .textContent =
+        this.maskMobile(
+          this.registrationData.mobile
+        );
 
 
     if (
-      session.user &&
-      session.user.role
+      result &&
+      result.testOtp
     ) {
 
-      return String(
-        session.user.role
-      );
-    }
+      this.elements.testOtpValue
+        .textContent =
+          result.testOtp;
 
 
-    return "";
-  },
+      this.elements.testOtpBox
+        .classList.remove(
+          "hidden"
+        );
+
+    } else {
+
+      this.elements.testOtpValue
+        .textContent =
+          "";
 
 
-  /*
-   * ----------------------------------------------------------
-   * SUPPORTED ROLE
-   * ----------------------------------------------------------
-   */
-
-  isSupportedRole(role) {
-
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .isSupportedRole ===
-        "function"
-    ) {
-
-      return AppRouter
-        .isSupportedRole(
-          role
+      this.elements.testOtpBox
+        .classList.add(
+          "hidden"
         );
     }
 
 
-    return Boolean(
-      this.getFallbackRolePath(
-        role
+    this.elements.otpInput.value =
+      "";
+
+
+    this.elements.otpInput.focus();
+
+
+    this.startResendTimer(
+      result &&
+      result.resendAfterSeconds
+        ? result.resendAfterSeconds
+        : 60
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * VERIFY AND REGISTER
+   *
+   * options.redirect:
+   * true  = normal flow through common splash
+   * false = integration test without navigation
+   * ----------------------------------------------------------
+   */
+
+  async verifyAndRegister(
+    options = {}
+  ) {
+
+    const otp =
+      this.elements.otpInput.value
+        .replace(
+          /\D/g,
+          ""
+        );
+
+
+    this.clearMessage();
+
+
+    if (!this.registrationData) {
+
+      this.showError(
+        "Please enter your registration details again."
+      );
+
+
+      this.showRegistrationStep();
+
+
+      return {
+        success: false,
+
+        code:
+          "REGISTRATION_DATA_REQUIRED"
+      };
+    }
+
+
+    if (
+      !/^\d{6}$/.test(
+        otp
       )
-    );
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * ROLE HOME URL
-   * ----------------------------------------------------------
-   */
-
-  getRoleHomeUrl(role) {
-
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .getHomeUrl ===
-        "function"
     ) {
 
-      const routerUrl =
-        AppRouter.getHomeUrl(
-          role
+      this.showError(
+        "Please enter the complete 6-digit OTP."
+      );
+
+
+      return {
+        success: false,
+
+        code:
+          "INVALID_OTP_FORMAT"
+      };
+    }
+
+
+    this.setButtonLoading(
+      this.elements.verifyButton,
+      true
+    );
+
+
+    try {
+
+      const verification =
+        await Auth.verifyOtp(
+          this.registrationData.mobile,
+          Auth.OTP_PURPOSES.REGISTER,
+          otp
         );
 
 
-      if (routerUrl) {
+      const registration =
+        await Auth.register(
+          this.registrationData,
+          verification
+            .verificationToken
+        );
 
-        return routerUrl;
+
+      if (
+        !registration ||
+        registration.success !== true ||
+        !registration.user
+      ) {
+
+        const registrationError =
+          new Error(
+            "Registration could not be completed."
+          );
+
+
+        registrationError.code =
+          "REGISTRATION_FAILED";
+
+
+        throw registrationError;
       }
-    }
 
 
-    const fallbackPath =
-      this.getFallbackRolePath(
-        role
+      this.showSuccess(
+        registration.user
       );
 
 
-    if (!fallbackPath) {
+      /*
+       * New registration is not logged in automatically.
+       * Show common splash, then open Login with selected role.
+       */
 
-      return this.getPublicUrl(
-        "role-selection.html"
+      if (
+        options.redirect !== false
+      ) {
+
+        this.scheduleSplashRedirect(
+          650
+        );
+      }
+
+
+      return {
+        success: true,
+
+        verification:
+          verification,
+
+        registration:
+          registration,
+
+        splashUrl:
+          this.getRegistrationSplashUrl(),
+
+        redirectScheduled:
+          options.redirect !== false
+      };
+
+    } catch (error) {
+
+      this.showError(
+        error.message ||
+        "Registration failed."
+      );
+
+
+      return {
+        success: false,
+
+        error:
+          error.message,
+
+        code:
+          error.code || "",
+
+        requestId:
+          error.requestId || ""
+      };
+
+    } finally {
+
+      this.setButtonLoading(
+        this.elements.verifyButton,
+        false
       );
     }
-
-
-    return this.getPublicUrl(
-      fallbackPath
-    );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOGIN URL
+   * REGISTRATION SPLASH URL
    * ----------------------------------------------------------
    */
 
-  getLoginUrl(role = "") {
+  getRegistrationSplashUrl() {
+
+    let url;
+
 
     if (
       typeof AppRouter !==
@@ -429,45 +761,43 @@ const LaunchController = {
         "function"
     ) {
 
-      const url =
+      url =
         new URL(
           AppRouter.getPublicUrl(
-            "login.html"
+            "index.html"
           )
         );
 
+    } else {
 
-      if (
-        role &&
-        this.isSupportedRole(
-          role
-        )
-      ) {
-
-        url.searchParams.set(
-          "role",
-          role
+      url =
+        new URL(
+          "index.html",
+          window.location.href
         );
-      }
-
-
-      return url.href;
     }
 
 
-    const url =
-      new URL(
-        "login.html",
-        window.location.href
-      );
+    url.searchParams.set(
+      "source",
+      "register"
+    );
 
 
-    if (
-      role &&
-      this.isSupportedRole(
-        role
-      )
-    ) {
+    url.searchParams.set(
+      "next",
+      "login"
+    );
+
+
+    const role =
+      this.registrationData &&
+      this.registrationData.role
+        ? this.registrationData.role
+        : "";
+
+
+    if (role) {
 
       url.searchParams.set(
         "role",
@@ -482,108 +812,350 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * FALLBACK ROLE PATHS
+   * SCHEDULE SPLASH
    * ----------------------------------------------------------
    */
 
-  getFallbackRolePath(role) {
+  scheduleSplashRedirect(
+    delay = 650
+  ) {
 
-    const routes = {
-
-      Customer:
-        "customer/html/home.html",
-
-      "Food Partner":
-        "food-partner/html/dashboard.html",
-
-      Rider:
-        "rider/html/dashboard.html",
-
-      Admin:
-        "admin/html/dashboard.html"
-    };
+    window.clearTimeout(
+      this.redirectTimer
+    );
 
 
-    return routes[
-      String(role || "")
-    ] || "";
+    this.redirectTimer =
+      window.setTimeout(
+        () => {
+
+          this.openRegistrationSplash();
+        },
+        delay
+      );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * PUBLIC URL
+   * OPEN COMMON SPLASH
    * ----------------------------------------------------------
    */
 
-  getPublicUrl(path) {
+  openRegistrationSplash() {
 
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .getPublicUrl ===
-        "function"
-    ) {
+    try {
 
-      return AppRouter
-        .getPublicUrl(
-          path
-        );
+      window.location.replace(
+        this.getRegistrationSplashUrl()
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Registration splash routing failed:",
+        error
+      );
+
+
+      this.showError(
+        "Account created, but the Login page could not be opened."
+      );
     }
-
-
-    return new URL(
-      path,
-      window.location.href
-    ).href;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * REDIRECT
+   * REGISTRATION STEP
    * ----------------------------------------------------------
    */
 
-  redirect(destination) {
+  showRegistrationStep() {
 
-    if (
-      this.redirecting ||
-      !destination
-    ) {
+    this.stopResendTimer();
 
+
+    window.clearTimeout(
+      this.redirectTimer
+    );
+
+
+    this.clearMessage();
+
+
+    this.registrationData =
+      null;
+
+
+    this.testOtp =
+      "";
+
+
+    this.elements.otpStep
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.successStep
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.registrationStep
+      .classList.remove(
+        "hidden"
+      );
+
+
+    this.elements.otpInput.value =
+      "";
+
+
+    this.elements.testOtpValue
+      .textContent =
+        "";
+
+
+    this.elements.testOtpBox
+      .classList.add(
+        "hidden"
+      );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SUCCESS STEP
+   * ----------------------------------------------------------
+   */
+
+  showSuccess(user) {
+
+    this.stopResendTimer();
+    this.clearMessage();
+
+
+    this.elements.registrationStep
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.otpStep
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.successStep
+      .classList.remove(
+        "hidden"
+      );
+
+
+    this.elements.successMessage
+      .textContent =
+        (
+          user &&
+          user.role
+            ? user.role
+            : "User"
+        ) +
+        " account verified successfully.";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * RESEND TIMER
+   * ----------------------------------------------------------
+   */
+
+  startResendTimer(seconds) {
+
+    this.stopResendTimer();
+
+
+    this.resendSeconds =
+      Number(
+        seconds
+      ) || 60;
+
+
+    this.updateResendButton();
+
+
+    this.resendTimer =
+      window.setInterval(
+        () => {
+
+          this.resendSeconds -= 1;
+
+
+          if (
+            this.resendSeconds <= 0
+          ) {
+
+            this.stopResendTimer();
+
+
+            this.elements.resendOtpButton
+              .disabled =
+                false;
+
+
+            this.elements.resendOtpButton
+              .textContent =
+                "Resend OTP";
+
+
+            return;
+          }
+
+
+          this.updateResendButton();
+        },
+        1000
+      );
+  },
+
+
+  updateResendButton() {
+
+    this.elements.resendOtpButton
+      .disabled =
+        true;
+
+
+    this.elements.resendOtpButton
+      .textContent =
+        "Resend OTP in " +
+        this.resendSeconds +
+        "s";
+  },
+
+
+  stopResendTimer() {
+
+    if (this.resendTimer) {
+
+      window.clearInterval(
+        this.resendTimer
+      );
+
+
+      this.resendTimer =
+        null;
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * BUTTON LOADING
+   * ----------------------------------------------------------
+   */
+
+  setButtonLoading(
+    button,
+    loading
+  ) {
+
+    if (!button) {
       return;
     }
 
 
-    this.redirecting =
-      true;
+    button.disabled =
+      loading;
 
 
-    window.location.replace(
-      destination
+    button.classList.toggle(
+      "auth-loading",
+      loading
+    );
+
+
+    button.setAttribute(
+      "aria-busy",
+      String(loading)
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * TEST
-   *
-   * Browser console:
-   * LaunchController.test()
+   * MESSAGE
    * ----------------------------------------------------------
    */
 
-  test() {
+  showError(message) {
+
+    this.elements.message
+      .textContent =
+        message;
+
+
+    this.elements.message
+      .classList.remove(
+        "hidden"
+      );
+  },
+
+
+  clearMessage() {
+
+    this.elements.message
+      .textContent =
+        "";
+
+
+    this.elements.message
+      .classList.add(
+        "hidden"
+      );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * MASK MOBILE
+   * ----------------------------------------------------------
+   */
+
+  maskMobile(mobile) {
+
+    return (
+      "+91 ******" +
+      String(
+        mobile || ""
+      ).slice(
+        -4
+      )
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * PAGE TEST
+   *
+   * Browser console:
+   * RegisterPage.test()
+   * ----------------------------------------------------------
+   */
+
+  async test() {
 
     console.log(
       "========================================"
     );
 
     console.log(
-      "APNABITE FAST LAUNCH TEST"
+      "APNABITE REGISTRATION AND SPLASH TEST"
     );
 
     console.log(
@@ -591,157 +1163,230 @@ const LaunchController = {
     );
 
 
-    const routeTests = [
+    const testMobile =
+      "9" +
+      String(
+        Date.now()
+      ).slice(
+        -9
+      );
 
-      {
-        role:
-          "Customer",
 
-        expected:
-          "customer/html/home.html"
-      },
+    try {
 
-      {
-        role:
-          "Food Partner",
+      window.clearTimeout(
+        this.redirectTimer
+      );
 
-        expected:
-          "food-partner/html/dashboard.html"
-      },
 
-      {
-        role:
-          "Rider",
+      this.showRegistrationStep();
 
-        expected:
-          "rider/html/dashboard.html"
-      },
 
-      {
-        role:
-          "Admin",
+      this.elements.roleInput.value =
+        "Customer";
 
-        expected:
-          "admin/html/dashboard.html"
-      },
 
-      {
-        role:
-          "",
+      this.elements.mobileInput.value =
+        testMobile;
 
-        expected:
-          ""
+
+      this.elements.emailInput.value =
+        "register-page-" +
+        Date.now() +
+        "@apnabite.test";
+
+
+      this.elements.languageInput.value =
+        "en";
+
+
+      const otpResult =
+        await this.sendOtp();
+
+
+      if (
+        !otpResult ||
+        otpResult.success !== true ||
+        !otpResult.testOtp
+      ) {
+
+        throw new Error(
+          "Registration page OTP request failed."
+        );
       }
 
-    ];
+
+      this.elements.otpInput.value =
+        otpResult.testOtp;
 
 
-    const results =
-      routeTests.map(
-        (test) => {
-
-          const actual =
-            this.getFallbackRolePath(
-              test.role
-            );
+      const registrationResult =
+        await this.verifyAndRegister({
+          redirect:
+            false
+        });
 
 
-          return {
-            role:
-              test.role ||
-              "Guest",
+      const splashUrl =
+        this.getRegistrationSplashUrl();
 
-            expected:
-              test.expected,
 
-            actual:
-              actual,
+      const splashConnected =
+        splashUrl.includes(
+          "/index.html"
+        ) &&
+        splashUrl.includes(
+          "source=register"
+        ) &&
+        splashUrl.includes(
+          "next=login"
+        ) &&
+        splashUrl.includes(
+          "role=Customer"
+        );
 
-            passed:
-              actual ===
-              test.expected
-          };
+
+      const passed =
+        registrationResult.success ===
+          true &&
+        splashConnected === true &&
+        this.elements.successStep
+          .classList.contains(
+            "hidden"
+          ) === false;
+
+
+      const results = [
+
+        {
+          test:
+            "Registration completed",
+
+          expected:
+            true,
+
+          actual:
+            registrationResult.success,
+
+          passed:
+            registrationResult.success ===
+              true
+        },
+
+        {
+          test:
+            "Success screen",
+
+          expected:
+            true,
+
+          actual:
+            !this.elements.successStep
+              .classList.contains(
+                "hidden"
+              ),
+
+          passed:
+            !this.elements.successStep
+              .classList.contains(
+                "hidden"
+              )
+        },
+
+        {
+          test:
+            "Common splash connected",
+
+          expected:
+            true,
+
+          actual:
+            splashConnected,
+
+          passed:
+            splashConnected
+        },
+
+        {
+          test:
+            "Next destination",
+
+          expected:
+            "Login",
+
+          actual:
+            splashUrl.includes(
+              "next=login"
+            )
+              ? "Login"
+              : "Unknown",
+
+          passed:
+            splashUrl.includes(
+              "next=login"
+            )
         }
-      );
+      ];
 
 
-    const loginUrl =
-      this.getLoginUrl(
-        "Customer"
-      );
-
-
-    const registrationRoutePassed =
-      loginUrl.includes(
-        "/login.html"
-      ) &&
-      loginUrl.includes(
-        "role=Customer"
-      );
-
-
-    results.push({
-
-      role:
-        "Registration handoff",
-
-      expected:
-        "login.html?role=Customer",
-
-      actual:
-        loginUrl,
-
-      passed:
-        registrationRoutePassed
-    });
-
-
-    const passed =
-      results.every(
-        (result) =>
-          result.passed
-      );
-
-
-    console.table(
-      results
-    );
-
-
-    console.log(
-      passed
-        ? "Fast Launch Test: PASS"
-        : "Fast Launch Test: FAIL"
-    );
-
-
-    return {
-      success:
-        passed,
-
-      status:
-        passed
-          ? "PASS"
-          : "FAIL",
-
-      splashDurationMs:
-        this.SPLASH_DURATION_MS,
-
-      waitsForBackend:
-        false,
-
-      waitsForLocation:
-        false,
-
-      registrationHandoff:
-        registrationRoutePassed,
-
-      destination:
-        this.resolveDestination(),
-
-      results:
+      console.table(
         results
-    };
+      );
+
+
+      console.log(
+        passed
+          ? "Registration and Splash Test: PASS"
+          : "Registration and Splash Test: FAIL"
+      );
+
+
+      return {
+        success:
+          passed,
+
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+
+        testMobile:
+          testMobile,
+
+        splashUrl:
+          splashUrl,
+
+        result:
+          registrationResult,
+
+        results:
+          results
+      };
+
+    } catch (error) {
+
+      console.error(
+        "Registration and Splash Test: FAIL",
+        error
+      );
+
+
+      return {
+        success: false,
+
+        status:
+          "FAIL",
+
+        testMobile:
+          testMobile,
+
+        error:
+          error.message,
+
+        code:
+          error.code || ""
+      };
+    }
   }
 
 };
@@ -753,23 +1398,42 @@ const LaunchController = {
  * ------------------------------------------------------------
  */
 
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+
+    RegisterPage.init();
+  }
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * SERVICE WORKER
+ * ------------------------------------------------------------
+ */
+
 if (
-  document.readyState ===
-    "loading"
+  "serviceWorker" in navigator
 ) {
 
-  document.addEventListener(
-    "DOMContentLoaded",
+  window.addEventListener(
+    "load",
     () => {
 
-      LaunchController.init();
-    },
-    {
-      once: true
+      navigator.serviceWorker
+        .register(
+          "./sw.js"
+        )
+        .catch(
+          (error) => {
+
+            console.error(
+              "Registration service worker failed:",
+              error
+            );
+          }
+        );
     }
   );
-
-} else {
-
-  LaunchController.init();
 }
