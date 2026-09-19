@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/login-page.js
- * PURPOSE: Secure OTP login and automatic role routing
- * VERSION: 1.1.0
+ * PURPOSE: Secure OTP login and common splash routing
+ * VERSION: 1.2.0
  * ============================================================
  */
 
@@ -133,8 +133,8 @@ const LoginPage = {
 
 
     /*
-     * Already authenticated users do not need
-     * to enter their mobile number again.
+     * Already logged-in user accidentally opens login page:
+     * send through the same common splash.
      */
 
     if (Auth.isLoggedIn()) {
@@ -148,9 +148,8 @@ const LoginPage = {
       );
 
 
-      this.scheduleRedirect(
-        user,
-        300
+      this.scheduleSplashRedirect(
+        100
       );
     }
 
@@ -166,7 +165,7 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * CHECK REQUIRED ELEMENTS
+   * REQUIRED ELEMENTS
    * ----------------------------------------------------------
    */
 
@@ -195,7 +194,7 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * BIND EVENTS
+   * EVENTS
    * ----------------------------------------------------------
    */
 
@@ -286,7 +285,7 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * SEND LOGIN OTP
+   * SEND OTP
    * ----------------------------------------------------------
    */
 
@@ -359,10 +358,13 @@ const LoginPage = {
 
       return {
         success: false,
+
         error:
           error.message,
+
         code:
           error.code || "",
+
         requestId:
           error.requestId || ""
       };
@@ -460,8 +462,8 @@ const LoginPage = {
    * VERIFY OTP AND LOGIN
    *
    * options.redirect:
-   * true  = normal page flow
-   * false = integration test without navigation
+   * true  = normal user flow
+   * false = console test without leaving page
    * ----------------------------------------------------------
    */
 
@@ -548,10 +550,17 @@ const LoginPage = {
         !login.user
       ) {
 
-        throw Auth.createError(
-          "Login could not be completed.",
-          "LOGIN_FAILED"
-        );
+        const loginError =
+          new Error(
+            "Login could not be completed."
+          );
+
+
+        loginError.code =
+          "LOGIN_FAILED";
+
+
+        throw loginError;
       }
 
 
@@ -561,32 +570,33 @@ const LoginPage = {
 
 
       /*
-       * Normal login:
-       *
-       * - Protected returnUrl exists:
-       *   return to that exact page.
-       *
-       * - No returnUrl:
-       *   open the correct role home page.
+       * Every successful login passes through index.html.
+       * index.html displays the common splash and launch.js
+       * routes the stored session to the correct role home.
        */
 
       if (
         options.redirect !== false
       ) {
 
-        this.scheduleRedirect(
-          login.user,
-          650
+        this.scheduleSplashRedirect(
+          150
         );
       }
 
 
       return {
         success: true,
+
         verification:
           verification,
+
         login:
           login,
+
+        splashUrl:
+          this.getSplashUrl(),
+
         redirectScheduled:
           options.redirect !== false
       };
@@ -601,10 +611,13 @@ const LoginPage = {
 
       return {
         success: false,
+
         error:
           error.message,
+
         code:
           error.code || "",
+
         requestId:
           error.requestId || ""
       };
@@ -621,25 +634,58 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * AUTOMATIC ROUTING AFTER LOGIN
+   * COMMON SPLASH URL
    * ----------------------------------------------------------
    */
 
-  scheduleRedirect(
-    user,
-    delay = 650
+  getSplashUrl() {
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .getPublicUrl ===
+        "function"
+    ) {
+
+      const url =
+        new URL(
+          AppRouter.getPublicUrl(
+            "index.html"
+          )
+        );
+
+
+      url.searchParams.set(
+        "source",
+        "login"
+      );
+
+
+      return url.href;
+    }
+
+
+    return new URL(
+      "index.html?source=login",
+      window.location.href
+    ).href;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * ROUTE THROUGH COMMON SPLASH
+   * ----------------------------------------------------------
+   */
+
+  scheduleSplashRedirect(
+    delay = 150
   ) {
 
     window.clearTimeout(
       this.redirectTimer
     );
-
-
-    const role =
-      user &&
-      user.role
-        ? user.role
-        : Auth.getRole();
 
 
     this.redirectTimer =
@@ -648,29 +694,14 @@ const LoginPage = {
 
           try {
 
-            if (
-              AppRouter.isSupportedRole(
-                role
-              )
-            ) {
-
-              AppRouter.goAfterLogin(
-                role,
-                true
-              );
-
-              return;
-            }
-
-
-            AppRouter.goToRoleSelection(
-              true
+            window.location.replace(
+              this.getSplashUrl()
             );
 
           } catch (error) {
 
             console.error(
-              "Post-login routing failed:",
+              "Post-login splash routing failed:",
               error
             );
 
@@ -790,7 +821,7 @@ const LoginPage = {
       .textContent =
         "Secure login completed for " +
         role +
-        ". Opening your ApnaBite page...";
+        ".";
   },
 
 
@@ -967,10 +998,7 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * PAGE INTEGRATION TEST
-   *
-   * This test disables navigation so the final result
-   * can be inspected in the browser console.
+   * PAGE TEST
    *
    * Browser console:
    * LoginPage.test()
@@ -984,7 +1012,7 @@ const LoginPage = {
     );
 
     console.log(
-      "APNABITE LOGIN PAGE ROUTING TEST"
+      "APNABITE LOGIN AND SPLASH TEST"
     );
 
     console.log(
@@ -1051,8 +1079,21 @@ const LoginPage = {
           : "";
 
 
+      const splashUrl =
+        this.getSplashUrl();
+
+
       const expectedHome =
         "customer/html/home.html";
+
+
+      const splashConnected =
+        splashUrl.includes(
+          "/index.html"
+        ) &&
+        splashUrl.includes(
+          "source=login"
+        );
 
 
       const passed =
@@ -1061,6 +1102,7 @@ const LoginPage = {
         user !== null &&
         user.role === "Customer" &&
         homePath === expectedHome &&
+        splashConnected === true &&
         this.elements.successStep
           .classList.contains(
             "hidden"
@@ -1072,10 +1114,13 @@ const LoginPage = {
         {
           test:
             "Authenticated",
+
           expected:
             true,
+
           actual:
             Auth.isLoggedIn(),
+
           passed:
             Auth.isLoggedIn() === true
         },
@@ -1083,12 +1128,15 @@ const LoginPage = {
         {
           test:
             "User role",
+
           expected:
             "Customer",
+
           actual:
             user
               ? user.role
               : "",
+
           passed:
             Boolean(
               user &&
@@ -1099,11 +1147,14 @@ const LoginPage = {
 
         {
           test:
-            "Customer home path",
+            "Role home path",
+
           expected:
             expectedHome,
+
           actual:
             homePath,
+
           passed:
             homePath ===
               expectedHome
@@ -1111,14 +1162,31 @@ const LoginPage = {
 
         {
           test:
-            "Success screen",
+            "Common splash connected",
+
           expected:
             true,
+
+          actual:
+            splashConnected,
+
+          passed:
+            splashConnected
+        },
+
+        {
+          test:
+            "Success screen",
+
+          expected:
+            true,
+
           actual:
             !this.elements.successStep
               .classList.contains(
                 "hidden"
               ),
+
           passed:
             !this.elements.successStep
               .classList.contains(
@@ -1135,24 +1203,32 @@ const LoginPage = {
 
       console.log(
         passed
-          ? "Login Page Routing Test: PASS"
-          : "Login Page Routing Test: FAIL"
+          ? "Login and Splash Test: PASS"
+          : "Login and Splash Test: FAIL"
       );
 
 
       return {
         success:
           passed,
+
         status:
           passed
             ? "PASS"
             : "FAIL",
+
         authenticated:
           Auth.isLoggedIn(),
+
         user:
           user,
+
         homePath:
           homePath,
+
+        splashUrl:
+          splashUrl,
+
         results:
           results
       };
@@ -1160,17 +1236,20 @@ const LoginPage = {
     } catch (error) {
 
       console.error(
-        "Login Page Routing Test: FAIL",
+        "Login and Splash Test: FAIL",
         error
       );
 
 
       return {
         success: false,
+
         status:
           "FAIL",
+
         error:
           error.message,
+
         code:
           error.code || ""
       };
@@ -1197,7 +1276,7 @@ document.addEventListener(
 
 /*
  * ------------------------------------------------------------
- * SERVICE WORKER REGISTRATION
+ * SERVICE WORKER
  * ------------------------------------------------------------
  */
 
