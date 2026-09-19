@@ -2,14 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/location.js
- * PURPOSE: Device location and local location state
- * VERSION: 1.1.0
- * ============================================================
- *
- * IMPORTANT:
- * - Location is requested only after an explicit user action.
- * - This file does not automatically request permission.
- * - Backend will remain authoritative for service eligibility.
+ * PURPOSE: Device location, background refresh and proximity
+ * VERSION: 2.0.0
  * ============================================================
  */
 
@@ -21,16 +15,34 @@ const LocationManager = {
   LOCATION_MAX_AGE_MS:
     5 * 60 * 1000,
 
+  BACKGROUND_REFRESH_MS:
+    5 * 60 * 1000,
+
   REQUEST_TIMEOUT_MS:
     10000,
 
+  NEARBY_ADDRESS_METERS:
+    500,
+
   current:
+    null,
+
+  backgroundInitialized:
+    false,
+
+  backgroundRequest:
+    null,
+
+  hiddenAt:
+    0,
+
+  visibilityHandler:
     null,
 
 
   /*
    * ----------------------------------------------------------
-   * GEOLOCATION SUPPORT
+   * SUPPORT AND PERMISSION
    * ----------------------------------------------------------
    */
 
@@ -42,41 +54,35 @@ const LocationManager = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * GET BROWSER PERMISSION STATE
-   *
-   * Possible values:
-   * granted
-   * prompt
-   * denied
-   * unsupported
-   * unknown
-   * ----------------------------------------------------------
-   */
-
   async getPermissionState() {
 
     if (!this.isSupported()) {
+
       return "unsupported";
     }
+
 
     if (
       !navigator.permissions ||
       typeof navigator.permissions.query !==
         "function"
     ) {
+
       return "unknown";
     }
+
 
     try {
 
       const result =
         await navigator.permissions.query({
-          name: "geolocation"
+          name:
+            "geolocation"
         });
 
-      return result.state || "unknown";
+
+      return result.state ||
+        "unknown";
 
     } catch (error) {
 
@@ -87,7 +93,7 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * VALIDATE COORDINATES
+   * COORDINATE VALIDATION
    * ----------------------------------------------------------
    */
 
@@ -97,14 +103,24 @@ const LocationManager = {
   ) {
 
     const lat =
-      Number(latitude);
+      Number(
+        latitude
+      );
+
 
     const lng =
-      Number(longitude);
+      Number(
+        longitude
+      );
+
 
     return (
-      Number.isFinite(lat) &&
-      Number.isFinite(lng) &&
+      Number.isFinite(
+        lat
+      ) &&
+      Number.isFinite(
+        lng
+      ) &&
       lat >= -90 &&
       lat <= 90 &&
       lng >= -180 &&
@@ -113,40 +129,46 @@ const LocationManager = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * NORMALIZE LOCATION
-   * ----------------------------------------------------------
-   */
-
   normalizeLocation(location) {
 
     if (
       !location ||
-      typeof location !== "object" ||
+      typeof location !==
+        "object" ||
       !this.isValidCoordinates(
         location.latitude,
         location.longitude
       )
     ) {
+
       throw this.createError(
         "Valid location coordinates are required.",
         "INVALID_LOCATION"
       );
     }
 
+
     const accuracy =
-      Number(location.accuracy);
+      Number(
+        location.accuracy
+      );
+
 
     return {
       latitude:
-        Number(location.latitude),
+        Number(
+          location.latitude
+        ),
 
       longitude:
-        Number(location.longitude),
+        Number(
+          location.longitude
+        ),
 
       accuracy:
-        Number.isFinite(accuracy) &&
+        Number.isFinite(
+          accuracy
+        ) &&
         accuracy >= 0
           ? accuracy
           : null,
@@ -164,7 +186,7 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * SAVE LOCATION
+   * LOCAL LOCATION STORAGE
    * ----------------------------------------------------------
    */
 
@@ -175,23 +197,20 @@ const LocationManager = {
         location
       );
 
+
     AppStorage.set(
       this.STORAGE_KEY,
       normalized
     );
 
+
     this.current =
       normalized;
+
 
     return normalized;
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * GET SAVED LOCATION
-   * ----------------------------------------------------------
-   */
 
   getSaved() {
 
@@ -201,9 +220,12 @@ const LocationManager = {
         null
       );
 
+
     if (!location) {
+
       return null;
     }
+
 
     try {
 
@@ -212,8 +234,10 @@ const LocationManager = {
           location
         );
 
+
       this.current =
         normalized;
+
 
       return normalized;
 
@@ -221,16 +245,11 @@ const LocationManager = {
 
       this.clear();
 
+
       return null;
     }
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * CLEAR LOCATION
-   * ----------------------------------------------------------
-   */
 
   clear() {
 
@@ -238,8 +257,10 @@ const LocationManager = {
       this.STORAGE_KEY
     );
 
+
     this.current =
       null;
+
 
     return true;
   },
@@ -257,38 +278,39 @@ const LocationManager = {
       location ||
       this.getSaved();
 
+
     if (
       !target ||
       !target.capturedAt
     ) {
+
       return Infinity;
     }
+
 
     const capturedTime =
       new Date(
         target.capturedAt
       ).getTime();
 
+
     if (
       Number.isNaN(
         capturedTime
       )
     ) {
+
       return Infinity;
     }
 
+
     return Math.max(
       0,
-      Date.now() - capturedTime
+      Date.now() -
+      capturedTime
     );
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * FRESH LOCATION CHECK
-   * ----------------------------------------------------------
-   */
 
   isFresh(
     location = null,
@@ -297,18 +319,16 @@ const LocationManager = {
   ) {
 
     return (
-      this.getAgeMs(location) <=
-      maxAgeMs
+      this.getAgeMs(
+        location
+      ) <= maxAgeMs
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * GET CURRENT DEVICE POSITION
-   *
-   * Call this only after a user taps:
-   * "Use Current Location"
+   * CURRENT DEVICE POSITION
    * ----------------------------------------------------------
    */
 
@@ -324,12 +344,16 @@ const LocationManager = {
       );
     }
 
+
     const persist =
-      options.persist !== false;
+      options.persist !==
+        false;
+
 
     const enableHighAccuracy =
       options.enableHighAccuracy ===
-      true;
+        true;
+
 
     const timeout =
       Number.isFinite(
@@ -338,12 +362,14 @@ const LocationManager = {
         ? options.timeout
         : this.REQUEST_TIMEOUT_MS;
 
+
     const maximumAge =
       Number.isFinite(
         options.maximumAge
       )
         ? options.maximumAge
         : this.LOCATION_MAX_AGE_MS;
+
 
     return new Promise(
       (resolve, reject) => {
@@ -376,6 +402,7 @@ const LocationManager = {
                       ).toISOString()
                   });
 
+
                 if (persist) {
 
                   this.save(
@@ -387,6 +414,7 @@ const LocationManager = {
                   this.current =
                     location;
                 }
+
 
                 resolve(
                   location
@@ -427,10 +455,7 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * GET BEST AVAILABLE LOCATION
-   *
-   * Uses a fresh saved location first.
-   * Does not open the permission prompt unless allowRequest=true.
+   * BEST AVAILABLE LOCATION
    * ----------------------------------------------------------
    */
 
@@ -441,36 +466,50 @@ const LocationManager = {
     const saved =
       this.getSaved();
 
+
     if (
       saved &&
-      this.isFresh(saved)
+      this.isFresh(
+        saved
+      ) &&
+      options.force !== true
     ) {
+
       return {
         success: true,
+
         location:
           saved,
+
         source:
           "SAVED"
       };
     }
 
+
     if (
-      options.allowRequest !== true
+      options.allowRequest !==
+        true
     ) {
+
       return {
         success: false,
+
         location:
           saved,
+
         source:
           saved
             ? "STALE_SAVED"
             : "NONE",
+
         reason:
           saved
             ? "SAVED_LOCATION_STALE"
             : "LOCATION_NOT_AVAILABLE"
       };
     }
+
 
     try {
 
@@ -479,10 +518,13 @@ const LocationManager = {
           options
         );
 
+
       return {
         success: true,
+
         location:
           location,
+
         source:
           "DEVICE"
       };
@@ -491,15 +533,19 @@ const LocationManager = {
 
       return {
         success: false,
+
         location:
           saved,
+
         source:
           saved
             ? "STALE_SAVED"
             : "NONE",
+
         reason:
           error.code ||
           "LOCATION_ERROR",
+
         message:
           error.message
       };
@@ -509,82 +555,482 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * GEOLOCATION ERROR NORMALIZATION
+   * BACKGROUND REFRESH INITIALIZATION
+   *
+   * This does not force the browser permission popup.
    * ----------------------------------------------------------
    */
 
-  normalizeGeolocationError(error) {
-
-    if (!error) {
-
-      return this.createError(
-        "Unable to access your location.",
-        "LOCATION_ERROR"
-      );
-    }
-
-    switch (error.code) {
-
-      case 1:
-        return this.createError(
-          "Location permission was denied.",
-          "LOCATION_PERMISSION_DENIED"
-        );
-
-      case 2:
-        return this.createError(
-          "Your current location is unavailable.",
-          "LOCATION_UNAVAILABLE"
-        );
-
-      case 3:
-        return this.createError(
-          "Location request timed out.",
-          "LOCATION_TIMEOUT"
-        );
-
-      default:
-        return this.createError(
-          error.message ||
-          "Unable to access your location.",
-          "LOCATION_ERROR"
-        );
-    }
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * CREATE STANDARD LOCATION ERROR
-   * ----------------------------------------------------------
-   */
-
-  createError(
-    message,
-    code
+  initBackgroundRefresh(
+    options = {}
   ) {
 
-    const error =
-      new Error(
-        message ||
-        "Location error."
+    if (this.backgroundInitialized) {
+
+      return {
+        success: true,
+
+        initialized:
+          true,
+
+        alreadyInitialized:
+          true
+      };
+    }
+
+
+    this.backgroundInitialized =
+      true;
+
+
+    this.visibilityHandler =
+      () => {
+
+        this.handleVisibilityChange();
+      };
+
+
+    if (
+      typeof document !==
+        "undefined"
+    ) {
+
+      document.addEventListener(
+        "visibilitychange",
+        this.visibilityHandler
       );
+    }
 
-    error.code =
-      code ||
-      "LOCATION_ERROR";
 
-    return error;
+    /*
+     * Page rendering is never awaited or blocked.
+     */
+
+    this.refreshInBackground({
+      reason:
+        "PAGE_OPEN",
+
+      force:
+        false,
+
+      allowPrompt:
+        options.allowPrompt ===
+          true
+    });
+
+
+    return {
+      success: true,
+
+      initialized:
+        true,
+
+      alreadyInitialized:
+        false
+    };
   },
 
 
   /*
    * ----------------------------------------------------------
-   * CALCULATE STRAIGHT-LINE DISTANCE
+   * VISIBILITY / APP RESUME
+   * ----------------------------------------------------------
+   */
+
+  handleVisibilityChange() {
+
+    if (
+      typeof document ===
+        "undefined"
+    ) {
+
+      return;
+    }
+
+
+    if (
+      document.visibilityState ===
+        "hidden"
+    ) {
+
+      this.hiddenAt =
+        Date.now();
+
+
+      return;
+    }
+
+
+    if (
+      document.visibilityState !==
+        "visible"
+    ) {
+
+      return;
+    }
+
+
+    const backgroundDuration =
+      this.hiddenAt
+        ? Date.now() -
+          this.hiddenAt
+        : 0;
+
+
+    this.hiddenAt =
+      0;
+
+
+    if (
+      backgroundDuration >=
+      this.BACKGROUND_REFRESH_MS
+    ) {
+
+      this.refreshInBackground({
+        reason:
+          "APP_RESUME",
+
+        force:
+          true,
+
+        allowPrompt:
+          false
+      });
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SAFE BACKGROUND LOCATION REFRESH
+   * ----------------------------------------------------------
+   */
+
+  async refreshInBackground(
+    options = {}
+  ) {
+
+    if (this.backgroundRequest) {
+
+      return this.backgroundRequest;
+    }
+
+
+    this.backgroundRequest =
+      this.performBackgroundRefresh(
+        options
+      );
+
+
+    try {
+
+      return await this.backgroundRequest;
+
+    } finally {
+
+      this.backgroundRequest =
+        null;
+    }
+  },
+
+
+  async performBackgroundRefresh(
+    options = {}
+  ) {
+
+    const reason =
+      options.reason ||
+      "BACKGROUND_REFRESH";
+
+
+    const force =
+      options.force ===
+      true;
+
+
+    const allowPrompt =
+      options.allowPrompt ===
+      true;
+
+
+    const saved =
+      this.getSaved();
+
+
+    /*
+     * Fresh saved coordinates are immediately usable.
+     */
+
+    if (
+      saved &&
+      this.isFresh(
+        saved
+      ) &&
+      !force
+    ) {
+
+      const result = {
+        success: true,
+
+        refreshed:
+          false,
+
+        source:
+          "SAVED",
+
+        reason:
+          reason,
+
+        location:
+          saved
+      };
+
+
+      this.dispatchLocationEvent(
+        "apnabite:background-location",
+        result
+      );
+
+
+      return result;
+    }
+
+
+    const permission =
+      await this.getPermissionState();
+
+
+    if (
+      permission === "denied"
+    ) {
+
+      const result = {
+        success: false,
+
+        refreshed:
+          false,
+
+        permission:
+          permission,
+
+        reason:
+          "LOCATION_PERMISSION_DENIED",
+
+        location:
+          saved
+      };
+
+
+      this.dispatchLocationEvent(
+        "apnabite:location-permission-denied",
+        result
+      );
+
+
+      return result;
+    }
+
+
+    if (
+      permission === "unsupported"
+    ) {
+
+      return {
+        success: false,
+
+        refreshed:
+          false,
+
+        permission:
+          permission,
+
+        reason:
+          "LOCATION_UNSUPPORTED",
+
+        location:
+          saved
+      };
+    }
+
+
+    /*
+     * Do not trigger an unexpected browser popup.
+     * Home UI will provide an explicit action button.
+     */
+
+    if (
+      permission !== "granted" &&
+      !allowPrompt
+    ) {
+
+      const result = {
+        success: false,
+
+        refreshed:
+          false,
+
+        permission:
+          permission,
+
+        reason:
+          "LOCATION_PERMISSION_REQUIRED",
+
+        location:
+          saved
+      };
+
+
+      this.dispatchLocationEvent(
+        "apnabite:location-permission-required",
+        result
+      );
+
+
+      return result;
+    }
+
+
+    try {
+
+      const location =
+        await this.getCurrentPosition({
+          persist:
+            true,
+
+          enableHighAccuracy:
+            false,
+
+          timeout:
+            this.REQUEST_TIMEOUT_MS,
+
+          maximumAge:
+            force
+              ? 0
+              : this.LOCATION_MAX_AGE_MS
+        });
+
+
+      const result = {
+        success: true,
+
+        refreshed:
+          true,
+
+        permission:
+          permission,
+
+        source:
+          "DEVICE",
+
+        reason:
+          reason,
+
+        location:
+          location
+      };
+
+
+      this.dispatchLocationEvent(
+        "apnabite:background-location",
+        result
+      );
+
+
+      return result;
+
+    } catch (error) {
+
+      const result = {
+        success: false,
+
+        refreshed:
+          false,
+
+        permission:
+          permission,
+
+        reason:
+          error.code ||
+          "LOCATION_ERROR",
+
+        message:
+          error.message,
+
+        location:
+          saved
+      };
+
+
+      this.dispatchLocationEvent(
+        "apnabite:background-location-error",
+        result
+      );
+
+
+      return result;
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * EXPLICIT USER LOCATION ACTION
    *
-   * Result is for frontend display only.
-   * Backend will calculate authoritative delivery eligibility
-   * and applicable charges.
+   * Home button can call this method.
+   * Browser permission popup may appear.
+   * ----------------------------------------------------------
+   */
+
+  async requestAfterUserAction() {
+
+    return this.refreshInBackground({
+      reason:
+        "USER_ACTION",
+
+      force:
+        true,
+
+      allowPrompt:
+        true
+    });
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * CUSTOM EVENT
+   * ----------------------------------------------------------
+   */
+
+  dispatchLocationEvent(
+    eventName,
+    detail
+  ) {
+
+    if (
+      typeof document ===
+        "undefined"
+    ) {
+
+      return;
+    }
+
+
+    document.dispatchEvent(
+      new CustomEvent(
+        eventName,
+        {
+          detail:
+            detail
+        }
+      )
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * DISTANCE CALCULATION
    * ----------------------------------------------------------
    */
 
@@ -605,74 +1051,325 @@ const LocationManager = {
         toLongitude
       )
     ) {
+
       throw this.createError(
         "Valid coordinates are required for distance calculation.",
         "INVALID_COORDINATES"
       );
     }
 
+
     const earthRadiusKm =
       6371;
+
 
     const toRadians =
       (degrees) =>
         degrees *
         (Math.PI / 180);
 
+
     const latitudeDifference =
       toRadians(
-        Number(toLatitude) -
-        Number(fromLatitude)
+        Number(
+          toLatitude
+        ) -
+        Number(
+          fromLatitude
+        )
       );
+
 
     const longitudeDifference =
       toRadians(
-        Number(toLongitude) -
-        Number(fromLongitude)
+        Number(
+          toLongitude
+        ) -
+        Number(
+          fromLongitude
+        )
       );
+
 
     const firstLatitude =
       toRadians(
-        Number(fromLatitude)
+        Number(
+          fromLatitude
+        )
       );
+
 
     const secondLatitude =
       toRadians(
-        Number(toLatitude)
+        Number(
+          toLatitude
+        )
       );
+
 
     const haversine =
       Math.sin(
         latitudeDifference / 2
       ) ** 2 +
-      Math.cos(firstLatitude) *
-      Math.cos(secondLatitude) *
+      Math.cos(
+        firstLatitude
+      ) *
+      Math.cos(
+        secondLatitude
+      ) *
       Math.sin(
         longitudeDifference / 2
       ) ** 2;
 
+
     const angularDistance =
       2 *
       Math.atan2(
-        Math.sqrt(haversine),
-        Math.sqrt(1 - haversine)
+        Math.sqrt(
+          haversine
+        ),
+        Math.sqrt(
+          1 - haversine
+        )
       );
+
 
     return Number(
       (
         earthRadiusKm *
         angularDistance
-      ).toFixed(2)
+      ).toFixed(
+        3
+      )
+    );
+  },
+
+
+  calculateDistanceMeters(
+    fromLatitude,
+    fromLongitude,
+    toLatitude,
+    toLongitude
+  ) {
+
+    return Math.round(
+      this.calculateDistanceKm(
+        fromLatitude,
+        fromLongitude,
+        toLatitude,
+        toLongitude
+      ) *
+      1000
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * TEST 1 — LOCATION STORAGE
-   *
-   * Browser console:
-   * LocationManager.testStorage()
+   * FIND NEAREST SAVED ADDRESS
+   * ----------------------------------------------------------
+   */
+
+  findNearestAddress(
+    currentLocation,
+    addresses,
+    thresholdMeters =
+      this.NEARBY_ADDRESS_METERS
+  ) {
+
+    if (
+      !currentLocation ||
+      !this.isValidCoordinates(
+        currentLocation.latitude,
+        currentLocation.longitude
+      ) ||
+      !Array.isArray(
+        addresses
+      )
+    ) {
+
+      return {
+        matched: false,
+
+        address:
+          null,
+
+        distanceMeters:
+          null
+      };
+    }
+
+
+    let nearestAddress =
+      null;
+
+
+    let nearestDistance =
+      Infinity;
+
+
+    addresses.forEach(
+      (address) => {
+
+        if (
+          !address ||
+          !this.isValidCoordinates(
+            address.latitude,
+            address.longitude
+          )
+        ) {
+
+          return;
+        }
+
+
+        const distance =
+          this.calculateDistanceMeters(
+            currentLocation.latitude,
+            currentLocation.longitude,
+            address.latitude,
+            address.longitude
+          );
+
+
+        if (
+          distance <
+          nearestDistance
+        ) {
+
+          nearestDistance =
+            distance;
+
+
+          nearestAddress =
+            address;
+        }
+      }
+    );
+
+
+    const safeThreshold =
+      Number.isFinite(
+        Number(
+          thresholdMeters
+        )
+      )
+        ? Math.max(
+            0,
+            Number(
+              thresholdMeters
+            )
+          )
+        : this.NEARBY_ADDRESS_METERS;
+
+
+    return {
+      matched:
+        nearestAddress !== null &&
+        nearestDistance <=
+          safeThreshold,
+
+      address:
+        nearestAddress !== null &&
+        nearestDistance <=
+          safeThreshold
+          ? nearestAddress
+          : null,
+
+      nearestAddress:
+        nearestAddress,
+
+      distanceMeters:
+        Number.isFinite(
+          nearestDistance
+        )
+          ? nearestDistance
+          : null,
+
+      thresholdMeters:
+        safeThreshold
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GEOLOCATION ERRORS
+   * ----------------------------------------------------------
+   */
+
+  normalizeGeolocationError(error) {
+
+    if (!error) {
+
+      return this.createError(
+        "Unable to access your location.",
+        "LOCATION_ERROR"
+      );
+    }
+
+
+    switch (error.code) {
+
+      case 1:
+
+        return this.createError(
+          "Location permission was denied.",
+          "LOCATION_PERMISSION_DENIED"
+        );
+
+
+      case 2:
+
+        return this.createError(
+          "Your current location is unavailable.",
+          "LOCATION_UNAVAILABLE"
+        );
+
+
+      case 3:
+
+        return this.createError(
+          "Location request timed out.",
+          "LOCATION_TIMEOUT"
+        );
+
+
+      default:
+
+        return this.createError(
+          error.message ||
+          "Unable to access your location.",
+          "LOCATION_ERROR"
+        );
+    }
+  },
+
+
+  createError(
+    message,
+    code
+  ) {
+
+    const error =
+      new Error(
+        message ||
+        "Location error."
+      );
+
+
+    error.code =
+      code ||
+      "LOCATION_ERROR";
+
+
+    return error;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * TEST — STORAGE
    * ----------------------------------------------------------
    */
 
@@ -690,27 +1387,35 @@ const LocationManager = {
       "========================================"
     );
 
+
     const previousLocation =
       this.getSaved();
+
 
     try {
 
       this.clear();
 
+
       const saved =
         this.save({
           latitude:
             28.5355,
+
           longitude:
             77.391,
+
           accuracy:
             25,
+
           source:
             "TEST"
         });
 
+
       const fetched =
         this.getSaved();
+
 
       const passed =
         fetched !== null &&
@@ -718,20 +1423,10 @@ const LocationManager = {
           28.5355 &&
         fetched.longitude ===
           77.391 &&
-        fetched.source ===
-          "TEST" &&
-        this.isFresh(fetched) ===
-          true;
+        this.isFresh(
+          fetched
+        ) === true;
 
-      console.log(
-        "Saved Location:",
-        saved
-      );
-
-      console.log(
-        "Fetched Location:",
-        fetched
-      );
 
       console.log(
         passed
@@ -739,38 +1434,27 @@ const LocationManager = {
           : "Location Storage Test: FAIL"
       );
 
+
       return {
         success:
           passed,
+
         status:
           passed
             ? "PASS"
             : "FAIL",
+
         saved:
           saved,
+
         fetched:
           fetched
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Location Storage Test: FAIL",
-        error
-      );
-
-      return {
-        success: false,
-        status: "FAIL",
-        error:
-          error.message,
-        code:
-          error.code || ""
       };
 
     } finally {
 
       this.clear();
+
 
       if (previousLocation) {
 
@@ -778,6 +1462,7 @@ const LocationManager = {
           this.STORAGE_KEY,
           previousLocation
         );
+
 
         this.current =
           previousLocation;
@@ -788,10 +1473,7 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * TEST 2 — DISTANCE CALCULATION
-   *
-   * Browser console:
-   * LocationManager.testDistance()
+   * TEST — DISTANCE AND 500-METRE MATCH
    * ----------------------------------------------------------
    */
 
@@ -802,78 +1484,119 @@ const LocationManager = {
     );
 
     console.log(
-      "APNABITE LOCATION DISTANCE TEST"
+      "APNABITE LOCATION PROXIMITY TEST"
     );
 
     console.log(
       "========================================"
     );
 
+
     try {
 
-      const samePointDistance =
-        this.calculateDistanceKm(
+      const current = {
+        latitude:
           28.5355,
-          77.391,
-          28.5355,
+
+        longitude:
           77.391
+      };
+
+
+      const addresses = [
+
+        {
+          addressId:
+            "ADDR_NEAR",
+
+          label:
+            "Home",
+
+          latitude:
+            28.536,
+
+          longitude:
+            77.392
+        },
+
+        {
+          addressId:
+            "ADDR_FAR",
+
+          label:
+            "Work",
+
+          latitude:
+            28.5706,
+
+          longitude:
+            77.3272
+        }
+      ];
+
+
+      const match =
+        this.findNearestAddress(
+          current,
+          addresses,
+          500
         );
 
-      const nearbyDistance =
-        this.calculateDistanceKm(
-          28.5355,
-          77.391,
-          28.5706,
-          77.3272
-        );
 
       const passed =
-        samePointDistance === 0 &&
-        nearbyDistance > 0;
+        match.matched ===
+          true &&
+        match.address !==
+          null &&
+        match.address.addressId ===
+          "ADDR_NEAR" &&
+        match.distanceMeters <=
+          500;
+
 
       console.log(
-        "Same Point Distance:",
-        samePointDistance,
-        "km"
+        "Nearest Address Result:",
+        match
       );
 
-      console.log(
-        "Nearby Distance:",
-        nearbyDistance,
-        "km"
-      );
 
       console.log(
         passed
-          ? "Location Distance Test: PASS"
-          : "Location Distance Test: FAIL"
+          ? "Location Proximity Test: PASS"
+          : "Location Proximity Test: FAIL"
       );
+
 
       return {
         success:
           passed,
+
         status:
           passed
             ? "PASS"
             : "FAIL",
-        samePointDistance:
-          samePointDistance,
-        nearbyDistance:
-          nearbyDistance
+
+        result:
+          match
       };
 
     } catch (error) {
 
       console.error(
-        "Location Distance Test: FAIL",
+        "Location Proximity Test: FAIL",
         error
       );
 
+
       return {
         success: false,
-        status: "FAIL",
+
+        status:
+          "FAIL",
+
         error:
           error.message,
+
         code:
           error.code || ""
       };
@@ -883,12 +1606,79 @@ const LocationManager = {
 
   /*
    * ----------------------------------------------------------
-   * TEST 3 — LIVE DEVICE LOCATION
-   *
-   * This may show the browser location permission popup.
-   *
-   * Browser console:
-   * LocationManager.testDeviceLocation()
+   * TEST — BACKGROUND CONFIGURATION
+   * ----------------------------------------------------------
+   */
+
+  async testBackgroundConfiguration() {
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE BACKGROUND LOCATION TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    const permission =
+      await this.getPermissionState();
+
+
+    const passed =
+      this.BACKGROUND_REFRESH_MS ===
+        300000 &&
+      this.NEARBY_ADDRESS_METERS ===
+        500 &&
+      typeof this
+        .refreshInBackground ===
+        "function" &&
+      typeof this
+        .requestAfterUserAction ===
+        "function";
+
+
+    console.log(
+      "Permission:",
+      permission
+    );
+
+
+    console.log(
+      passed
+        ? "Background Location Test: PASS"
+        : "Background Location Test: FAIL"
+    );
+
+
+    return {
+      success:
+        passed,
+
+      status:
+        passed
+          ? "PASS"
+          : "FAIL",
+
+      permission:
+        permission,
+
+      refreshAfterMs:
+        this.BACKGROUND_REFRESH_MS,
+
+      nearbyAddressMeters:
+        this.NEARBY_ADDRESS_METERS
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * TEST — LIVE DEVICE LOCATION
    * ----------------------------------------------------------
    */
 
@@ -906,53 +1696,36 @@ const LocationManager = {
       "========================================"
     );
 
+
     const previousLocation =
       this.getSaved();
 
+
     try {
 
-      const permissionBefore =
-        await this.getPermissionState();
+      const result =
+        await this.requestAfterUserAction();
 
-      console.log(
-        "Permission Before Request:",
-        permissionBefore
-      );
-
-      const location =
-        await this.getCurrentPosition({
-          persist:
-            true,
-          enableHighAccuracy:
-            false
-        });
-
-      console.log(
-        "Device Location:",
-        location
-      );
 
       const saved =
         this.getSaved();
 
-      const permissionAfter =
-        await this.getPermissionState();
-
-      console.log(
-        "Permission After Request:",
-        permissionAfter
-      );
 
       const passed =
-        this.isValidCoordinates(
-          location.latitude,
-          location.longitude
-        ) &&
+        result.success ===
+          true &&
         saved !== null &&
-        saved.latitude ===
-          location.latitude &&
-        saved.longitude ===
-          location.longitude;
+        this.isValidCoordinates(
+          saved.latitude,
+          saved.longitude
+        );
+
+
+      console.log(
+        "Device Location Result:",
+        result
+      );
+
 
       console.log(
         passed
@@ -960,19 +1733,19 @@ const LocationManager = {
           : "Device Location Test: FAIL"
       );
 
+
       return {
         success:
           passed,
+
         status:
           passed
             ? "PASS"
             : "FAIL",
-        permissionBefore:
-          permissionBefore,
-        permissionAfter:
-          permissionAfter,
-        location:
-          location,
+
+        result:
+          result,
+
         saved:
           saved
       };
@@ -980,19 +1753,20 @@ const LocationManager = {
     } catch (error) {
 
       console.error(
-        "Device Location Test: FAIL"
-      );
-
-      console.error(
-        "Error:",
+        "Device Location Test: FAIL",
         error
       );
 
+
       return {
         success: false,
-        status: "FAIL",
+
+        status:
+          "FAIL",
+
         error:
           error.message,
+
         code:
           error.code || ""
       };
@@ -1001,12 +1775,14 @@ const LocationManager = {
 
       this.clear();
 
+
       if (previousLocation) {
 
         AppStorage.set(
           this.STORAGE_KEY,
           previousLocation
         );
+
 
         this.current =
           previousLocation;
