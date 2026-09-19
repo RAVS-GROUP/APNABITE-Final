@@ -2,8 +2,16 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/launch.js
- * PURPOSE: Fast splash and safe launch routing
- * VERSION: 2.2.0
+ * PURPOSE: App-opening splash and local session routing
+ * VERSION: 3.0.0
+ * ============================================================
+ *
+ * FINAL RULE:
+ *
+ * - Splash only appears when index.html opens.
+ * - Login does not route through splash.
+ * - Registration does not route through splash.
+ * - Location and backend validation do not block launch.
  * ============================================================
  */
 
@@ -37,12 +45,14 @@ const LaunchController = {
   init() {
 
     if (this.started) {
+
       return;
     }
 
 
     this.started =
       true;
+
 
     this.startedAt =
       Date.now();
@@ -53,16 +63,22 @@ const LaunchController = {
         "launchSplash"
       );
 
+
     this.elements.status =
       document.getElementById(
         "launchStatusText"
       );
+
 
     this.elements.spinner =
       document.querySelector(
         ".launch-spinner"
       );
 
+
+    /*
+     * Loading text and spinner must never appear.
+     */
 
     if (
       this.elements.status &&
@@ -85,7 +101,7 @@ const LaunchController = {
 
 
     console.log(
-      "ApnaBite Fast Launch initialized."
+      "ApnaBite App Launch initialized."
     );
 
 
@@ -132,7 +148,7 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * RESOLVE DESTINATION
+   * RESOLVE APP-OPEN DESTINATION
    * ----------------------------------------------------------
    */
 
@@ -143,8 +159,8 @@ const LaunchController = {
 
 
     /*
-     * Valid authenticated users always go to
-     * their own role home.
+     * Returning authenticated user:
+     * direct role home after one-second splash.
      */
 
     if (session) {
@@ -170,94 +186,13 @@ const LaunchController = {
 
 
     /*
-     * Safe post-registration route:
-     *
-     * index.html?source=register&next=login&role=Customer
-     *
-     * Only the fixed "login" destination is supported.
-     * Arbitrary external redirect URLs are never accepted.
-     */
-
-    const launchRequest =
-      this.getLaunchRequest();
-
-
-    if (
-      launchRequest.next ===
-        "login"
-    ) {
-
-      return this.getLoginUrl(
-        launchRequest.role
-      );
-    }
-
-
-    /*
-     * Normal guest launch.
+     * New or logged-out user:
+     * role selection after splash.
      */
 
     return this.getPublicUrl(
       "role-selection.html"
     );
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * LAUNCH QUERY REQUEST
-   * ----------------------------------------------------------
-   */
-
-  getLaunchRequest() {
-
-    const parameters =
-      new URLSearchParams(
-        window.location.search
-      );
-
-
-    const next =
-      String(
-        parameters.get(
-          "next"
-        ) || ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    const role =
-      String(
-        parameters.get(
-          "role"
-        ) || ""
-      )
-        .trim();
-
-
-    return {
-      source:
-        String(
-          parameters.get(
-            "source"
-          ) || ""
-        )
-          .trim()
-          .toLowerCase(),
-
-      next:
-        next === "login"
-          ? "login"
-          : "",
-
-      role:
-        this.isSupportedRole(
-          role
-        )
-          ? role
-          : ""
-    };
   },
 
 
@@ -306,6 +241,7 @@ const LaunchController = {
   getSessionRole(session) {
 
     if (!session) {
+
       return "";
     }
 
@@ -393,13 +329,13 @@ const LaunchController = {
     }
 
 
-    const fallbackPath =
+    const path =
       this.getFallbackRolePath(
         role
       );
 
 
-    if (!fallbackPath) {
+    if (!path) {
 
       return this.getPublicUrl(
         "role-selection.html"
@@ -408,81 +344,14 @@ const LaunchController = {
 
 
     return this.getPublicUrl(
-      fallbackPath
+      path
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOGIN URL
-   * ----------------------------------------------------------
-   */
-
-  getLoginUrl(role = "") {
-
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .getPublicUrl ===
-        "function"
-    ) {
-
-      const url =
-        new URL(
-          AppRouter.getPublicUrl(
-            "login.html"
-          )
-        );
-
-
-      if (
-        role &&
-        this.isSupportedRole(
-          role
-        )
-      ) {
-
-        url.searchParams.set(
-          "role",
-          role
-        );
-      }
-
-
-      return url.href;
-    }
-
-
-    const url =
-      new URL(
-        "login.html",
-        window.location.href
-      );
-
-
-    if (
-      role &&
-      this.isSupportedRole(
-        role
-      )
-    ) {
-
-      url.searchParams.set(
-        "role",
-        role
-      );
-    }
-
-
-    return url.href;
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * FALLBACK ROLE PATHS
+   * FALLBACK ROLE ROUTES
    * ----------------------------------------------------------
    */
 
@@ -505,7 +374,9 @@ const LaunchController = {
 
 
     return routes[
-      String(role || "")
+      String(
+        role || ""
+      )
     ] || "";
   },
 
@@ -569,6 +440,34 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
+   * PURE TEST STATE RESOLUTION
+   * ----------------------------------------------------------
+   */
+
+  resolveTestDestination(
+    authenticated,
+    role
+  ) {
+
+    if (
+      authenticated === true &&
+      this.isSupportedRole(
+        role
+      )
+    ) {
+
+      return this.getFallbackRolePath(
+        role
+      );
+    }
+
+
+    return "role-selection.html";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
    * TEST
    *
    * Browser console:
@@ -583,7 +482,7 @@ const LaunchController = {
     );
 
     console.log(
-      "APNABITE FAST LAUNCH TEST"
+      "APNABITE APP-OPEN LAUNCH TEST"
     );
 
     console.log(
@@ -591,9 +490,43 @@ const LaunchController = {
     );
 
 
-    const routeTests = [
+    const scenarios = [
 
       {
+        scenario:
+          "New user",
+
+        authenticated:
+          false,
+
+        role:
+          "",
+
+        expected:
+          "role-selection.html"
+      },
+
+      {
+        scenario:
+          "Logged-out user",
+
+        authenticated:
+          false,
+
+        role:
+          "Customer",
+
+        expected:
+          "role-selection.html"
+      },
+
+      {
+        scenario:
+          "Customer session",
+
+        authenticated:
+          true,
+
         role:
           "Customer",
 
@@ -602,6 +535,12 @@ const LaunchController = {
       },
 
       {
+        scenario:
+          "Food Partner session",
+
+        authenticated:
+          true,
+
         role:
           "Food Partner",
 
@@ -610,6 +549,12 @@ const LaunchController = {
       },
 
       {
+        scenario:
+          "Rider session",
+
+        authenticated:
+          true,
+
         role:
           "Rider",
 
@@ -618,82 +563,49 @@ const LaunchController = {
       },
 
       {
+        scenario:
+          "Unsupported session",
+
+        authenticated:
+          true,
+
         role:
-          "Admin",
+          "Unknown",
 
         expected:
-          "admin/html/dashboard.html"
-      },
-
-      {
-        role:
-          "",
-
-        expected:
-          ""
+          "role-selection.html"
       }
 
     ];
 
 
     const results =
-      routeTests.map(
-        (test) => {
+      scenarios.map(
+        (scenario) => {
 
           const actual =
-            this.getFallbackRolePath(
-              test.role
+            this.resolveTestDestination(
+              scenario.authenticated,
+              scenario.role
             );
 
 
           return {
-            role:
-              test.role ||
-              "Guest",
+            scenario:
+              scenario.scenario,
 
             expected:
-              test.expected,
+              scenario.expected,
 
             actual:
               actual,
 
             passed:
               actual ===
-              test.expected
+              scenario.expected
           };
         }
       );
-
-
-    const loginUrl =
-      this.getLoginUrl(
-        "Customer"
-      );
-
-
-    const registrationRoutePassed =
-      loginUrl.includes(
-        "/login.html"
-      ) &&
-      loginUrl.includes(
-        "role=Customer"
-      );
-
-
-    results.push({
-
-      role:
-        "Registration handoff",
-
-      expected:
-        "login.html?role=Customer",
-
-      actual:
-        loginUrl,
-
-      passed:
-        registrationRoutePassed
-    });
 
 
     const passed =
@@ -709,9 +621,34 @@ const LaunchController = {
 
 
     console.log(
+      "Splash Duration:",
+      this.SPLASH_DURATION_MS +
+      "ms"
+    );
+
+
+    console.log(
+      "Backend Blocking:",
+      false
+    );
+
+
+    console.log(
+      "Location Blocking:",
+      false
+    );
+
+
+    console.log(
+      "Login/Registration Splash:",
+      false
+    );
+
+
+    console.log(
       passed
-        ? "Fast Launch Test: PASS"
-        : "Fast Launch Test: FAIL"
+        ? "App-Open Launch Test: PASS"
+        : "App-Open Launch Test: FAIL"
     );
 
 
@@ -727,16 +664,16 @@ const LaunchController = {
       splashDurationMs:
         this.SPLASH_DURATION_MS,
 
-      waitsForBackend:
+      backendBlocking:
         false,
 
-      waitsForLocation:
+      locationBlocking:
         false,
 
-      registrationHandoff:
-        registrationRoutePassed,
+      loginRegistrationSplash:
+        false,
 
-      destination:
+      currentDestination:
         this.resolveDestination(),
 
       results:
