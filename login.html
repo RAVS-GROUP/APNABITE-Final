@@ -67,8 +67,8 @@
 
       <a
         class="auth-back"
-        href="index.html"
-        aria-label="Back to location"
+        href="role-selection.html"
+        aria-label="Back to role selection"
       >
         ←
       </a>
@@ -82,9 +82,7 @@
           A
         </div>
 
-        <span>
-          ApnaBite
-        </span>
+        <span>ApnaBite</span>
 
       </div>
 
@@ -97,6 +95,7 @@
         class="auth-icon"
         aria-hidden="true"
       >
+
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -115,8 +114,11 @@
 
           <path d="M10 18h4"></path>
         </svg>
+
       </div>
 
+
+      <!-- MOBILE NUMBER STEP -->
 
       <div id="mobileStep">
 
@@ -173,6 +175,8 @@
 
       </div>
 
+
+      <!-- OTP STEP -->
 
       <div
         class="hidden"
@@ -255,6 +259,8 @@
       </div>
 
 
+      <!-- LOGIN SUCCESS -->
+
       <div
         class="auth-success hidden"
         id="successStep"
@@ -281,6 +287,8 @@
       </div>
 
 
+      <!-- PAGE MESSAGE -->
+
       <div
         class="auth-message hidden"
         id="authMessage"
@@ -302,11 +310,7 @@
   <script src="shared/js/api.js"></script>
   <script src="shared/js/session.js"></script>
   <script src="shared/js/auth.js"></script>
-
-  <!-- Must load before login-page.js -->
-
   <script src="shared/js/app-router.js"></script>
-
   <script src="shared/js/login-page.js"></script>
 
 </body>
