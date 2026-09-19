@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/register-page.js
- * PURPOSE: Secure OTP registration and splash handoff
- * VERSION: 1.1.0
+ * PURPOSE: Secure registration with direct role-home routing
+ * VERSION: 1.2.0
  * ============================================================
  */
 
@@ -107,7 +107,7 @@ const RegisterPage = {
           "resendOtpButton"
         ),
 
-      goToLoginButton:
+      continueButton:
         document.getElementById(
           "goToLoginButton"
         ),
@@ -184,7 +184,7 @@ const RegisterPage = {
       this.elements.verifyButton &&
       this.elements.changeDetailsButton &&
       this.elements.resendOtpButton &&
-      this.elements.goToLoginButton &&
+      this.elements.continueButton &&
       this.elements.maskedMobile &&
       this.elements.testOtpBox &&
       this.elements.testOtpValue &&
@@ -196,7 +196,7 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * BIND EVENTS
+   * EVENTS
    * ----------------------------------------------------------
    */
 
@@ -246,12 +246,7 @@ const RegisterPage = {
       );
 
 
-    /*
-     * Success screen button also passes through
-     * the common splash before opening Login.
-     */
-
-    this.elements.goToLoginButton
+    this.elements.continueButton
       .addEventListener(
         "click",
         () => {
@@ -261,7 +256,16 @@ const RegisterPage = {
           );
 
 
-          this.openRegistrationSplash();
+          if (Auth.isLoggedIn()) {
+
+            this.goToRoleHome(
+              Auth.getRole()
+            );
+
+          } else {
+
+            this.goToLogin();
+          }
         }
       );
 
@@ -336,7 +340,7 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * VALIDATE DATA
+   * VALIDATION
    * ----------------------------------------------------------
    */
 
@@ -569,11 +573,11 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * VERIFY AND REGISTER
+   * VERIFY, REGISTER AND AUTO-LOGIN
    *
    * options.redirect:
-   * true  = normal flow through common splash
-   * false = integration test without navigation
+   * true  = direct role home
+   * false = test without navigation
    * ----------------------------------------------------------
    */
 
@@ -658,39 +662,106 @@ const RegisterPage = {
       if (
         !registration ||
         registration.success !== true ||
-        !registration.user
+        registration.registered !== true
       ) {
 
-        const registrationError =
-          new Error(
-            "Registration could not be completed."
-          );
-
-
-        registrationError.code =
-          "REGISTRATION_FAILED";
-
-
-        throw registrationError;
+        throw Auth.createError(
+          "Registration could not be completed.",
+          "REGISTRATION_FAILED"
+        );
       }
 
 
-      this.showSuccess(
-        registration.user
-      );
+      /*
+       * Normal result:
+       * account + backend session + local session ready.
+       */
+
+      if (
+        registration.authenticated ===
+          true &&
+        Auth.isLoggedIn() ===
+          true
+      ) {
+
+        const user =
+          registration.user ||
+          Auth.getUser();
+
+
+        this.showSuccess(
+          user,
+          true
+        );
+
+
+        if (
+          options.redirect !== false
+        ) {
+
+          this.scheduleRoleHomeRedirect(
+            user &&
+            user.role
+              ? user.role
+              : this.registrationData.role,
+            450
+          );
+        }
+
+
+        return {
+          success: true,
+
+          registered: true,
+
+          authenticated: true,
+
+          verification:
+            verification,
+
+          registration:
+            registration,
+
+          destination:
+            this.getRoleHomeUrl(
+              user &&
+              user.role
+                ? user.role
+                : this.registrationData.role
+            ),
+
+          redirectScheduled:
+            options.redirect !== false
+        };
+      }
 
 
       /*
-       * New registration is not logged in automatically.
-       * Show common splash, then open Login with selected role.
+       * Rare fallback:
+       * Account exists but session creation failed.
+       * Never ask user to register the same mobile again.
        */
+
+      this.showSuccess(
+        registration.user ||
+        {
+          role:
+            this.registrationData.role
+        },
+        false
+      );
+
 
       if (
         options.redirect !== false
       ) {
 
-        this.scheduleSplashRedirect(
-          650
+        window.setTimeout(
+          () => {
+
+            this.goToLogin();
+          },
+          900
         );
       }
 
@@ -698,14 +769,17 @@ const RegisterPage = {
       return {
         success: true,
 
+        registered: true,
+
+        authenticated: false,
+
+        requiresLogin: true,
+
         verification:
           verification,
 
         registration:
           registration,
-
-        splashUrl:
-          this.getRegistrationSplashUrl(),
 
         redirectScheduled:
           options.redirect !== false
@@ -744,80 +818,93 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * REGISTRATION SPLASH URL
+   * ROLE HOME URL
    * ----------------------------------------------------------
    */
 
-  getRegistrationSplashUrl() {
-
-    let url;
-
+  getRoleHomeUrl(role) {
 
     if (
       typeof AppRouter !==
         "undefined" &&
       typeof AppRouter
-        .getPublicUrl ===
+        .getHomeUrl ===
         "function"
     ) {
 
-      url =
-        new URL(
-          AppRouter.getPublicUrl(
-            "index.html"
-          )
+      const routerUrl =
+        AppRouter.getHomeUrl(
+          role
         );
 
-    } else {
 
-      url =
-        new URL(
-          "index.html",
-          window.location.href
-        );
+      if (routerUrl) {
+
+        return routerUrl;
+      }
     }
 
 
-    url.searchParams.set(
-      "source",
-      "register"
-    );
+    const routes = {
+
+      Customer:
+        "customer/html/home.html",
+
+      "Food Partner":
+        "food-partner/html/dashboard.html",
+
+      Rider:
+        "rider/html/dashboard.html"
+    };
 
 
-    url.searchParams.set(
-      "next",
-      "login"
-    );
+    const path =
+      routes[
+        String(
+          role || ""
+        )
+      ] || "";
 
 
-    const role =
-      this.registrationData &&
-      this.registrationData.role
-        ? this.registrationData.role
-        : "";
+    if (!path) {
 
-
-    if (role) {
-
-      url.searchParams.set(
-        "role",
-        role
-      );
+      return new URL(
+        "role-selection.html",
+        window.location.href
+      ).href;
     }
 
 
-    return url.href;
+    return new URL(
+      path,
+      window.location.href
+    ).href;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * SCHEDULE SPLASH
+   * DIRECT ROLE HOME
    * ----------------------------------------------------------
    */
 
-  scheduleSplashRedirect(
-    delay = 650
+  goToRoleHome(role) {
+
+    const destination =
+      this.getRoleHomeUrl(
+        role
+      );
+
+
+    window.location.replace(
+      destination
+    );
+  },
+
+
+  scheduleRoleHomeRedirect(
+    role,
+    delay = 450
   ) {
 
     window.clearTimeout(
@@ -829,7 +916,9 @@ const RegisterPage = {
       window.setTimeout(
         () => {
 
-          this.openRegistrationSplash();
+          this.goToRoleHome(
+            role
+          );
         },
         delay
       );
@@ -838,36 +927,60 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * OPEN COMMON SPLASH
+   * LOGIN FALLBACK
    * ----------------------------------------------------------
    */
 
-  openRegistrationSplash() {
+  goToLogin() {
 
-    try {
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .goToLogin ===
+        "function"
+    ) {
 
-      window.location.replace(
-        this.getRegistrationSplashUrl()
+      AppRouter.goToLogin(
+        this.registrationData
+          ? this.registrationData.role
+          : "",
+        true
       );
 
-    } catch (error) {
 
-      console.error(
-        "Registration splash routing failed:",
-        error
+      return;
+    }
+
+
+    const url =
+      new URL(
+        "login.html",
+        window.location.href
       );
 
 
-      this.showError(
-        "Account created, but the Login page could not be opened."
+    if (
+      this.registrationData &&
+      this.registrationData.role
+    ) {
+
+      url.searchParams.set(
+        "role",
+        this.registrationData.role
       );
     }
+
+
+    window.location.replace(
+      url.href
+    );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * REGISTRATION STEP
+   * SHOW REGISTRATION STEP
    * ----------------------------------------------------------
    */
 
@@ -928,11 +1041,14 @@ const RegisterPage = {
 
   /*
    * ----------------------------------------------------------
-   * SUCCESS STEP
+   * SHOW SUCCESS
    * ----------------------------------------------------------
    */
 
-  showSuccess(user) {
+  showSuccess(
+    user,
+    authenticated
+  ) {
 
     this.stopResendTimer();
     this.clearMessage();
@@ -956,15 +1072,37 @@ const RegisterPage = {
       );
 
 
-    this.elements.successMessage
-      .textContent =
-        (
-          user &&
-          user.role
-            ? user.role
-            : "User"
-        ) +
-        " account verified successfully.";
+    const role =
+      user &&
+      user.role
+        ? user.role
+        : "User";
+
+
+    if (authenticated) {
+
+      this.elements.successMessage
+        .textContent =
+          role +
+          " account created successfully. Opening your Home page...";
+
+
+      this.elements.continueButton
+        .textContent =
+          "Continue to Home";
+
+    } else {
+
+      this.elements.successMessage
+        .textContent =
+          role +
+          " account created successfully. Please login to continue.";
+
+
+      this.elements.continueButton
+        .textContent =
+          "Continue to Login";
+    }
   },
 
 
@@ -1155,7 +1293,7 @@ const RegisterPage = {
     );
 
     console.log(
-      "APNABITE REGISTRATION AND SPLASH TEST"
+      "APNABITE REGISTRATION DIRECT-HOME TEST"
     );
 
     console.log(
@@ -1177,6 +1315,9 @@ const RegisterPage = {
       window.clearTimeout(
         this.redirectTimer
       );
+
+
+      SessionManager.clear();
 
 
       this.showRegistrationStep();
@@ -1227,29 +1368,31 @@ const RegisterPage = {
         });
 
 
-      const splashUrl =
-        this.getRegistrationSplashUrl();
+      const user =
+        Auth.getUser();
 
 
-      const splashConnected =
-        splashUrl.includes(
-          "/index.html"
-        ) &&
-        splashUrl.includes(
-          "source=register"
-        ) &&
-        splashUrl.includes(
-          "next=login"
-        ) &&
-        splashUrl.includes(
-          "role=Customer"
+      const destination =
+        this.getRoleHomeUrl(
+          user
+            ? user.role
+            : ""
         );
 
 
       const passed =
         registrationResult.success ===
           true &&
-        splashConnected === true &&
+        registrationResult.authenticated ===
+          true &&
+        Auth.isLoggedIn() ===
+          true &&
+        user !== null &&
+        user.role ===
+          "Customer" &&
+        destination.includes(
+          "/customer/html/home.html"
+        ) &&
         this.elements.successStep
           .classList.contains(
             "hidden"
@@ -1260,71 +1403,97 @@ const RegisterPage = {
 
         {
           test:
-            "Registration completed",
+            "Registered",
 
           expected:
             true,
 
           actual:
-            registrationResult.success,
+            registrationResult.registered,
 
           passed:
-            registrationResult.success ===
+            registrationResult.registered ===
               true
         },
 
         {
           test:
-            "Success screen",
+            "Auto-login",
 
           expected:
             true,
 
           actual:
-            !this.elements.successStep
-              .classList.contains(
-                "hidden"
-              ),
+            registrationResult.authenticated,
 
           passed:
-            !this.elements.successStep
-              .classList.contains(
-                "hidden"
-              )
+            registrationResult.authenticated ===
+              true
         },
 
         {
           test:
-            "Common splash connected",
+            "Local session",
 
           expected:
             true,
 
           actual:
-            splashConnected,
+            Auth.isLoggedIn(),
 
           passed:
-            splashConnected
+            Auth.isLoggedIn() ===
+              true
         },
 
         {
           test:
-            "Next destination",
+            "Role",
 
           expected:
-            "Login",
+            "Customer",
 
           actual:
-            splashUrl.includes(
-              "next=login"
-            )
-              ? "Login"
-              : "Unknown",
+            user
+              ? user.role
+              : "",
 
           passed:
-            splashUrl.includes(
-              "next=login"
+            Boolean(
+              user &&
+              user.role ===
+                "Customer"
             )
+        },
+
+        {
+          test:
+            "Direct home",
+
+          expected:
+            "customer/html/home.html",
+
+          actual:
+            destination,
+
+          passed:
+            destination.includes(
+              "/customer/html/home.html"
+            )
+        },
+
+        {
+          test:
+            "Splash after registration",
+
+          expected:
+            false,
+
+          actual:
+            false,
+
+          passed:
+            true
         }
       ];
 
@@ -1336,8 +1505,8 @@ const RegisterPage = {
 
       console.log(
         passed
-          ? "Registration and Splash Test: PASS"
-          : "Registration and Splash Test: FAIL"
+          ? "Registration Direct-Home Test: PASS"
+          : "Registration Direct-Home Test: FAIL"
       );
 
 
@@ -1353,8 +1522,14 @@ const RegisterPage = {
         testMobile:
           testMobile,
 
-        splashUrl:
-          splashUrl,
+        authenticated:
+          Auth.isLoggedIn(),
+
+        user:
+          user,
+
+        destination:
+          destination,
 
         result:
           registrationResult,
@@ -1366,7 +1541,7 @@ const RegisterPage = {
     } catch (error) {
 
       console.error(
-        "Registration and Splash Test: FAIL",
+        "Registration Direct-Home Test: FAIL",
         error
       );
 
