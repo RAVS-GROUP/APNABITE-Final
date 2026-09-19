@@ -23,6 +23,13 @@
     href="manifest.json"
   >
 
+  <link
+    rel="preload"
+    href="shared/assets/images/apnabite-logo.webp"
+    as="image"
+    type="image/webp"
+  >
+
   <title>ApnaBite</title>
 
   <link
@@ -63,42 +70,181 @@
     <section
       class="launch-splash"
       id="launchSplash"
-      aria-labelledby="launchBrandName"
+      aria-label="Opening ApnaBite"
     >
 
-      <div class="launch-brand">
+      <!-- LIGHTWEIGHT FOOD BACKGROUND ART -->
 
-        <!--
-          Custom ApnaBite logo upload hone ke baad
-          isi element ko image se replace karenge.
-        -->
+      <svg
+        viewBox="0 0 400 800"
+        aria-hidden="true"
+        style="
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 0;
+        "
+      >
 
-        <div
-          class="launch-logo"
-          aria-hidden="true"
+        <!-- PIZZA -->
+
+        <g
+          transform="translate(24 90) rotate(-14)"
+          fill="none"
+          stroke="#ef5b00"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.10"
         >
-          A
-        </div>
+          <path d="M10 68L43 6l33 62Z"></path>
+          <path d="M17 55c17 8 35 8 52 0"></path>
+          <circle cx="42" cy="34" r="4"></circle>
+          <circle cx="56" cy="48" r="3"></circle>
+          <circle cx="34" cy="51" r="3"></circle>
+        </g>
 
-        <h1 id="launchBrandName">
-          ApnaBite
-        </h1>
 
-        <p>
-          Apna Swaad, Apni Pasand
-        </p>
+        <!-- BURGER -->
+
+        <g
+          transform="translate(292 110) rotate(10)"
+          fill="none"
+          stroke="#0b7a2a"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.09"
+        >
+          <path d="M8 34c3-19 49-19 52 0Z"></path>
+          <path d="M7 43h54"></path>
+          <path d="M11 43l8 8 9-8 9 8 9-8 10 8"></path>
+          <path d="M9 58h50c0 9-7 13-15 13H24C16 71 9 67 9 58Z"></path>
+        </g>
+
+
+        <!-- CUPCAKE -->
+
+        <g
+          transform="translate(30 610) rotate(9)"
+          fill="none"
+          stroke="#0b2f66"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.08"
+        >
+          <path d="M20 33c-8-2-8-14 0-17 1-11 16-14 22-5 10-4 19 7 14 16 8 6 3 16-6 16H25"></path>
+          <path d="M18 43h38l-5 31H23Z"></path>
+          <path d="M30 49l2 19"></path>
+          <path d="M44 49l-2 19"></path>
+        </g>
+
+
+        <!-- FOOD BOWL -->
+
+        <g
+          transform="translate(290 620) rotate(-9)"
+          fill="none"
+          stroke="#ef5b00"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.09"
+        >
+          <path d="M6 33h64c-2 25-15 38-32 38S8 58 6 33Z"></path>
+          <path d="M3 33h70"></path>
+          <path d="M26 25c-7-8 6-12 0-20"></path>
+          <path d="M42 25c-7-8 6-12 0-20"></path>
+          <path d="M56 25c-7-8 6-12 0-20"></path>
+        </g>
+
+
+        <!-- FORK AND SPOON -->
+
+        <g
+          transform="translate(326 344) rotate(12)"
+          fill="none"
+          stroke="#0b2f66"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.07"
+        >
+          <path d="M10 4v18"></path>
+          <path d="M16 4v18"></path>
+          <path d="M22 4v18"></path>
+          <path d="M10 14h12v18c0 5-3 8-6 8v35"></path>
+          <ellipse cx="48" cy="18" rx="11" ry="15"></ellipse>
+          <path d="M48 33v42"></path>
+        </g>
+
+
+        <!-- LEAF -->
+
+        <g
+          transform="translate(24 350) rotate(-12)"
+          fill="none"
+          stroke="#0b7a2a"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.08"
+        >
+          <path d="M6 58C8 22 28 7 62 7c0 34-17 53-50 56"></path>
+          <path d="M10 62C24 45 38 31 57 15"></path>
+        </g>
+
+
+        <!-- SMALL DECORATIVE DOTS -->
+
+        <g
+          fill="#ef5b00"
+          opacity="0.07"
+        >
+          <circle cx="83" cy="242" r="5"></circle>
+          <circle cx="326" cy="267" r="4"></circle>
+          <circle cx="82" cy="555" r="4"></circle>
+          <circle cx="340" cy="541" r="5"></circle>
+        </g>
+
+      </svg>
+
+
+      <!-- MAIN APNABITE BRAND -->
+
+      <div
+        class="launch-brand"
+        style="
+          position: relative;
+          z-index: 1;
+        "
+      >
+
+        <img
+          class="launch-logo-image"
+          src="shared/assets/images/apnabite-logo.webp"
+          width="720"
+          height="455"
+          alt="ApnaBite - Apna Swaad, Apni Pasand"
+          decoding="sync"
+          fetchpriority="high"
+        >
 
       </div>
 
 
-      <div class="launch-location-status">
+      <!-- Kept for JavaScript compatibility -->
 
-        <span id="launchStatusText">
-          Opening ApnaBite...
-        </span>
-
+      <div
+        class="launch-location-status"
+        aria-hidden="true"
+      >
+        <span id="launchStatusText"></span>
       </div>
-
 
       <div
         class="launch-spinner"
@@ -110,12 +256,7 @@
   </main>
 
 
-  <!--
-    FAST LAUNCH FILES ONLY
-
-    Backend API, location, cart and other application files
-    root splash par load nahi honge. Isse launch lightweight rahega.
-  -->
+  <!-- FAST LOCAL LAUNCH DEPENDENCIES ONLY -->
 
   <script src="shared/js/storage.js"></script>
   <script src="shared/js/session.js"></script>
