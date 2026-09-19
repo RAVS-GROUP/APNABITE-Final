@@ -2,87 +2,29 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/launch.js
- * PURPOSE: Fast brand splash and launch routing
- * VERSION: 2.0.0
- * ============================================================
- *
- * FINAL LAUNCH FLOW:
- *
- * Guest:
- * Splash for 1 second
- * → Role Selection
- * → Login / Registration
- *
- * Authenticated user:
- * Splash for 1 second
- * → Correct role home
- *
- * IMPORTANT:
- * Location detection never blocks splash or routing.
- * Location will refresh in the background after login/home.
+ * PURPOSE: Fast splash and session-based launch routing
+ * VERSION: 2.1.0
  * ============================================================
  */
 
 const LaunchController = {
 
-  /*
-   * ----------------------------------------------------------
-   * SETTINGS
-   * ----------------------------------------------------------
-   */
-
-  MINIMUM_SPLASH_MS:
+  SPLASH_DURATION_MS:
     1000,
 
-
-  /*
-   * ----------------------------------------------------------
-   * ROLE ROUTES
-   *
-   * Used only as a safe fallback if AppRouter has not loaded.
-   * ----------------------------------------------------------
-   */
-
-  ROLE_ROUTES: {
-
-    Customer:
-      "customer/html/home.html",
-
-    "Food Partner":
-      "food-partner/html/dashboard.html",
-
-    Rider:
-      "rider/html/dashboard.html",
-
-    Admin:
-      "admin/html/dashboard.html"
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * STATE
-   * ----------------------------------------------------------
-   */
-
-  startedAt:
-    0,
+  started:
+    false,
 
   redirecting:
     false,
 
-  launchStarted:
-    false,
+  startedAt:
+    0,
 
   elements: {
-    splash:
-      null,
-
-    status:
-      null,
-
-    locationScreen:
-      null
+    splash: null,
+    status: null,
+    spinner: null
   },
 
 
@@ -94,6 +36,14 @@ const LaunchController = {
 
   init() {
 
+    if (this.started) {
+      return;
+    }
+
+
+    this.started =
+      true;
+
     this.startedAt =
       Date.now();
 
@@ -103,173 +53,207 @@ const LaunchController = {
         "launchSplash"
       );
 
-
     this.elements.status =
       document.getElementById(
         "launchStatusText"
       );
 
-
-    this.elements.locationScreen =
-      document.getElementById(
-        "locationScreen"
+    this.elements.spinner =
+      document.querySelector(
+        ".launch-spinner"
       );
 
 
     /*
-     * The old location screen must not appear during launch.
+     * Splash par loading text aur spinner nahi dikhayenge.
+     * Sirf ApnaBite branding approximately one second rahegi.
      */
 
     if (
-      this.elements.locationScreen
+      this.elements.status &&
+      this.elements.status.parentElement
     ) {
 
-      this.elements.locationScreen
-        .classList.add(
-          "hidden"
-        );
+      this.elements.status
+        .parentElement
+        .style.display =
+          "none";
     }
 
 
-    /*
-     * Do not wait for backend health or session validation.
-     * Local session is enough to choose the first destination.
-     */
+    if (this.elements.spinner) {
 
-    this.startLaunch();
-
-
-    /*
-     * App bootstrap may continue in the background.
-     * It no longer controls initial splash duration.
-     */
-
-    document.addEventListener(
-      "apnabite:app-ready",
-      (event) => {
-
-        this.handleApplicationReady(
-          event.detail || {}
-        );
-      }
-    );
+      this.elements.spinner
+        .style.display =
+          "none";
+    }
 
 
     console.log(
-      "ApnaBite Fast Launch Controller initialized."
+      "ApnaBite Fast Launch initialized."
+    );
+
+
+    /*
+     * Launch routing backend, API health check or location
+     * detection ka wait nahi karti.
+     */
+
+    this.startRouting();
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * START ROUTING
+   * ----------------------------------------------------------
+   */
+
+  startRouting() {
+
+    const destination =
+      this.resolveDestination();
+
+
+    const elapsed =
+      Date.now() -
+      this.startedAt;
+
+
+    const remaining =
+      Math.max(
+        0,
+        this.SPLASH_DURATION_MS -
+        elapsed
+      );
+
+
+    window.setTimeout(
+      () => {
+
+        this.redirect(
+          destination
+        );
+      },
+      remaining
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * START FAST LAUNCH
+   * RESOLVE DESTINATION
    * ----------------------------------------------------------
    */
 
-  async startLaunch() {
+  resolveDestination() {
 
-    if (this.launchStarted) {
+    const session =
+      this.getLocalSession();
 
-      return;
+
+    if (!session) {
+
+      return this.getPublicUrl(
+        "role-selection.html"
+      );
     }
 
 
-    this.launchStarted =
-      true;
-
-
-    const localSession =
-      SessionManager.get();
-
-
-    const user =
-      Auth.getUser();
-
-
     const role =
-      user &&
-      user.role
-        ? user.role
-        : (
-            localSession &&
-            localSession.role
-              ? localSession.role
-              : ""
-          );
+      this.getSessionRole(
+        session
+      );
 
-
-    /*
-     * Authenticated returning user.
-     */
 
     if (
-      localSession &&
-      role &&
-      this.isSupportedRole(
+      !role ||
+      !this.isSupportedRole(
         role
       )
     ) {
 
-      this.setStatus(
-        "Welcome back to ApnaBite"
+      return this.getPublicUrl(
+        "role-selection.html"
       );
-
-
-      await this.waitForMinimumSplash();
-
-
-      this.goToRoleHome(
-        role
-      );
-
-
-      return;
     }
 
 
-    /*
-     * Guest or expired local session.
-     */
-
-    this.setStatus(
-      "Apna Swaad, Apni Pasand"
+    return this.getRoleHomeUrl(
+      role
     );
-
-
-    await this.waitForMinimumSplash();
-
-
-    this.goToRoleSelection();
   },
 
 
   /*
    * ----------------------------------------------------------
-   * APPLICATION READY
-   *
-   * Application bootstrap is intentionally non-blocking.
-   * Protected role pages perform background validation.
+   * GET LOCAL SESSION
    * ----------------------------------------------------------
    */
 
-  handleApplicationReady(
-    appState
-  ) {
+  getLocalSession() {
 
-    console.log(
-      "Launch Background App State:",
-      appState
-    );
+    try {
+
+      if (
+        typeof SessionManager ===
+          "undefined" ||
+        typeof SessionManager.get !==
+          "function"
+      ) {
+
+        return null;
+      }
 
 
-    return {
-      success: true,
-      blocking:
-        false,
-      state:
-        appState
-    };
+      return SessionManager.get();
+
+    } catch (error) {
+
+      console.warn(
+        "Local session could not be restored:",
+        error
+      );
+
+
+      return null;
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * GET SESSION ROLE
+   * ----------------------------------------------------------
+   */
+
+  getSessionRole(session) {
+
+    if (!session) {
+      return "";
+    }
+
+
+    if (session.role) {
+
+      return String(
+        session.role
+      );
+    }
+
+
+    if (
+      session.user &&
+      session.user.role
+    ) {
+
+      return String(
+        session.user.role
+      );
+    }
+
+
+    return "";
   },
 
 
@@ -297,22 +281,133 @@ const LaunchController = {
 
 
     return Boolean(
-      this.ROLE_ROUTES[
-        String(role || "")
-      ]
+      this.getFallbackRolePath(
+        role
+      )
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * GO TO ROLE HOME
+   * ROLE HOME URL
    * ----------------------------------------------------------
    */
 
-  goToRoleHome(role) {
+  getRoleHomeUrl(role) {
 
-    if (this.redirecting) {
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .getHomeUrl ===
+        "function"
+    ) {
+
+      const routerUrl =
+        AppRouter.getHomeUrl(
+          role
+        );
+
+
+      if (routerUrl) {
+        return routerUrl;
+      }
+    }
+
+
+    const fallbackPath =
+      this.getFallbackRolePath(
+        role
+      );
+
+
+    if (!fallbackPath) {
+
+      return this.getPublicUrl(
+        "role-selection.html"
+      );
+    }
+
+
+    return this.getPublicUrl(
+      fallbackPath
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * FALLBACK ROLE PATH
+   * ----------------------------------------------------------
+   */
+
+  getFallbackRolePath(role) {
+
+    const routes = {
+
+      Customer:
+        "customer/html/home.html",
+
+      "Food Partner":
+        "food-partner/html/dashboard.html",
+
+      Rider:
+        "rider/html/dashboard.html",
+
+      Admin:
+        "admin/html/dashboard.html"
+    };
+
+
+    return routes[
+      String(role || "")
+    ] || "";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * PUBLIC URL
+   * ----------------------------------------------------------
+   */
+
+  getPublicUrl(path) {
+
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .getPublicUrl ===
+        "function"
+    ) {
+
+      return AppRouter
+        .getPublicUrl(
+          path
+        );
+    }
+
+
+    return new URL(
+      path,
+      window.location.href
+    ).href;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * REDIRECT
+   * ----------------------------------------------------------
+   */
+
+  redirect(destination) {
+
+    if (
+      this.redirecting ||
+      !destination
+    ) {
 
       return;
     }
@@ -320,49 +415,6 @@ const LaunchController = {
 
     this.redirecting =
       true;
-
-
-    /*
-     * Use central router when available.
-     */
-
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .goToRoleHome ===
-        "function"
-    ) {
-
-      AppRouter.goToRoleHome(
-        role,
-        true
-      );
-
-
-      return;
-    }
-
-
-    /*
-     * Safe fallback.
-     */
-
-    const destination =
-      this.ROLE_ROUTES[
-        String(role || "")
-      ];
-
-
-    if (!destination) {
-
-      this.redirecting =
-        false;
-
-      this.goToRoleSelection();
-
-      return;
-    }
 
 
     window.location.replace(
@@ -373,156 +425,7 @@ const LaunchController = {
 
   /*
    * ----------------------------------------------------------
-   * GO TO ROLE SELECTION
-   * ----------------------------------------------------------
-   */
-
-  goToRoleSelection() {
-
-    if (this.redirecting) {
-
-      return;
-    }
-
-
-    this.redirecting =
-      true;
-
-
-    if (
-      typeof AppRouter !==
-        "undefined" &&
-      typeof AppRouter
-        .goToRoleSelection ===
-        "function"
-    ) {
-
-      AppRouter.goToRoleSelection(
-        true
-      );
-
-
-      return;
-    }
-
-
-    window.location.replace(
-      "role-selection.html"
-    );
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * SET SPLASH STATUS
-   * ----------------------------------------------------------
-   */
-
-  setStatus(message) {
-
-    if (
-      this.elements.status
-    ) {
-
-      this.elements.status
-        .textContent =
-          message;
-    }
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * MINIMUM ONE-SECOND SPLASH
-   * ----------------------------------------------------------
-   */
-
-  waitForMinimumSplash() {
-
-    const elapsed =
-      Date.now() -
-      this.startedAt;
-
-
-    const remaining =
-      Math.max(
-        0,
-        this.MINIMUM_SPLASH_MS -
-        elapsed
-      );
-
-
-    return new Promise(
-      (resolve) => {
-
-        window.setTimeout(
-          resolve,
-          remaining
-        );
-      }
-    );
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * RESOLVE LAUNCH STATE
-   *
-   * Location is deliberately not part of the launch decision.
-   * ----------------------------------------------------------
-   */
-
-  resolveLaunchState(
-    options = {}
-  ) {
-
-    const authenticated =
-      options.authenticated ===
-      true;
-
-
-    const role =
-      String(
-        options.role || ""
-      );
-
-
-    if (
-      authenticated &&
-      this.isSupportedRole(
-        role
-      )
-    ) {
-
-      return {
-        state:
-          "AUTHENTICATED",
-        destination:
-          this.ROLE_ROUTES[role] ||
-          (
-            typeof AppRouter !==
-              "undefined"
-              ? AppRouter.getHomePath(
-                  role
-                )
-              : ""
-          )
-      };
-    }
-
-
-    return {
-      state:
-        "GUEST",
-      destination:
-        "role-selection.html"
-    };
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * TEST
+   * ROUTING TEST
    *
    * Browser console:
    * LaunchController.test()
@@ -544,132 +447,73 @@ const LaunchController = {
     );
 
 
-    const scenarios = [
+    const tests = [
 
       {
-        name:
-          "New user without location",
-
-        input: {
-          authenticated:
-            false,
-          role:
-            ""
-        },
-
-        expected:
-          "role-selection.html"
-      },
-
-      {
-        name:
-          "Guest with saved location",
-
-        input: {
-          authenticated:
-            false,
-          role:
-            ""
-        },
-
-        expected:
-          "role-selection.html"
-      },
-
-      {
-        name:
-          "Authenticated Customer",
-
-        input: {
-          authenticated:
-            true,
-          role:
-            "Customer"
-        },
-
+        role:
+          "Customer",
         expected:
           "customer/html/home.html"
       },
 
       {
-        name:
-          "Authenticated Food Partner",
-
-        input: {
-          authenticated:
-            true,
-          role:
-            "Food Partner"
-        },
-
+        role:
+          "Food Partner",
         expected:
           "food-partner/html/dashboard.html"
       },
 
       {
-        name:
-          "Authenticated Rider",
-
-        input: {
-          authenticated:
-            true,
-          role:
-            "Rider"
-        },
-
+        role:
+          "Rider",
         expected:
           "rider/html/dashboard.html"
+      },
+
+      {
+        role:
+          "Admin",
+        expected:
+          "admin/html/dashboard.html"
+      },
+
+      {
+        role:
+          "",
+        expected:
+          ""
       }
+
     ];
 
 
     const results =
-      scenarios.map(
-        (scenario) => {
+      tests.map(
+        (test) => {
 
-          const result =
-            this.resolveLaunchState(
-              scenario.input
+          const actual =
+            this.getFallbackRolePath(
+              test.role
             );
 
 
           return {
-            scenario:
-              scenario.name,
+            role:
+              test.role ||
+              "Guest",
 
             expected:
-              scenario.expected,
+              test.expected,
 
             actual:
-              result.destination,
+              actual,
 
             passed:
-              result.destination ===
-              scenario.expected
+              actual ===
+              test.expected
           };
         }
       );
-
-
-    const locationBlocksLaunch =
-      false;
-
-
-    results.push({
-
-      scenario:
-        "Location blocks splash",
-
-      expected:
-        false,
-
-      actual:
-        locationBlocksLaunch,
-
-      passed:
-        locationBlocksLaunch ===
-          false
-    });
 
 
     const passed =
@@ -685,18 +529,6 @@ const LaunchController = {
 
 
     console.log(
-      "Splash Duration MS:",
-      this.MINIMUM_SPLASH_MS
-    );
-
-
-    console.log(
-      "Location Blocking:",
-      locationBlocksLaunch
-    );
-
-
-    console.log(
       passed
         ? "Fast Launch Test: PASS"
         : "Fast Launch Test: FAIL"
@@ -706,14 +538,24 @@ const LaunchController = {
     return {
       success:
         passed,
+
       status:
         passed
           ? "PASS"
           : "FAIL",
+
       splashDurationMs:
-        this.MINIMUM_SPLASH_MS,
-      locationBlocking:
-        locationBlocksLaunch,
+        this.SPLASH_DURATION_MS,
+
+      waitsForBackend:
+        false,
+
+      waitsForLocation:
+        false,
+
+      destination:
+        this.resolveDestination(),
+
       results:
         results
     };
@@ -724,14 +566,27 @@ const LaunchController = {
 
 /*
  * ------------------------------------------------------------
- * INITIALIZE
+ * START IMMEDIATELY WHEN DOM IS AVAILABLE
  * ------------------------------------------------------------
  */
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+if (
+  document.readyState ===
+  "loading"
+) {
 
-    LaunchController.init();
-  }
-);
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      LaunchController.init();
+    },
+    {
+      once: true
+    }
+  );
+
+} else {
+
+  LaunchController.init();
+}
