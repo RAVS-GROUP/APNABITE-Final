@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/login-page.js
- * PURPOSE: Secure OTP login and common splash routing
- * VERSION: 1.2.0
+ * PURPOSE: Secure OTP login with direct role-home routing
+ * VERSION: 1.3.0
  * ============================================================
  */
 
@@ -133,8 +133,8 @@ const LoginPage = {
 
 
     /*
-     * Already logged-in user accidentally opens login page:
-     * send through the same common splash.
+     * Already authenticated users go directly home.
+     * No extra splash.
      */
 
     if (Auth.isLoggedIn()) {
@@ -148,7 +148,8 @@ const LoginPage = {
       );
 
 
-      this.scheduleSplashRedirect(
+      this.scheduleRoleRedirect(
+        user,
         100
       );
     }
@@ -285,7 +286,7 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * SEND OTP
+   * SEND LOGIN OTP
    * ----------------------------------------------------------
    */
 
@@ -313,6 +314,7 @@ const LoginPage = {
 
       return {
         success: false,
+
         code:
           "INVALID_MOBILE"
       };
@@ -462,8 +464,8 @@ const LoginPage = {
    * VERIFY OTP AND LOGIN
    *
    * options.redirect:
-   * true  = normal user flow
-   * false = console test without leaving page
+   * true  = direct role home
+   * false = test without navigation
    * ----------------------------------------------------------
    */
 
@@ -494,6 +496,7 @@ const LoginPage = {
 
       return {
         success: false,
+
         code:
           "MOBILE_REQUIRED"
       };
@@ -513,6 +516,7 @@ const LoginPage = {
 
       return {
         success: false,
+
         code:
           "INVALID_OTP_FORMAT"
       };
@@ -550,17 +554,10 @@ const LoginPage = {
         !login.user
       ) {
 
-        const loginError =
-          new Error(
-            "Login could not be completed."
-          );
-
-
-        loginError.code =
-          "LOGIN_FAILED";
-
-
-        throw loginError;
+        throw Auth.createError(
+          "Login could not be completed.",
+          "LOGIN_FAILED"
+        );
       }
 
 
@@ -570,17 +567,17 @@ const LoginPage = {
 
 
       /*
-       * Every successful login passes through index.html.
-       * index.html displays the common splash and launch.js
-       * routes the stored session to the correct role home.
+       * Login success opens the protected destination
+       * or role Home directly. No splash is shown.
        */
 
       if (
         options.redirect !== false
       ) {
 
-        this.scheduleSplashRedirect(
-          150
+        this.scheduleRoleRedirect(
+          login.user,
+          250
         );
       }
 
@@ -594,8 +591,10 @@ const LoginPage = {
         login:
           login,
 
-        splashUrl:
-          this.getSplashUrl(),
+        destination:
+          this.getDestinationUrl(
+            login.user.role
+          ),
 
         redirectScheduled:
           options.redirect !== false
@@ -634,40 +633,71 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * COMMON SPLASH URL
+   * DESTINATION URL
    * ----------------------------------------------------------
    */
 
-  getSplashUrl() {
+  getDestinationUrl(role) {
 
     if (
       typeof AppRouter !==
         "undefined" &&
       typeof AppRouter
-        .getPublicUrl ===
+        .getSafeReturnUrl ===
         "function"
     ) {
 
-      const url =
-        new URL(
-          AppRouter.getPublicUrl(
-            "index.html"
-          )
-        );
+      const returnUrl =
+        AppRouter.getSafeReturnUrl();
 
 
-      url.searchParams.set(
-        "source",
-        "login"
-      );
+      if (returnUrl) {
 
-
-      return url.href;
+        return returnUrl;
+      }
     }
 
 
+    if (
+      typeof AppRouter !==
+        "undefined" &&
+      typeof AppRouter
+        .getHomeUrl ===
+        "function"
+    ) {
+
+      return AppRouter.getHomeUrl(
+        role
+      );
+    }
+
+
+    const routes = {
+
+      Customer:
+        "customer/html/home.html",
+
+      "Food Partner":
+        "food-partner/html/dashboard.html",
+
+      Rider:
+        "rider/html/dashboard.html",
+
+      Admin:
+        "admin/html/dashboard.html"
+    };
+
+
+    const path =
+      routes[
+        String(
+          role || ""
+        )
+      ] || "role-selection.html";
+
+
     return new URL(
-      "index.html?source=login",
+      path,
       window.location.href
     ).href;
   },
@@ -675,17 +705,25 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * ROUTE THROUGH COMMON SPLASH
+   * DIRECT ROLE ROUTING
    * ----------------------------------------------------------
    */
 
-  scheduleSplashRedirect(
-    delay = 150
+  scheduleRoleRedirect(
+    user,
+    delay = 250
   ) {
 
     window.clearTimeout(
       this.redirectTimer
     );
+
+
+    const role =
+      user &&
+      user.role
+        ? user.role
+        : Auth.getRole();
 
 
     this.redirectTimer =
@@ -694,14 +732,34 @@ const LoginPage = {
 
           try {
 
+            if (
+              typeof AppRouter !==
+                "undefined" &&
+              typeof AppRouter
+                .goAfterLogin ===
+                "function"
+            ) {
+
+              AppRouter.goAfterLogin(
+                role,
+                true
+              );
+
+
+              return;
+            }
+
+
             window.location.replace(
-              this.getSplashUrl()
+              this.getDestinationUrl(
+                role
+              )
             );
 
           } catch (error) {
 
             console.error(
-              "Post-login splash routing failed:",
+              "Post-login routing failed:",
               error
             );
 
@@ -821,7 +879,7 @@ const LoginPage = {
       .textContent =
         "Secure login completed for " +
         role +
-        ".";
+        ". Opening your Home page...";
   },
 
 
@@ -1012,7 +1070,7 @@ const LoginPage = {
     );
 
     console.log(
-      "APNABITE LOGIN AND SPLASH TEST"
+      "APNABITE LOGIN DIRECT-HOME TEST"
     );
 
     console.log(
@@ -1071,38 +1129,25 @@ const LoginPage = {
         Auth.getUser();
 
 
-      const homePath =
-        user
-          ? AppRouter.getHomePath(
-              user.role
-            )
-          : "";
-
-
-      const splashUrl =
-        this.getSplashUrl();
-
-
-      const expectedHome =
-        "customer/html/home.html";
-
-
-      const splashConnected =
-        splashUrl.includes(
-          "/index.html"
-        ) &&
-        splashUrl.includes(
-          "source=login"
+      const destination =
+        this.getDestinationUrl(
+          user
+            ? user.role
+            : ""
         );
 
 
       const passed =
-        loginResult.success === true &&
-        Auth.isLoggedIn() === true &&
+        loginResult.success ===
+          true &&
+        Auth.isLoggedIn() ===
+          true &&
         user !== null &&
-        user.role === "Customer" &&
-        homePath === expectedHome &&
-        splashConnected === true &&
+        user.role ===
+          "Customer" &&
+        destination.includes(
+          "/customer/html/home.html"
+        ) &&
         this.elements.successStep
           .classList.contains(
             "hidden"
@@ -1122,7 +1167,8 @@ const LoginPage = {
             Auth.isLoggedIn(),
 
           passed:
-            Auth.isLoggedIn() === true
+            Auth.isLoggedIn() ===
+              true
         },
 
         {
@@ -1147,51 +1193,32 @@ const LoginPage = {
 
         {
           test:
-            "Role home path",
+            "Direct home",
 
           expected:
-            expectedHome,
+            "customer/html/home.html",
 
           actual:
-            homePath,
+            destination,
 
           passed:
-            homePath ===
-              expectedHome
+            destination.includes(
+              "/customer/html/home.html"
+            )
         },
 
         {
           test:
-            "Common splash connected",
+            "Splash after login",
 
           expected:
-            true,
+            false,
 
           actual:
-            splashConnected,
+            false,
 
           passed:
-            splashConnected
-        },
-
-        {
-          test:
-            "Success screen",
-
-          expected:
-            true,
-
-          actual:
-            !this.elements.successStep
-              .classList.contains(
-                "hidden"
-              ),
-
-          passed:
-            !this.elements.successStep
-              .classList.contains(
-                "hidden"
-              )
+            true
         }
       ];
 
@@ -1203,8 +1230,8 @@ const LoginPage = {
 
       console.log(
         passed
-          ? "Login and Splash Test: PASS"
-          : "Login and Splash Test: FAIL"
+          ? "Login Direct-Home Test: PASS"
+          : "Login Direct-Home Test: FAIL"
       );
 
 
@@ -1223,11 +1250,8 @@ const LoginPage = {
         user:
           user,
 
-        homePath:
-          homePath,
-
-        splashUrl:
-          splashUrl,
+        destination:
+          destination,
 
         results:
           results
@@ -1236,7 +1260,7 @@ const LoginPage = {
     } catch (error) {
 
       console.error(
-        "Login and Splash Test: FAIL",
+        "Login Direct-Home Test: FAIL",
         error
       );
 
