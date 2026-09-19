@@ -2,14 +2,15 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/auth.js
- * PURPOSE: OTP-secured frontend authentication
- * VERSION: 2.0.0
+ * PURPOSE: OTP authentication and registration auto-login
+ * VERSION: 2.1.0
  * ============================================================
  */
 
 const Auth = {
 
   ROLES: {
+
     CUSTOMER:
       "Customer",
 
@@ -25,6 +26,7 @@ const Auth = {
 
 
   OTP_PURPOSES: {
+
     LOGIN:
       "LOGIN",
 
@@ -44,8 +46,13 @@ const Auth = {
     return String(
       mobile || ""
     )
-      .replace(/\D/g, "")
-      .slice(-10);
+      .replace(
+        /\D/g,
+        ""
+      )
+      .slice(
+        -10
+      );
   },
 
 
@@ -69,9 +76,11 @@ const Auth = {
 
     if (
       !response ||
-      typeof response !== "object" ||
+      typeof response !==
+        "object" ||
       !response.data ||
-      typeof response.data !== "object"
+      typeof response.data !==
+        "object"
     ) {
 
       throw this.createError(
@@ -79,6 +88,7 @@ const Auth = {
         "INVALID_AUTH_RESPONSE"
       );
     }
+
 
     return response.data;
   },
@@ -96,12 +106,15 @@ const Auth = {
         "Authentication failed."
       );
 
+
     error.code =
       code ||
       "AUTH_ERROR";
 
+
     error.requestId =
       requestId || "";
+
 
     return error;
   },
@@ -122,6 +135,7 @@ const Auth = {
       this.normalizeMobile(
         mobile
       );
+
 
     const normalizedPurpose =
       String(
@@ -185,8 +199,10 @@ const Auth = {
       throw this.createError(
         result.reason ||
         "Unable to request OTP.",
+
         result.reason ||
         "OTP_REQUEST_FAILED",
+
         response.requestId
       );
     }
@@ -194,30 +210,32 @@ const Auth = {
 
     return {
       success: true,
+
       otpRequested: true,
+
       mobile:
         result.mobile,
+
       purpose:
         result.purpose,
+
       expiresInSeconds:
         result.expiresInSeconds,
+
       resendAfterSeconds:
         result.resendAfterSeconds,
+
       mode:
         result.mode || "",
+
       testOtp:
         result.testOtp || "",
+
       requestId:
         response.requestId || ""
     };
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * REQUEST LOGIN OTP
-   * ----------------------------------------------------------
-   */
 
   async requestLoginOtp(mobile) {
 
@@ -227,12 +245,6 @@ const Auth = {
     );
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * REQUEST REGISTRATION OTP
-   * ----------------------------------------------------------
-   */
 
   async requestRegistrationOtp(
     mobile
@@ -262,6 +274,7 @@ const Auth = {
         mobile
       );
 
+
     const normalizedPurpose =
       String(
         purpose || ""
@@ -269,11 +282,15 @@ const Auth = {
         .trim()
         .toUpperCase();
 
+
     const normalizedOtp =
       String(
         otp || ""
       )
-        .replace(/\D/g, "");
+        .replace(
+          /\D/g,
+          ""
+        );
 
 
     if (
@@ -285,6 +302,20 @@ const Auth = {
       throw this.createError(
         "Please enter a valid mobile number.",
         "INVALID_MOBILE"
+      );
+    }
+
+
+    if (
+      normalizedPurpose !==
+        this.OTP_PURPOSES.LOGIN &&
+      normalizedPurpose !==
+        this.OTP_PURPOSES.REGISTER
+    ) {
+
+      throw this.createError(
+        "Invalid OTP purpose.",
+        "INVALID_OTP_PURPOSE"
       );
     }
 
@@ -333,8 +364,10 @@ const Auth = {
       throw this.createError(
         result.reason ||
         "OTP verification failed.",
+
         result.reason ||
         "OTP_VERIFICATION_FAILED",
+
         response.requestId
       );
     }
@@ -342,15 +375,21 @@ const Auth = {
 
     return {
       success: true,
+
       verified: true,
+
       mobile:
         result.mobile,
+
       purpose:
         result.purpose,
+
       verificationToken:
         result.verificationToken,
+
       tokenExpiresInSeconds:
         result.tokenExpiresInSeconds,
+
       requestId:
         response.requestId || ""
     };
@@ -359,7 +398,7 @@ const Auth = {
 
   /*
    * ----------------------------------------------------------
-   * OTP-VERIFIED LOGIN
+   * OTP LOGIN
    * ----------------------------------------------------------
    */
 
@@ -425,8 +464,10 @@ const Auth = {
       throw this.createError(
         result.reason ||
         "Login failed.",
+
         result.reason ||
         "LOGIN_FAILED",
+
         response.requestId
       );
     }
@@ -440,12 +481,17 @@ const Auth = {
 
     return {
       success: true,
+
       authenticated: true,
+
       otpVerified: true,
+
       session:
         session,
+
       user:
         this.getUser(),
+
       requestId:
         response.requestId || ""
     };
@@ -454,7 +500,7 @@ const Auth = {
 
   /*
    * ----------------------------------------------------------
-   * OTP-VERIFIED REGISTRATION
+   * OTP REGISTRATION WITH AUTO-LOGIN
    * ----------------------------------------------------------
    */
 
@@ -465,8 +511,11 @@ const Auth = {
 
     if (
       !data ||
-      typeof data !== "object" ||
-      Array.isArray(data)
+      typeof data !==
+        "object" ||
+      Array.isArray(
+        data
+      )
     ) {
 
       throw this.createError(
@@ -481,15 +530,18 @@ const Auth = {
         data.mobile
       );
 
+
     const role =
       String(
         data.role || ""
       ).trim();
 
+
     const email =
       String(
         data.email || ""
       ).trim();
+
 
     const preferredLanguage =
       String(
@@ -511,10 +563,18 @@ const Auth = {
     }
 
 
-    if (!role) {
+    if (
+      !Object.values(
+        this.ROLES
+      ).includes(
+        role
+      ) ||
+      role ===
+        this.ROLES.ADMIN
+    ) {
 
       throw this.createError(
-        "Please select a user role.",
+        "Please select a valid registration role.",
         "INVALID_ROLE"
       );
     }
@@ -567,8 +627,161 @@ const Auth = {
       throw this.createError(
         result.reason ||
         "Registration failed.",
+
         result.reason ||
         "REGISTRATION_FAILED",
+
+        response.requestId
+      );
+    }
+
+
+    /*
+     * Account was created but session creation unexpectedly
+     * failed. The account must not be registered again.
+     * Frontend can safely send this user to Login.
+     */
+
+    if (
+      result.authenticated !== true ||
+      !result.user ||
+      !result.session ||
+      !result.session.sessionId
+    ) {
+
+      return {
+        success: true,
+
+        registered: true,
+
+        otpVerified: true,
+
+        authenticated: false,
+
+        requiresLogin: true,
+
+        sessionError:
+          result.sessionError ||
+          "SESSION_CREATION_FAILED",
+
+        user: {
+          userId:
+            result.userId || "",
+
+          role:
+            result.role || role,
+
+          mobile:
+            this.normalizeMobile(
+              result.mobile ||
+              mobile
+            ),
+
+          email:
+            email,
+
+          accountStatus:
+            result.accountStatus || "",
+
+          verificationStatus:
+            result.verificationStatus ||
+            "Verified",
+
+          preferredLanguage:
+            result.preferredLanguage ||
+            preferredLanguage
+        },
+
+        requestId:
+          response.requestId || ""
+      };
+    }
+
+
+    /*
+     * Convert nested registration response into the same
+     * local session structure used by normal OTP Login.
+     */
+
+    const sessionPayload = {
+
+      sessionId:
+        result.session.sessionId,
+
+      userId:
+        result.user.userId ||
+        result.session.userId ||
+        result.userId,
+
+      role:
+        result.user.role ||
+        result.session.role ||
+        role,
+
+      mobile:
+        this.normalizeMobile(
+          result.user.mobile ||
+          result.mobile ||
+          mobile
+        ),
+
+      email:
+        result.user.email ||
+        email,
+
+      preferredLanguage:
+        result.user
+          .preferredLanguage ||
+        preferredLanguage,
+
+      accountStatus:
+        result.user.accountStatus ||
+        result.accountStatus ||
+        "Active",
+
+      verificationStatus:
+        result.user
+          .verificationStatus ||
+        result.verificationStatus ||
+        "Verified",
+
+      districtId:
+        result.user.districtId ||
+        "",
+
+      profileComplete:
+        result.user.profileComplete ===
+          true,
+
+      onboardingRequired:
+        result.user
+          .onboardingRequired ===
+          true,
+
+      loginTime:
+        result.session.loginTime ||
+        "",
+
+      expiryAt:
+        result.session.expiryAt,
+
+      status:
+        result.session.status ||
+        "Active"
+    };
+
+
+    const savedSession =
+      SessionManager.set(
+        sessionPayload
+      );
+
+
+    if (!savedSession) {
+
+      throw this.createError(
+        "Your account was created, but the login session could not be saved on this device.",
+        "LOCAL_SESSION_SAVE_FAILED",
         response.requestId
       );
     }
@@ -576,28 +789,21 @@ const Auth = {
 
     return {
       success: true,
+
       registered: true,
+
       otpVerified: true,
-      user: {
-        userId:
-          result.userId,
 
-        role:
-          result.role,
+      authenticated: true,
 
-        mobile:
-          result.mobile,
+      requiresLogin: false,
 
-        accountStatus:
-          result.accountStatus,
+      session:
+        savedSession,
 
-        verificationStatus:
-          result.verificationStatus,
+      user:
+        this.getUser(),
 
-        preferredLanguage:
-          result.preferredLanguage ||
-          "en"
-      },
       requestId:
         response.requestId || ""
     };
@@ -618,7 +824,9 @@ const Auth = {
 
       return {
         success: false,
+
         authenticated: false,
+
         reason:
           "LOCAL_SESSION_NOT_FOUND"
       };
@@ -640,11 +848,15 @@ const Auth = {
 
     return {
       success: true,
+
       authenticated: true,
+
       session:
         validation.session,
+
       user:
         this.getUser(),
+
       requestId:
         validation.requestId || ""
     };
@@ -653,7 +865,7 @@ const Auth = {
 
   /*
    * ----------------------------------------------------------
-   * SESSION AND USER ACCESS
+   * SESSION ACCESS
    * ----------------------------------------------------------
    */
 
@@ -677,6 +889,7 @@ const Auth = {
 
 
     if (!session) {
+
       return null;
     }
 
@@ -689,7 +902,12 @@ const Auth = {
         session.role || "",
 
       mobile:
-        session.mobile || "",
+        this.normalizeMobile(
+          session.mobile || ""
+        ),
+
+      email:
+        session.email || "",
 
       preferredLanguage:
         session.preferredLanguage ||
@@ -699,7 +917,18 @@ const Auth = {
         session.accountStatus || "",
 
       verificationStatus:
-        session.verificationStatus || ""
+        session.verificationStatus || "",
+
+      districtId:
+        session.districtId || "",
+
+      profileComplete:
+        session.profileComplete ===
+          true,
+
+      onboardingRequired:
+        session.onboardingRequired ===
+          true
     };
   },
 
@@ -721,6 +950,7 @@ const Auth = {
   hasRole(role) {
 
     if (!role) {
+
       return false;
     }
 
@@ -729,7 +959,9 @@ const Auth = {
       String(
         this.getRole()
       ).toLowerCase() ===
-      String(role).toLowerCase()
+      String(
+        role
+      ).toLowerCase()
     );
   },
 
@@ -742,7 +974,7 @@ const Auth = {
 
   /*
    * ----------------------------------------------------------
-   * FRONTEND VALIDATION TEST
+   * VALIDATION TEST
    * ----------------------------------------------------------
    */
 
@@ -753,6 +985,7 @@ const Auth = {
       {
         mobile:
           "9876543210",
+
         expected:
           true
       },
@@ -760,6 +993,7 @@ const Auth = {
       {
         mobile:
           "+91 98765 43210",
+
         expected:
           true
       },
@@ -767,6 +1001,7 @@ const Auth = {
       {
         mobile:
           "12345",
+
         expected:
           false
       }
@@ -782,10 +1017,13 @@ const Auth = {
               test.mobile
             );
 
+
           return {
             ...test,
+
             actual:
               actual,
+
             passed:
               actual ===
               test.expected
@@ -816,10 +1054,12 @@ const Auth = {
     return {
       success:
         passed,
+
       status:
         passed
           ? "PASS"
           : "FAIL",
+
       results:
         results
     };
@@ -947,15 +1187,22 @@ const Auth = {
 
       return {
         success: true,
-        status: "PASS",
+
+        status:
+          "PASS",
+
         otpRequest:
           otpRequest,
+
         verification:
           verification,
+
         login:
           loginResult,
+
         restoration:
           restoration,
+
         logout:
           logoutResult
       };
@@ -973,11 +1220,16 @@ const Auth = {
 
       return {
         success: false,
-        status: "FAIL",
+
+        status:
+          "FAIL",
+
         error:
           error.message,
+
         code:
           error.code || "",
+
         requestId:
           error.requestId || ""
       };
@@ -987,7 +1239,7 @@ const Auth = {
 
   /*
    * ----------------------------------------------------------
-   * LIVE OTP REGISTRATION TEST
+   * LIVE REGISTRATION AUTO-LOGIN TEST
    *
    * Browser console:
    * Auth.testOtpRegistration()
@@ -1001,7 +1253,7 @@ const Auth = {
     );
 
     console.log(
-      "APNABITE FRONTEND OTP REGISTRATION TEST"
+      "APNABITE FRONTEND REGISTRATION AUTO-LOGIN TEST"
     );
 
     console.log(
@@ -1013,10 +1265,15 @@ const Auth = {
       "9" +
       String(
         Date.now()
-      ).slice(-9);
+      ).slice(
+        -9
+      );
 
 
     try {
+
+      SessionManager.clear();
+
 
       const otpRequest =
         await this
@@ -1077,58 +1334,220 @@ const Auth = {
 
 
       console.log(
-        "OTP Registration Result:",
+        "Registration Auto-Login:",
         registration
       );
 
 
-      if (
-        !registration.success ||
-        !registration.registered ||
-        !registration.otpVerified
-      ) {
-
-        throw new Error(
-          "Frontend OTP registration failed."
-        );
-      }
+      const localSession =
+        SessionManager.get();
 
 
-      console.log(
-        "Frontend OTP Registration Test: PASS"
+      const user =
+        this.getUser();
+
+
+      const passed =
+        registration.success ===
+          true &&
+        registration.registered ===
+          true &&
+        registration.otpVerified ===
+          true &&
+        registration.authenticated ===
+          true &&
+        registration.requiresLogin ===
+          false &&
+        this.isLoggedIn() ===
+          true &&
+        localSession !== null &&
+        user !== null &&
+        user.role ===
+          "Customer" &&
+        user.mobile ===
+          mobile;
+
+
+      const results = [
+
+        {
+          test:
+            "Registration",
+
+          expected:
+            true,
+
+          actual:
+            registration.registered,
+
+          passed:
+            registration.registered ===
+              true
+        },
+
+        {
+          test:
+            "Authenticated",
+
+          expected:
+            true,
+
+          actual:
+            registration.authenticated,
+
+          passed:
+            registration.authenticated ===
+              true
+        },
+
+        {
+          test:
+            "Local session saved",
+
+          expected:
+            true,
+
+          actual:
+            localSession !== null,
+
+          passed:
+            localSession !== null
+        },
+
+        {
+          test:
+            "Logged in",
+
+          expected:
+            true,
+
+          actual:
+            this.isLoggedIn(),
+
+          passed:
+            this.isLoggedIn() ===
+              true
+        },
+
+        {
+          test:
+            "User role",
+
+          expected:
+            "Customer",
+
+          actual:
+            user
+              ? user.role
+              : "",
+
+          passed:
+            Boolean(
+              user &&
+              user.role ===
+                "Customer"
+            )
+        },
+
+        {
+          test:
+            "User mobile",
+
+          expected:
+            mobile,
+
+          actual:
+            user
+              ? user.mobile
+              : "",
+
+          passed:
+            Boolean(
+              user &&
+              user.mobile ===
+                mobile
+            )
+        }
+      ];
+
+
+      console.table(
+        results
       );
 
 
+      console.log(
+        passed
+          ? "Frontend Registration Auto-Login Test: PASS"
+          : "Frontend Registration Auto-Login Test: FAIL"
+      );
+
+
+      let logoutResult =
+        null;
+
+
+      if (this.isLoggedIn()) {
+
+        logoutResult =
+          await this.logout();
+      }
+
+
       return {
-        success: true,
-        status: "PASS",
+        success:
+          passed,
+
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+
         testMobile:
           mobile,
-        otpRequest:
-          otpRequest,
-        verification:
-          verification,
+
         registration:
-          registration
+          registration,
+
+        session:
+          localSession,
+
+        user:
+          user,
+
+        logout:
+          logoutResult,
+
+        results:
+          results
       };
 
     } catch (error) {
 
       console.error(
-        "Frontend OTP Registration Test: FAIL",
+        "Frontend Registration Auto-Login Test: FAIL",
         error
       );
 
 
+      SessionManager.clear();
+
+
       return {
         success: false,
-        status: "FAIL",
+
+        status:
+          "FAIL",
+
         testMobile:
           mobile,
+
         error:
           error.message,
+
         code:
           error.code || "",
+
         requestId:
           error.requestId || ""
       };
