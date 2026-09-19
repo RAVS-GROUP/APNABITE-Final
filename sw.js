@@ -2,23 +2,14 @@
  * ============================================================
  * APNABITE SERVICE WORKER
  * FILE: sw.js
- * PURPOSE: Fast PWA static loading and offline support
- * VERSION: 6.0.0
+ * PURPOSE: Fast PWA loading and offline support
+ * VERSION: 7.0.0
  * ============================================================
  */
 
 const CACHE_NAME =
-  "apnabite-static-v6";
+  "apnabite-static-v7";
 
-
-/*
- * ------------------------------------------------------------
- * APPLICATION SHELL
- *
- * These files are cached individually. One missing optional
- * file will not prevent the complete service worker install.
- * ------------------------------------------------------------
- */
 
 const STATIC_ASSETS = [
 
@@ -29,20 +20,12 @@ const STATIC_ASSETS = [
   "./role-selection.html",
   "./manifest.json",
 
-  /*
-   * Shared CSS
-   */
-
   "./shared/css/reset.css",
   "./shared/css/variables.css",
   "./shared/css/common.css",
   "./shared/css/components.css",
   "./shared/css/auth-pages.css",
   "./shared/css/responsive.css",
-
-  /*
-   * Shared JavaScript
-   */
 
   "./shared/js/storage.js",
   "./shared/js/cache.js",
@@ -65,19 +48,11 @@ const STATIC_ASSETS = [
   "./shared/js/register-page.js",
   "./shared/js/role-selection.js",
 
-  /*
-   * Customer HTML
-   */
-
   "./customer/html/home.html",
   "./customer/html/orders.html",
   "./customer/html/dine-in.html",
   "./customer/html/account.html",
   "./customer/html/addresses.html",
-
-  /*
-   * Customer CSS
-   */
 
   "./customer/css/customer-common.css",
   "./customer/css/home.css",
@@ -85,10 +60,6 @@ const STATIC_ASSETS = [
   "./customer/css/dine-in.css",
   "./customer/css/account.css",
   "./customer/css/addresses.css",
-
-  /*
-   * Customer JavaScript
-   */
 
   "./customer/js/home.js",
   "./customer/js/orders.js",
@@ -117,11 +88,6 @@ self.addEventListener(
 
         .then(
           async (cache) => {
-
-            /*
-             * Cache files separately so one missing optional
-             * asset does not fail the complete installation.
-             */
 
             const results =
               await Promise.allSettled(
@@ -167,7 +133,7 @@ self.addEventListener(
             ) {
 
               console.warn(
-                "ApnaBite optional cache files skipped:",
+                "ApnaBite cache files skipped:",
                 failedAssets
               );
             }
@@ -188,8 +154,6 @@ self.addEventListener(
 /*
  * ------------------------------------------------------------
  * ACTIVATE
- *
- * Delete older ApnaBite static caches.
  * ------------------------------------------------------------
  */
 
@@ -270,8 +234,9 @@ self.addEventListener(
  * ------------------------------------------------------------
  * NORMALIZED CACHE KEY
  *
- * Query parameters such as ?v=123 do not create duplicate
- * static cache entries.
+ * A URL string is intentionally used here.
+ * Creating a new Request with mode "navigate" causes browsers
+ * to reject navigation and return ERR_FAILED.
  * ------------------------------------------------------------
  */
 
@@ -287,27 +252,13 @@ function getCacheKey(request) {
     "";
 
 
-  return new Request(
-    url.href,
-    {
-      method:
-        "GET",
-      headers:
-        request.headers,
-      mode:
-        request.mode,
-      credentials:
-        request.credentials,
-      redirect:
-        request.redirect
-    }
-  );
+  return url.href;
 }
 
 
 /*
  * ------------------------------------------------------------
- * SAFE CACHE UPDATE
+ * SAVE SUCCESSFUL RESPONSE
  * ------------------------------------------------------------
  */
 
@@ -344,9 +295,6 @@ async function updateCache(
 /*
  * ------------------------------------------------------------
  * STALE-WHILE-REVALIDATE
- *
- * Cached page/assets return immediately.
- * Latest version downloads in the background.
  * ------------------------------------------------------------
  */
 
@@ -390,7 +338,17 @@ async function staleWhileRevalidate(
       )
 
       .catch(
-        () => null
+        (error) => {
+
+          console.warn(
+            "Background network refresh failed:",
+            request.url,
+            error
+          );
+
+
+          return null;
+        }
       );
 
 
@@ -405,17 +363,7 @@ async function staleWhileRevalidate(
   }
 
 
-  const networkResponse =
-    await networkPromise;
-
-
-  if (networkResponse) {
-
-    return networkResponse;
-  }
-
-
-  return null;
+  return networkPromise;
 }
 
 
@@ -443,12 +391,16 @@ async function getNavigationFallback(
   }
 
 
+  const indexUrl =
+    new URL(
+      "./index.html",
+      self.location.href
+    ).href;
+
+
   const cachedIndex =
     await caches.match(
-      new URL(
-        "./index.html",
-        self.location.href
-      ).href
+      indexUrl
     );
 
 
@@ -503,8 +455,7 @@ self.addEventListener(
 
 
     /*
-     * Apps Script API and other external services must never
-     * be cached by this service worker.
+     * Do not cache Apps Script API or external requests.
      */
 
     if (
@@ -517,9 +468,7 @@ self.addEventListener(
 
 
     /*
-     * Browser page navigation:
-     * return cached HTML immediately when available and
-     * refresh it silently in the background.
+     * HTML navigation.
      */
 
     if (
@@ -547,6 +496,15 @@ self.addEventListener(
               );
             }
           )
+
+          .catch(
+            () => {
+
+              return getNavigationFallback(
+                request
+              );
+            }
+          )
       );
 
 
@@ -555,8 +513,7 @@ self.addEventListener(
 
 
     /*
-     * Same-origin CSS, JavaScript, manifest and image files:
-     * serve cache immediately and update in background.
+     * Static application assets.
      */
 
     const cacheableDestinations = [
