@@ -1,1336 +1,1829 @@
 /**
  * ============================================================
  * APNABITE FRONTEND
- * FILE: customer/css/addresses.css
- * PURPOSE: Customer saved addresses and map-pin styles
- * VERSION: 2.1.0
+ * FILE: customer/js/addresses.js
+ * PURPOSE: Customer delivery address and map-pin management
+ * VERSION: 2.2.0
  * ============================================================
  */
 
-.customer-addresses {
-  width: 100%;
-  max-width: 720px;
-  min-height: 100vh;
-  min-height: 100dvh;
-  margin: 0 auto;
-  color: #171717;
-  background: #f8f8f8;
-}
-
-
-/* HEADER */
-
-.addresses-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
-  align-items: center;
-  gap: 10px;
-  min-height: 72px;
-  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid #e8e8e8;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.addresses-back-button,
-.addresses-refresh-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  color: #222222;
-  text-decoration: none;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 13px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.addresses-back-button svg,
-.addresses-refresh-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.addresses-back-button:active,
-.addresses-refresh-button:active {
-  transform: scale(0.96);
-}
-
-.addresses-refresh-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.addresses-refresh-button.is-loading svg {
-  animation: addresses-rotate 0.8s linear infinite;
-}
-
-.addresses-header-title {
-  min-width: 0;
-}
-
-.addresses-header-title h1 {
-  margin: 0;
-  overflow: hidden;
-  color: #111111;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.addresses-header-title p {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: #777777;
-  font-size: 11px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-/* PAGE MESSAGE */
-
-.customer-addresses .customer-page-message {
-  margin: 14px 16px 0;
-  padding: 12px 14px;
-  color: #754000;
-  background: #fff6dc;
-  border: 1px solid #f2d795;
-  border-radius: 12px;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.customer-addresses .customer-page-message[data-message-type="success"] {
-  color: #126638;
-  background: #eaf8f0;
-  border-color: #b7e5ca;
-}
-
-.customer-addresses .customer-page-message[data-message-type="error"] {
-  color: #9c241e;
-  background: #fff1f0;
-  border-color: #ffc9c5;
-}
-
-
-/* INTRO */
-
-.addresses-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  margin: 18px 16px;
-  padding: 20px;
-  color: #ffffff;
-  background: linear-gradient(135deg, #c94300 0%, #ef5b00 58%, #ff7b2c 100%);
-  border-radius: 20px;
-  box-shadow: 0 12px 26px rgba(239, 91, 0, 0.16);
-}
-
-.addresses-intro-content {
-  min-width: 0;
-}
-
-.addresses-intro-label {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 8px;
-  padding: 4px 8px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-}
-
-.addresses-intro h2 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 21px;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.addresses-intro p {
-  max-width: 410px;
-  margin: 7px 0 0;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.addresses-intro-icon {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 62px;
-  height: 62px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 19px;
-  font-size: 32px;
-}
-
-
-/* SECTIONS */
-
-.addresses-actions,
-.saved-addresses-section {
-  margin: 0 16px 20px;
-}
-
-.addresses-section-heading {
-  min-width: 0;
-  margin-bottom: 11px;
-}
-
-.addresses-section-heading h2 {
-  margin: 0;
-  color: #171717;
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.3;
-}
-
-.addresses-section-heading p {
-  margin: 4px 0 0;
-  color: #777777;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.addresses-section-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.addresses-count {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 10px;
-  color: #e95400;
-  background: #fff0e7;
-  border: 1px solid #ffd0b5;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-
-/* QUICK ACTIONS */
-
-.addresses-action-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.address-action-card {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
-  min-height: 76px;
-  padding: 13px 14px;
-  color: #171717;
-  text-align: left;
-  background: #ffffff;
-  border: 1px solid #e4e4e4;
-  border-radius: 16px;
-  font-family: inherit;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.035);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.address-action-card:active {
-  background: #fafafa;
-  transform: scale(0.99);
-}
-
-.address-action-card:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.address-action-icon {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  background: #fff0e7;
-  border-radius: 14px;
-  font-size: 22px;
-}
-
-.address-action-content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.address-action-content strong {
-  color: #1b1b1b;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.address-action-content small {
-  margin-top: 3px;
-  overflow: hidden;
-  color: #777777;
-  font-size: 11px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.address-action-arrow {
-  flex: 0 0 auto;
-  color: #999999;
-  font-size: 26px;
-  font-weight: 300;
-}
-
-
-/* LOADING */
-
-.addresses-loading,
-.saved-addresses-list {
-  display: grid;
-  gap: 12px;
-}
-
-.address-skeleton {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 17px;
-  background: #ffffff;
-  border: 1px solid #e7e7e7;
-  border-radius: 17px;
-}
-
-.address-skeleton-icon {
-  position: relative;
-  overflow: hidden;
-  display: block;
-  flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
-  background: #ededed;
-  border-radius: 15px;
-}
-
-.address-skeleton-content {
-  flex: 1;
-  padding-top: 3px;
-}
-
-.address-skeleton-content span {
-  position: relative;
-  overflow: hidden;
-  display: block;
-  height: 11px;
-  margin-bottom: 10px;
-  background: #ededed;
-  border-radius: 999px;
-}
-
-.address-skeleton-content span:nth-child(1) {
-  width: 48%;
-  height: 15px;
-}
-
-.address-skeleton-content span:nth-child(2) {
-  width: 85%;
-}
-
-.address-skeleton-content span:nth-child(3) {
-  width: 60%;
-}
-
-.address-skeleton-icon::after,
-.address-skeleton-content span::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-  transform: translateX(-100%);
-  animation: addresses-shimmer 1.2s infinite;
-}
-
-
-/* LOAD ERROR AND EMPTY */
-
-.addresses-error,
-.addresses-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 20px;
-  text-align: center;
-  background: #ffffff;
-  border-radius: 18px;
-}
-
-.addresses-error {
-  border: 1px solid #f0c0bc;
-}
-
-.addresses-empty {
-  min-height: 260px;
-  border: 1px dashed #d5d5d5;
-}
-
-.addresses-error-icon,
-.addresses-empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 13px;
-  border-radius: 18px;
-  font-weight: 800;
-}
-
-.addresses-error-icon {
-  width: 54px;
-  height: 54px;
-  color: #b3261e;
-  background: #fff0ef;
-  font-size: 24px;
-}
-
-.addresses-empty-icon {
-  width: 68px;
-  height: 68px;
-  background: #fff0e7;
-  font-size: 32px;
-}
-
-.addresses-error h3,
-.addresses-empty h3 {
-  margin: 0;
-  color: #252525;
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.addresses-error p,
-.addresses-empty p {
-  max-width: 340px;
-  margin: 8px 0 17px;
-  color: #777777;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.addresses-error .app-button {
-  min-width: 130px;
-}
-
-.addresses-empty .app-button {
-  min-width: 190px;
-}
-
-
-/* SAVED ADDRESS CARDS */
-
-.saved-address-card {
-  overflow: hidden;
-  background: #ffffff;
-  border: 1px solid #e3e3e3;
-  border-radius: 17px;
-  box-shadow: 0 5px 16px rgba(0,0,0,0.04);
-}
-
-.saved-address-card.is-default {
-  border-color: #f2a275;
-  box-shadow: 0 6px 18px rgba(239,91,0,0.09);
-}
-
-.saved-address-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 13px;
-  padding: 16px;
-}
-
-.saved-address-icon {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: #fff0e7;
-  border-radius: 15px;
-  font-size: 23px;
-}
-
-.saved-address-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.saved-address-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.saved-address-title-row h3 {
-  margin: 0;
-  overflow: hidden;
-  color: #171717;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.saved-address-default-badge {
-  display: inline-flex;
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  color: #a13d00;
-  background: #fff0e7;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.saved-address-text {
-  margin: 6px 0 0;
-  color: #505050;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.saved-address-landmark {
-  margin: 4px 0 0;
-  color: #777777;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.saved-address-receiver {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px 12px;
-  margin-top: 9px;
-  color: #555555;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.saved-address-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 9px;
-}
-
-.saved-address-meta span {
-  padding: 4px 7px;
-  color: #777777;
-  background: #f5f5f5;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.saved-address-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 8px;
-  padding: 11px 12px 13px;
-  background: #fafafa;
-  border-top: 1px solid #eeeeee;
-}
-
-.saved-address-button {
-  min-height: 38px;
-  padding: 7px 8px;
-  color: #e95400;
-  background: #ffffff;
-  border: 1px solid #f1a77d;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.saved-address-button:disabled {
-  color: #999999;
-  border-color: #dddddd;
-  cursor: default;
-  opacity: 0.7;
-}
-
-.saved-address-button-danger {
-  color: #b3261e;
-  border-color: #efb5b1;
-}
-
-.saved-address-button:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-
-/* DIALOG */
-
-body.address-dialog-open {
-  overflow: hidden;
-}
-
-.address-dialog {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.address-dialog.hidden {
-  display: none;
-}
-
-.address-dialog-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-}
-
-.address-dialog-sheet {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 720px;
-  max-height: 92vh;
-  max-height: 92dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 10px 18px calc(22px + env(safe-area-inset-bottom));
-  background: #ffffff;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -12px 40px rgba(0,0,0,0.2);
-}
-
-.address-dialog-handle {
-  width: 42px;
-  height: 5px;
-  margin: 0 auto 15px;
-  background: #d4d4d4;
-  border-radius: 999px;
-}
-
-.address-dialog-header {
-  position: sticky;
-  top: -10px;
-  z-index: 30;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 15px;
-  margin: 0 -4px;
-  padding: 10px 4px 14px;
-  background: rgba(255,255,255,0.97);
-  border-bottom: 1px solid #eeeeee;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.address-dialog-header > div {
-  min-width: 0;
-}
-
-.address-dialog-header h2 {
-  margin: 0;
-  color: #171717;
-  font-size: 19px;
-  font-weight: 800;
-}
-
-.address-dialog-header p {
-  margin: 5px 0 0;
-  color: #777777;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.address-dialog-close {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  color: #333333;
-  background: #f5f5f5;
-  border: 0;
-  border-radius: 50%;
-  font-family: inherit;
-  font-size: 25px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-
-/* FORM */
-
-.address-form {
-  display: grid;
-  gap: 15px;
-  padding-top: 18px;
-}
-
-.address-form-group {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.address-form-group label,
-.address-form-group legend {
-  display: block;
-  margin: 0 0 7px;
-  color: #292929;
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.35;
-}
-
-.address-optional-label {
-  color: #999999;
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.address-form-input {
-  width: 100%;
-  min-height: 48px;
-  padding: 11px 13px;
-  color: #222222;
-  background: #ffffff;
-  border: 1px solid #d8d8d8;
-  border-radius: 12px;
-  outline: none;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.address-form-input::placeholder {
-  color: #aaaaaa;
-}
-
-.address-form-input:focus {
-  border-color: #ef5b00;
-  box-shadow: 0 0 0 3px rgba(239,91,0,0.1);
-}
-
-.address-form-input[readonly],
-.address-form-input:disabled,
-.address-system-field {
-  color: #5f5f5f;
-  background: #f4f4f4;
-  border-color: #dddddd;
-  cursor: not-allowed;
-  opacity: 1;
-}
-
-.address-locked-note {
-  display: block;
-  margin: 6px 2px 0;
-  color: #777777;
-  font-size: 9px;
-  line-height: 1.4;
-}
-
-.address-field-note {
-  margin: 6px 2px 0;
-  color: #888888;
-  font-size: 10px;
-  line-height: 1.45;
-}
-
-
-/* SEARCH */
-
-.address-search-group {
-  position: relative;
-}
-
-.address-search-wrap {
-  position: relative;
-}
-
-.address-search-input {
-  padding-right: 44px;
-  padding-left: 42px;
-}
-
-.address-search-icon {
-  position: absolute;
-  top: 50%;
-  left: 13px;
-  transform: translateY(-50%);
-  font-size: 17px;
-  pointer-events: none;
-}
-
-.address-search-spinner {
-  position: absolute;
-  top: calc(50% - 9px);
-  right: 14px;
-  width: 19px;
-  height: 19px;
-  border: 2px solid #eeeeee;
-  border-top-color: #ef5b00;
-  border-radius: 50%;
-  animation: addresses-rotate 0.75s linear infinite;
-}
-
-.address-suggestions {
-  position: relative;
-  z-index: 35;
-  overflow: hidden;
-  margin-top: 7px;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 12px;
-  box-shadow: 0 10px 26px rgba(0,0,0,0.1);
-}
-
-.address-suggestion-button {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  width: 100%;
-  padding: 12px;
-  color: #333333;
-  text-align: left;
-  background: #ffffff;
-  border: 0;
-  border-bottom: 1px solid #eeeeee;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.address-suggestion-button:last-child {
-  border-bottom: 0;
-}
-
-.address-suggestion-button:active {
-  background: #fff7f2;
-}
-
-.address-suggestion-icon {
-  flex: 0 0 auto;
-  font-size: 17px;
-}
-
-.address-suggestion-content {
-  min-width: 0;
-}
-
-.address-suggestion-content strong {
-  display: block;
-  color: #222222;
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.4;
-}
-
-.address-suggestion-content small {
-  display: block;
-  margin-top: 3px;
-  color: #777777;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-
-/* DELIVERY MAP */
-
-.address-map-section {
-  padding: 13px;
-  background: #fffaf7;
-  border: 1px solid #f1d2c0;
-  border-radius: 16px;
-}
-
-.address-map-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 11px;
-}
-
-.address-map-heading > div {
-  min-width: 0;
-}
-
-.address-map-heading h3 {
-  margin: 0;
-  color: #242424;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.address-map-heading p {
-  margin: 3px 0 0;
-  color: #777777;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.address-map-location-button {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 34px;
-  padding: 6px 10px;
-  color: #d94f00;
-  background: #ffffff;
-  border: 1px solid #f1a77d;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.address-map-location-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.address-map-wrap {
-  position: relative;
-  overflow: hidden;
-  min-height: 245px;
-  background: #ececec;
-  border: 1px solid #dedede;
-  border-radius: 13px;
-}
-
-.address-map {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 245px;
-  background: #ececec;
-}
-
-.address-map-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 500;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 20px;
-  color: #555555;
-  text-align: center;
-  background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-}
-
-.address-map-loading.hidden {
-  display: none;
-}
-
-.address-map-loading strong {
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.address-map-spinner {
-  width: 25px;
-  height: 25px;
-  border: 3px solid #eeeeee;
-  border-top-color: #ef5b00;
-  border-radius: 50%;
-  animation: addresses-rotate 0.75s linear infinite;
-}
-
-.address-map-status {
-  margin-top: 10px;
-  padding: 9px 10px;
-  color: #6a3b20;
-  background: #ffffff;
-  border: 1px solid #f0d7c8;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.address-map-status[data-status="success"] {
-  color: #126638;
-  background: #edf9f2;
-  border-color: #b7e5ca;
-}
-
-.address-map-status[data-status="error"] {
-  color: #9c241e;
-  background: #fff1f0;
-  border-color: #ffc9c5;
-}
-
-.address-map-rule {
-  margin: 8px 2px 0;
-  color: #888888;
-  font-size: 9px;
-  line-height: 1.45;
-}
-
-.address-map .leaflet-control-attribution {
-  max-width: 72%;
-  overflow: hidden;
-  font-size: 8px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.address-map .leaflet-control-zoom a {
-  color: #333333;
-}
-
-.address-map-pin-icon {
-  background: transparent;
-  border: 0;
-}
-
-.address-map-pin {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  color: #ffffff;
-  background: #ef5b00;
-  border: 3px solid #ffffff;
-  border-radius: 50% 50% 50% 6px;
-  box-shadow: 0 5px 16px rgba(0,0,0,0.28);
-  transform: rotate(-45deg);
-}
-
-.address-map-pin span {
-  font-size: 16px;
-  transform: rotate(45deg);
-}
-
-.address-map-pin::after {
-  position: absolute;
-  right: -5px;
-  bottom: -5px;
-  width: 13px;
-  height: 6px;
-  content: "";
-  background: rgba(0,0,0,0.18);
-  border-radius: 50%;
-  transform: rotate(45deg);
-  filter: blur(2px);
-}
-
-
-/* ADDRESS TYPE */
-
-.address-type-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 8px;
-}
-
-.address-type-option {
-  position: relative;
-  margin: 0;
-}
-
-.address-type-option input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.address-type-option span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 8px;
-  color: #666666;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 11px;
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.address-type-option input:checked + span {
-  color: #e95400;
-  background: #fff4ed;
-  border-color: #ef5b00;
-  box-shadow: 0 0 0 2px rgba(239,91,0,0.08);
-}
-
-
-/* RECEIVER AND SAVE */
-
-.address-form-section {
-  margin-top: 3px;
-  padding-top: 16px;
-  border-top: 1px solid #eeeeee;
-}
-
-.address-form-section h3 {
-  margin: 0;
-  color: #222222;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.address-form-section p {
-  margin: 4px 0 0;
-  color: #777777;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.receiver-mobile-wrap {
-  display: grid;
-  grid-template-columns: 52px minmax(0,1fr);
-}
-
-.receiver-mobile-wrap > span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  color: #555555;
-  background: #f6f6f6;
-  border: 1px solid #d8d8d8;
-  border-right: 0;
-  border-radius: 12px 0 0 12px;
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.receiver-mobile-wrap .address-form-input {
-  border-radius: 0 12px 12px 0;
-}
-
-.address-form-error {
-  margin: 0;
-  padding: 11px 12px;
-  color: #9c241e;
-  background: #fff1f0;
-  border: 1px solid #ffc9c5;
-  border-radius: 10px;
-  font-size: 11px;
-  line-height: 1.45;
-}
-
-.address-save-button {
-  width: 100%;
-  min-height: 50px;
-  margin-top: 2px;
-}
-
-.address-save-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
-}
-
-
-/* TABLET/DESKTOP */
-
-@media (min-width: 600px) {
-  .addresses-header {
-    padding-right: 24px;
-    padding-left: 24px;
+const CustomerAddresses = {
+
+  SEARCH_DEBOUNCE_MS: 300,
+  MAP_DRAG_DEBOUNCE_MS: 700,
+  NEAREST_ADDRESS_THRESHOLD_METERS: 500,
+  MAP_DEFAULT_ZOOM: 17,
+  MAP_FALLBACK_LATITUDE: 28.6139,
+  MAP_FALLBACK_LONGITUDE: 77.2090,
+
+  state: {
+    loading: false,
+    saving: false,
+    deviceRequestRunning: false,
+    reverseGeocoding: false,
+    addresses: [],
+    districts: [],
+    editingAddressId: "",
+    searchTimer: null,
+    mapDragTimer: null,
+    map: null,
+    marker: null,
+    initialPinLocation: null,
+    latestGeocodeRequest: 0,
+    mapReady: false
+  },
+
+  elements: {},
+
+
+  /* INITIALIZE */
+
+  init() {
+
+    this.elements = {
+      refreshButton: document.getElementById("refreshAddressesButton"),
+      deviceButton: document.getElementById("useDeviceLocationButton"),
+      addButton: document.getElementById("addAddressButton"),
+      emptyAddButton: document.getElementById("emptyAddAddressButton"),
+      loading: document.getElementById("addressesLoading"),
+      error: document.getElementById("addressesError"),
+      errorMessage: document.getElementById("addressesErrorMessage"),
+      retryButton: document.getElementById("retryAddressesButton"),
+      list: document.getElementById("savedAddressesList"),
+      empty: document.getElementById("addressesEmpty"),
+      count: document.getElementById("addressesCount"),
+      message: document.getElementById("roleHomeMessage"),
+      dialog: document.getElementById("addressFormDialog"),
+      closeDialogButton: document.getElementById("closeAddressFormButton"),
+      formTitle: document.getElementById("addressFormTitle"),
+      formDescription: document.getElementById("addressFormDescription"),
+      form: document.getElementById("addressForm"),
+      formError: document.getElementById("addressFormError"),
+      saveButton: document.getElementById("saveAddressButton"),
+      addressId: document.getElementById("addressIdInput"),
+      latitude: document.getElementById("addressLatitudeInput"),
+      longitude: document.getElementById("addressLongitudeInput"),
+      locationSource: document.getElementById("addressLocationSourceInput"),
+      placeProvider: document.getElementById("addressPlaceProviderInput"),
+      placeReference: document.getElementById("addressPlaceReferenceInput"),
+      accuracy: document.getElementById("addressAccuracyInput"),
+      searchInput: document.getElementById("addressSearchInput"),
+      searchSpinner: document.getElementById("addressSearchSpinner"),
+      searchStatus: document.getElementById("addressSearchStatus"),
+      suggestions: document.getElementById("addressSuggestions"),
+      area: document.getElementById("addressAreaInput"),
+      line1: document.getElementById("addressLine1Input"),
+      line2: document.getElementById("addressLine2Input"),
+      landmark: document.getElementById("addressLandmarkInput"),
+      district: document.getElementById("addressDistrictSelect"),
+      city: document.getElementById("addressCityInput"),
+      state: document.getElementById("addressStateInput"),
+      pincode: document.getElementById("addressPincodeInput"),
+      receiverName: document.getElementById("receiverNameInput"),
+      receiverMobile: document.getElementById("receiverMobileInput"),
+      mapSection: document.getElementById("addressMapSection"),
+      map: document.getElementById("addressMap"),
+      mapLoading: document.getElementById("addressMapLoading"),
+      mapStatus: document.getElementById("addressMapStatus"),
+      recenterMapButton: document.getElementById("recenterAddressMapButton"),
+      bottomNavigation: document.querySelector(".customer-bottom-nav")
+    };
+
+    if (!this.hasRequiredElements()) {
+      console.error("Customer Addresses page elements are missing.");
+      return false;
+    }
+
+    this.bindEvents();
+    this.loadInitialData();
+
+    console.log("ApnaBite Customer Addresses initialized.");
+    return true;
+  },
+
+
+  hasRequiredElements() {
+
+    const required = [
+      "refreshButton", "deviceButton", "addButton", "emptyAddButton",
+      "loading", "error", "errorMessage", "retryButton", "list",
+      "empty", "count", "message", "dialog", "closeDialogButton",
+      "formTitle", "form", "formError", "saveButton", "addressId",
+      "latitude", "longitude", "locationSource", "placeProvider",
+      "placeReference", "accuracy", "searchInput", "searchStatus",
+      "suggestions", "area", "line1", "line2", "landmark", "district",
+      "city", "state", "pincode", "receiverName", "receiverMobile",
+      "mapSection", "map", "mapLoading", "mapStatus", "recenterMapButton"
+    ];
+
+    return required.every((name) => Boolean(this.elements[name]));
+  },
+
+
+  /* EVENTS */
+
+  bindEvents() {
+
+    this.elements.refreshButton.addEventListener("click", () => {
+      this.loadAddresses();
+    });
+
+    this.elements.retryButton.addEventListener("click", () => {
+      this.loadAddresses();
+    });
+
+    this.elements.deviceButton.addEventListener("click", () => {
+      this.useCurrentLocation();
+    });
+
+    this.elements.addButton.addEventListener("click", () => {
+      this.openCreateForm();
+    });
+
+    this.elements.emptyAddButton.addEventListener("click", () => {
+      this.openCreateForm();
+    });
+
+    this.elements.recenterMapButton.addEventListener("click", () => {
+      this.detectLocationForOpenForm();
+    });
+
+    this.elements.closeDialogButton.addEventListener("click", () => {
+      this.closeForm();
+    });
+
+    this.elements.dialog.addEventListener("click", (event) => {
+      if (event.target.dataset.closeAddressForm === "true") {
+        this.closeForm();
+      }
+    });
+
+    this.elements.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      this.saveAddress();
+    });
+
+    this.elements.list.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-address-action]");
+
+      if (!button) {
+        return;
+      }
+
+      const action = button.dataset.addressAction;
+      const addressId = button.dataset.addressId;
+
+      if (action === "edit") {
+        this.openEditForm(addressId);
+      }
+
+      if (action === "remove") {
+        this.removeAddress(addressId);
+      }
+    });
+
+    this.elements.searchInput.addEventListener("input", () => {
+      this.handleAddressSearch();
+    });
+
+    this.elements.receiverMobile.addEventListener("input", () => {
+      this.elements.receiverMobile.value = this.elements.receiverMobile.value
+        .replace(/\D/g, "")
+        .slice(0, 10);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        !this.elements.dialog.classList.contains("hidden")
+      ) {
+        this.closeForm();
+      }
+    });
+  },
+
+
+  /* SESSION AND INITIAL DATA */
+
+  getSessionId() {
+    const session = SessionManager.get();
+    return session && session.sessionId ? session.sessionId : "";
+  },
+
+
+  async loadInitialData() {
+
+    this.setPageLoading(true);
+
+    try {
+      await Promise.all([
+        this.loadDistricts(),
+        this.loadAddresses({ manageLoading: false })
+      ]);
+    } finally {
+      this.setPageLoading(false);
+    }
+  },
+
+
+  /* DISTRICTS */
+
+  async loadDistricts() {
+
+    try {
+      const result = await ServiceLocation.getAvailable();
+      const districts = Array.isArray(result.districts)
+        ? result.districts
+        : [];
+
+      this.state.districts = districts;
+      this.renderDistrictOptions();
+
+      return {
+        success: true,
+        count: districts.length,
+        districts: districts
+      };
+    } catch (error) {
+      console.error("Address districts failed:", error);
+      this.state.districts = [];
+      this.renderDistrictOptions();
+
+      return {
+        success: false,
+        error: error.message,
+        code: error.code || ""
+      };
+    }
+  },
+
+
+  renderDistrictOptions() {
+
+    const selectedValue = this.elements.district.value;
+    this.elements.district.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = this.state.districts.length > 0
+      ? "Location will select service district"
+      : "No active district available";
+
+    this.elements.district.appendChild(placeholder);
+
+    this.state.districts.forEach((district) => {
+      const option = document.createElement("option");
+      option.value = district.districtId;
+      option.textContent = district.districtName + ", " + district.state;
+      this.elements.district.appendChild(option);
+    });
+
+    if (selectedValue) {
+      this.elements.district.value = selectedValue;
+    }
+  },
+
+
+  /* SAVED ADDRESSES */
+
+  async loadAddresses(options = {}) {
+
+    if (this.state.loading) {
+      return { success: false, reason: "ADDRESS_REQUEST_ALREADY_RUNNING" };
+    }
+
+    this.state.loading = true;
+
+    if (options.manageLoading !== false) {
+      this.setPageLoading(true);
+    }
+
+    this.clearMessage();
+    this.hideError();
+
+    try {
+      const response = await API.request(
+        "get_customer_addresses",
+        { sessionId: this.getSessionId() }
+      );
+
+      const result = response.data || {};
+      const addresses = Array.isArray(result.addresses)
+        ? result.addresses
+        : [];
+
+      this.state.addresses = addresses;
+      this.renderAddresses(addresses);
+
+      return {
+        success: true,
+        count: addresses.length,
+        addresses: addresses,
+        requestId: response.requestId || ""
+      };
+    } catch (error) {
+      this.showLoadError(error.message || "Unable to load your addresses.");
+      return { success: false, error: error.message, code: error.code || "" };
+    } finally {
+      this.state.loading = false;
+
+      if (options.manageLoading !== false) {
+        this.setPageLoading(false);
+      }
+    }
+  },
+
+
+  renderAddresses(addresses) {
+
+    const safeAddresses = Array.isArray(addresses) ? addresses : [];
+    this.elements.count.textContent = String(safeAddresses.length);
+    this.elements.list.innerHTML = "";
+    this.elements.loading.classList.add("hidden");
+    this.elements.error.classList.add("hidden");
+
+    if (safeAddresses.length === 0) {
+      this.elements.list.classList.add("hidden");
+      this.elements.empty.classList.remove("hidden");
+      return;
+    }
+
+    safeAddresses.forEach((address) => {
+      this.elements.list.appendChild(this.createAddressCard(address));
+    });
+
+    this.elements.empty.classList.add("hidden");
+    this.elements.list.classList.remove("hidden");
+  },
+
+
+  createAddressCard(address) {
+
+    const card = document.createElement("article");
+    card.className = "saved-address-card";
+    card.dataset.savedAddressId = address.addressId || "";
+
+    const main = document.createElement("div");
+    main.className = "saved-address-main";
+
+    const icon = document.createElement("div");
+    icon.className = "saved-address-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = this.getAddressIcon(address.addressType);
+
+    const content = document.createElement("div");
+    content.className = "saved-address-content";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "saved-address-title-row";
+
+    const title = document.createElement("h3");
+    title.textContent = this.getAddressTypeLabel(address.addressType);
+    titleRow.appendChild(title);
+
+    const addressText = document.createElement("p");
+    addressText.className = "saved-address-text";
+    addressText.textContent = this.formatAddressText(address);
+
+    content.appendChild(titleRow);
+    content.appendChild(addressText);
+
+    if (address.landmark) {
+      const landmark = document.createElement("p");
+      landmark.className = "saved-address-landmark";
+      landmark.textContent = "Landmark: " + address.landmark;
+      content.appendChild(landmark);
+    }
+
+    const receiver = document.createElement("div");
+    receiver.className = "saved-address-receiver";
+
+    const receiverName = document.createElement("span");
+    receiverName.textContent = "👤 " + (address.receiverName || "Receiver");
+
+    const receiverMobile = document.createElement("span");
+    receiverMobile.textContent = "☎ +91 " + (address.receiverMobile || "");
+
+    receiver.appendChild(receiverName);
+    receiver.appendChild(receiverMobile);
+    content.appendChild(receiver);
+
+    const meta = document.createElement("div");
+    meta.className = "saved-address-meta";
+
+    const source = document.createElement("span");
+    source.textContent = address.locationSource || "SAVED";
+
+    const district = document.createElement("span");
+    district.textContent = address.district || "District";
+
+    meta.appendChild(source);
+    meta.appendChild(district);
+    content.appendChild(meta);
+    main.appendChild(icon);
+    main.appendChild(content);
+
+    const actions = document.createElement("div");
+    actions.className = "saved-address-actions";
+    actions.appendChild(
+      this.createCardButton("Edit", "edit", address.addressId)
+    );
+    actions.appendChild(
+      this.createCardButton("Remove", "remove", address.addressId, true)
+    );
+
+    card.appendChild(main);
+    card.appendChild(actions);
+    return card;
+  },
+
+
+  createCardButton(text, action, addressId, danger = false) {
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "saved-address-button";
+
+    if (danger) {
+      button.classList.add("saved-address-button-danger");
+    }
+
+    button.dataset.addressAction = action;
+    button.dataset.addressId = addressId;
+    button.textContent = text;
+    return button;
+  },
+
+
+  /* CREATE/EDIT FORM */
+
+  openCreateForm(options = {}) {
+
+    this.resetForm();
+    this.state.editingAddressId = "";
+    this.elements.formTitle.textContent = "Add delivery address";
+    this.elements.formDescription.textContent =
+      "Place the pin and complete the delivery details.";
+    this.elements.saveButton.textContent = "Save Address";
+    this.openForm();
+
+    const suppliedLocation = options.location || null;
+    const savedLocation = suppliedLocation || LocationManager.getSaved();
+
+    if (this.isValidLocation(savedLocation)) {
+      window.setTimeout(() => {
+        this.placePin(savedLocation, {
+          setAnchor: true,
+          center: true
+        });
+        this.resolvePinLocation(savedLocation, {
+          mode: "FULL",
+          setAnchor: true
+        });
+      }, 120);
+    } else {
+      window.setTimeout(() => {
+        this.initializeMap();
+        this.setMapStatus(
+          "Tap Current to detect your location and place the delivery pin.",
+          ""
+        );
+      }, 120);
+    }
+
+    return { success: true, mode: "CREATE" };
+  },
+
+
+  openEditForm(addressId) {
+
+    const address = this.state.addresses.find(
+      (item) => item.addressId === addressId
+    );
+
+    if (!address) {
+      this.showMessage("Saved address could not be found.", "error");
+      return { success: false, reason: "ADDRESS_NOT_FOUND" };
+    }
+
+    this.resetForm();
+    this.state.editingAddressId = addressId;
+    this.elements.formTitle.textContent = "Edit delivery address";
+    this.elements.formDescription.textContent =
+      "Adjust the pin or update delivery details.";
+    this.elements.saveButton.textContent = "Update Address";
+    this.elements.addressId.value = address.addressId || "";
+    this.setAddressType(address.addressType);
+    this.elements.area.value = address.areaLocality || "";
+    this.elements.line1.value = address.addressLine1 || "";
+    this.elements.line2.value = address.addressLine2 || "";
+    this.elements.landmark.value = address.landmark || "";
+    this.elements.district.value = address.districtId || "";
+    this.elements.city.value = address.city || "";
+    this.elements.state.value = address.state || "";
+    this.elements.pincode.value = address.pincode || "";
+    this.elements.latitude.value = this.coordinateToInput(address.latitude);
+    this.elements.longitude.value = this.coordinateToInput(address.longitude);
+    this.elements.locationSource.value = address.locationSource || "MANUAL";
+    this.elements.placeProvider.value = address.placeProvider || "";
+    this.elements.placeReference.value = address.placeReference || "";
+    this.elements.accuracy.value = address.locationAccuracyMeters ?? "";
+    this.elements.receiverName.value = address.receiverName || "";
+    this.elements.receiverMobile.value = address.receiverMobile || "";
+    this.elements.searchInput.value = [
+      address.areaLocality,
+      address.city,
+      address.district
+    ].filter(Boolean).join(", ");
+
+    this.openForm();
+
+    const location = {
+      latitude: Number(address.latitude),
+      longitude: Number(address.longitude),
+      accuracy: address.locationAccuracyMeters
+    };
+
+    window.setTimeout(() => {
+      this.placePin(location, { setAnchor: true, center: true });
+      this.setMapStatus(
+        "Saved pin restored. Drag it to adjust the delivery point.",
+        "success"
+      );
+    }, 120);
+
+    return { success: true, mode: "EDIT", address: address };
+  },
+
+
+  openForm() {
+
+    this.clearFormError();
+    this.hideSuggestions();
+    this.elements.dialog.classList.remove("hidden");
+    document.body.classList.add("address-dialog-open");
+
+    window.setTimeout(() => {
+      this.initializeMap();
+      if (this.state.map) {
+        this.state.map.invalidateSize();
+      }
+    }, 80);
+  },
+
+
+  closeForm(force = false) {
+
+    if (this.state.saving && force !== true) {
+      return false;
+    }
+
+    window.clearTimeout(this.state.mapDragTimer);
+    this.state.latestGeocodeRequest += 1;
+    this.elements.dialog.classList.add("hidden");
+    document.body.classList.remove("address-dialog-open");
+    this.hideSuggestions();
+    this.clearFormError();
+    this.setMapLoading(false);
+    return true;
+  },
+
+
+  resetForm() {
+
+    this.elements.form.reset();
+    this.elements.addressId.value = "";
+    this.elements.latitude.value = "";
+    this.elements.longitude.value = "";
+    this.elements.locationSource.value = "MANUAL";
+    this.elements.placeProvider.value = "";
+    this.elements.placeReference.value = "";
+    this.elements.accuracy.value = "";
+    this.elements.searchInput.value = "";
+    this.elements.searchStatus.textContent =
+      "Search an active service district or use your current location.";
+    this.elements.district.value = "";
+    this.elements.state.value = "";
+    this.elements.pincode.value = "";
+    this.state.initialPinLocation = null;
+    this.state.latestGeocodeRequest += 1;
+    window.clearTimeout(this.state.mapDragTimer);
+    this.setAddressType("HOME");
+    this.hideSuggestions();
+    this.clearFormError();
+    this.setMapLoading(false);
+
+    if (this.state.marker && this.state.map) {
+      this.state.map.removeLayer(this.state.marker);
+      this.state.marker = null;
+    }
+
+    this.setMapStatus(
+      "Use current location or select a service area to place the pin.",
+      ""
+    );
+  },
+
+
+  /* MAP */
+
+  initializeMap() {
+
+    if (this.state.map) {
+      this.state.map.invalidateSize();
+      return true;
+    }
+
+    if (typeof window.L === "undefined") {
+      this.setMapStatus(
+        "Map could not be loaded. Check your connection and reopen the form.",
+        "error"
+      );
+      return false;
+    }
+
+    this.state.map = L.map(this.elements.map, {
+      zoomControl: true,
+      attributionControl: true
+    }).setView(
+      [this.MAP_FALLBACK_LATITUDE, this.MAP_FALLBACK_LONGITUDE],
+      5
+    );
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }
+    ).addTo(this.state.map);
+
+    this.state.map.on("click", (event) => {
+      const location = {
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng,
+        accuracy: ""
+      };
+
+      this.placePin(location, { center: false });
+      this.schedulePinResolution(location);
+    });
+
+    this.state.mapReady = true;
+    return true;
+  },
+
+
+  createMapPinIcon() {
+
+    return L.divIcon({
+      className: "address-map-pin-icon",
+      html: '<div class="address-map-pin"><span>●</span></div>',
+      iconSize: [42, 48],
+      iconAnchor: [21, 44]
+    });
+  },
+
+
+  placePin(location, options = {}) {
+
+    if (!this.isValidLocation(location)) {
+      return false;
+    }
+
+    if (!this.initializeMap()) {
+      return false;
+    }
+
+    const latitude = Number(location.latitude);
+    const longitude = Number(location.longitude);
+    const latLng = L.latLng(latitude, longitude);
+
+    if (!this.state.marker) {
+      this.state.marker = L.marker(latLng, {
+        draggable: true,
+        icon: this.createMapPinIcon(),
+        autoPan: true
+      }).addTo(this.state.map);
+
+      this.state.marker.on("dragend", () => {
+        const markerLocation = this.state.marker.getLatLng();
+        const draggedLocation = {
+          latitude: markerLocation.lat,
+          longitude: markerLocation.lng,
+          accuracy: ""
+        };
+
+        this.writeCoordinates(draggedLocation, "MAP_PIN");
+        this.schedulePinResolution(draggedLocation);
+      });
+    } else {
+      this.state.marker.setLatLng(latLng);
+    }
+
+    this.writeCoordinates(location, options.source || "MAP_PIN");
+
+    if (options.setAnchor === true) {
+      this.state.initialPinLocation = {
+        latitude: latitude,
+        longitude: longitude
+      };
+    }
+
+    if (options.center !== false) {
+      this.state.map.setView(latLng, this.MAP_DEFAULT_ZOOM);
+    }
+
+    window.setTimeout(() => {
+      this.state.map.invalidateSize();
+    }, 50);
+
+    return true;
+  },
+
+
+  schedulePinResolution(location) {
+
+    window.clearTimeout(this.state.mapDragTimer);
+    this.setMapStatus("Checking the selected pin location...", "");
+
+    this.state.mapDragTimer = window.setTimeout(() => {
+      const distanceMeters = this.getDistanceFromAnchor(location);
+      const mode = distanceMeters <= this.NEAREST_ADDRESS_THRESHOLD_METERS
+        ? "AREA_ONLY"
+        : "FULL";
+
+      this.resolvePinLocation(location, {
+        mode: mode,
+        distanceMeters: distanceMeters
+      });
+    }, this.MAP_DRAG_DEBOUNCE_MS);
+  },
+
+
+  getDistanceFromAnchor(location) {
+
+    if (!this.isValidLocation(this.state.initialPinLocation)) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    try {
+      return LocationManager.calculateDistanceKm(
+        this.state.initialPinLocation.latitude,
+        this.state.initialPinLocation.longitude,
+        location.latitude,
+        location.longitude
+      ) * 1000;
+    } catch (error) {
+      return this.calculateDistanceMeters(
+        this.state.initialPinLocation,
+        location
+      );
+    }
+  },
+
+
+  calculateDistanceMeters(first, second) {
+
+    const earthRadius = 6371000;
+    const toRadians = (value) => value * Math.PI / 180;
+    const latitudeOne = toRadians(Number(first.latitude));
+    const latitudeTwo = toRadians(Number(second.latitude));
+    const latitudeDifference = toRadians(
+      Number(second.latitude) - Number(first.latitude)
+    );
+    const longitudeDifference = toRadians(
+      Number(second.longitude) - Number(first.longitude)
+    );
+
+    const value =
+      Math.sin(latitudeDifference / 2) ** 2 +
+      Math.cos(latitudeOne) *
+      Math.cos(latitudeTwo) *
+      Math.sin(longitudeDifference / 2) ** 2;
+
+    return earthRadius * 2 * Math.atan2(
+      Math.sqrt(value),
+      Math.sqrt(1 - value)
+    );
+  },
+
+
+  async resolvePinLocation(location, options = {}) {
+
+    if (!this.isValidLocation(location)) {
+      return { success: false, reason: "INVALID_LOCATION" };
+    }
+
+    const requestNumber = this.state.latestGeocodeRequest + 1;
+    this.state.latestGeocodeRequest = requestNumber;
+    this.state.reverseGeocoding = true;
+    this.setMapLoading(true);
+
+    try {
+      const response = await API.request(
+        "reverse_geocode_location",
+        {
+          sessionId: this.getSessionId(),
+          latitude: Number(location.latitude),
+          longitude: Number(location.longitude)
+        }
+      );
+
+      if (requestNumber !== this.state.latestGeocodeRequest) {
+        return { success: false, reason: "STALE_GEOCODE_RESPONSE" };
+      }
+
+      const resolved = response.data || {};
+      const mode = options.mode || "FULL";
+
+      this.writeCoordinates(location, "MAP_PIN");
+
+      if (mode === "AREA_ONLY") {
+        this.applyAreaOnlyResult(resolved);
+        this.setMapStatus(
+          (resolved.label || "Pin adjusted") +
+          " • Within 500m; only Area or locality was refreshed.",
+          "success"
+        );
+      } else {
+        const districtResult = this.applyFullGeocodeResult(resolved);
+
+        if (!districtResult.matched) {
+          this.setMapStatus(
+            "This location is outside the currently matched ApnaBite service district.",
+            "error"
+          );
+        } else {
+          this.setMapStatus(
+            resolved.label || "Delivery location identified.",
+            "success"
+          );
+        }
+      }
+
+      if (options.setAnchor === true) {
+        this.state.initialPinLocation = {
+          latitude: Number(location.latitude),
+          longitude: Number(location.longitude)
+        };
+      }
+
+      this.elements.searchInput.value =
+        resolved.formattedAddress || resolved.label || "";
+      this.elements.placeProvider.value =
+        resolved.provider || "GOOGLE_APPS_SCRIPT_MAPS";
+      this.elements.placeReference.value = "";
+
+      return {
+        success: true,
+        mode: mode,
+        resolved: resolved,
+        requestId: response.requestId || ""
+      };
+    } catch (error) {
+      if (requestNumber === this.state.latestGeocodeRequest) {
+        this.setMapStatus(
+          error.message || "Unable to identify this pin location.",
+          "error"
+        );
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        code: error.code || ""
+      };
+    } finally {
+      if (requestNumber === this.state.latestGeocodeRequest) {
+        this.state.reverseGeocoding = false;
+        this.setMapLoading(false);
+      }
+    }
+  },
+
+
+  applyAreaOnlyResult(resolved) {
+
+    const area =
+      resolved.area ||
+      resolved.locality ||
+      resolved.placeName ||
+      resolved.street ||
+      resolved.label ||
+      "";
+
+    if (area) {
+      this.elements.area.value = area;
+    }
+
+    return area;
+  },
+
+
+  applyFullGeocodeResult(resolved) {
+
+    const area =
+      resolved.area ||
+      resolved.locality ||
+      resolved.placeName ||
+      resolved.street ||
+      resolved.label ||
+      "";
+
+    if (area) {
+      this.elements.area.value = area;
+    }
+
+    if (resolved.street) {
+      this.elements.line2.value = resolved.street;
+    }
+
+    this.elements.city.value =
+      resolved.city || resolved.locality || this.elements.city.value;
+    this.elements.state.value = resolved.state || "";
+    this.elements.pincode.value = String(resolved.pincode || "")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+
+    const matchedDistrict = this.matchServiceDistrict(resolved);
+    this.elements.district.value = matchedDistrict
+      ? matchedDistrict.districtId
+      : "";
+
+    return {
+      matched: Boolean(matchedDistrict),
+      district: matchedDistrict
+    };
+  },
+
+
+  matchServiceDistrict(resolved) {
+
+    const resolvedState = this.normalizeText(resolved.state);
+    const locationNames = [
+      resolved.district,
+      resolved.city,
+      resolved.locality,
+      resolved.area,
+      resolved.formattedAddress
+    ].map((value) => this.normalizeText(value)).filter(Boolean);
+
+    let match = this.state.districts.find((district) => {
+      const districtName = this.normalizeText(district.districtName);
+      const stateName = this.normalizeText(district.state);
+      const stateMatches = !resolvedState || !stateName || stateName === resolvedState;
+      const nameMatches = locationNames.some((name) =>
+        name === districtName ||
+        name.includes(districtName) ||
+        districtName.includes(name)
+      );
+
+      return stateMatches && nameMatches;
+    });
+
+    if (match) {
+      return match;
+    }
+
+    const savedDistrict = ServiceLocation.getSaved();
+
+    if (savedDistrict) {
+      const savedState = this.normalizeText(savedDistrict.state);
+      const activeSavedDistrict = this.state.districts.find(
+        (district) => district.districtId === savedDistrict.districtId
+      );
+
+      if (
+        activeSavedDistrict &&
+        (!resolvedState || !savedState || resolvedState === savedState)
+      ) {
+        return activeSavedDistrict;
+      }
+    }
+
+    const sameStateDistricts = this.state.districts.filter((district) =>
+      resolvedState && this.normalizeText(district.state) === resolvedState
+    );
+
+    if (sameStateDistricts.length === 1) {
+      match = sameStateDistricts[0];
+    }
+
+    return match || null;
+  },
+
+
+  writeCoordinates(location, source) {
+
+    this.elements.latitude.value = String(Number(location.latitude));
+    this.elements.longitude.value = String(Number(location.longitude));
+    this.elements.accuracy.value =
+      location.accuracy === null || location.accuracy === undefined
+        ? this.elements.accuracy.value
+        : String(location.accuracy);
+    this.elements.locationSource.value = source || "MAP_PIN";
+  },
+
+
+  setMapLoading(isLoading) {
+
+    this.elements.mapLoading.classList.toggle("hidden", !isLoading);
+    this.elements.recenterMapButton.disabled = isLoading;
+  },
+
+
+  setMapStatus(message, status) {
+
+    this.elements.mapStatus.textContent = message || "";
+
+    if (status) {
+      this.elements.mapStatus.dataset.status = status;
+    } else {
+      delete this.elements.mapStatus.dataset.status;
+    }
+  },
+
+
+  /* CURRENT LOCATION */
+
+  async useCurrentLocation() {
+
+    if (this.state.deviceRequestRunning) {
+      return { success: false, reason: "LOCATION_REQUEST_ALREADY_RUNNING" };
+    }
+
+    this.state.deviceRequestRunning = true;
+    this.setDeviceLoading(true);
+    this.clearMessage();
+
+    try {
+      const location = await this.requestDeviceLocation();
+      const nearestResult = await this.findNearestSavedAddress(location);
+
+      if (nearestResult.matched && nearestResult.address) {
+        await this.loadAddresses();
+        this.highlightAddress(nearestResult.address.addressId);
+
+        this.showMessage(
+          "Nearby saved " +
+          this.getAddressTypeLabel(nearestResult.address.addressType) +
+          " address selected (" +
+          Math.round(nearestResult.distanceMeters) +
+          " metres away).",
+          "success"
+        );
+
+        document.dispatchEvent(
+          new CustomEvent("apnabite:address-selected", {
+            detail: {
+              source: "NEAREST_SAVED",
+              address: nearestResult.address,
+              distanceMeters: nearestResult.distanceMeters
+            }
+          })
+        );
+
+        return {
+          success: true,
+          matched: true,
+          location: location,
+          address: nearestResult.address,
+          distanceMeters: nearestResult.distanceMeters
+        };
+      }
+
+      this.openCreateForm({ location: location });
+      this.showMessage(
+        "Current location detected. Adjust the pin and complete the address.",
+        "success"
+      );
+
+      return { success: true, matched: false, location: location };
+    } catch (error) {
+      const displayError = this.getLocationError(error);
+      this.showMessage(displayError.message, "error");
+      return { success: false, code: displayError.code, error: displayError.message };
+    } finally {
+      this.state.deviceRequestRunning = false;
+      this.setDeviceLoading(false);
+    }
+  },
+
+
+  async detectLocationForOpenForm() {
+
+    if (this.state.deviceRequestRunning) {
+      return { success: false, reason: "LOCATION_REQUEST_ALREADY_RUNNING" };
+    }
+
+    this.state.deviceRequestRunning = true;
+    this.elements.recenterMapButton.disabled = true;
+    this.setMapStatus("Detecting your current location...", "");
+
+    try {
+      const location = await this.requestDeviceLocation();
+      this.placePin(location, { setAnchor: true, center: true, source: "DEVICE" });
+      return await this.resolvePinLocation(location, {
+        mode: "FULL",
+        setAnchor: true
+      });
+    } catch (error) {
+      const displayError = this.getLocationError(error);
+      this.setMapStatus(displayError.message, "error");
+      return { success: false, code: displayError.code, error: displayError.message };
+    } finally {
+      this.state.deviceRequestRunning = false;
+      this.elements.recenterMapButton.disabled = false;
+    }
+  },
+
+
+  async requestDeviceLocation() {
+
+    const result = await LocationManager.requestAfterUserAction({
+      persist: true,
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 60000
+    });
+
+    const location = result && result.location ? result.location : result;
+
+    if (!this.isValidLocation(location)) {
+      throw LocationManager.createError(
+        "Invalid location received.",
+        "INVALID_LOCATION"
+      );
+    }
+
+    return location;
+  },
+
+
+  async findNearestSavedAddress(location) {
+
+    const response = await API.request(
+      "find_nearest_customer_address",
+      {
+        sessionId: this.getSessionId(),
+        latitude: Number(location.latitude),
+        longitude: Number(location.longitude),
+        thresholdMeters: this.NEAREST_ADDRESS_THRESHOLD_METERS
+      }
+    );
+
+    const result = response.data || {};
+
+    return {
+      success: result.success === true,
+      matched: result.matched === true,
+      address: result.address || result.nearestAddress || null,
+      distanceMeters: Number(result.distanceMeters || 0),
+      thresholdMeters: Number(
+        result.thresholdMeters || this.NEAREST_ADDRESS_THRESHOLD_METERS
+      ),
+      requestId: response.requestId || ""
+    };
+  },
+
+
+  highlightAddress(addressId) {
+
+    const cards = this.elements.list.querySelectorAll(".saved-address-card");
+    cards.forEach((card) => card.classList.remove("is-nearest"));
+
+    const target = Array.from(cards).find(
+      (card) => card.dataset.savedAddressId === addressId
+    );
+
+    if (!target) {
+      return false;
+    }
+
+    target.classList.add("is-nearest");
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    window.setTimeout(() => {
+      target.classList.remove("is-nearest");
+    }, 2500);
+
+    return true;
+  },
+
+
+  /* DISTRICT SEARCH */
+
+  handleAddressSearch() {
+
+    window.clearTimeout(this.state.searchTimer);
+    const query = this.elements.searchInput.value.trim().toLowerCase();
+
+    if (query.length < 2) {
+      this.hideSuggestions();
+      this.elements.searchStatus.textContent =
+        "Type at least 2 characters to search service districts.";
+      return;
+    }
+
+    this.state.searchTimer = window.setTimeout(() => {
+      const matches = this.state.districts.filter((district) => {
+        const searchable = (
+          district.districtName + " " + district.state
+        ).toLowerCase();
+        return searchable.includes(query);
+      }).slice(0, 6);
+
+      this.renderSuggestions(matches);
+    }, this.SEARCH_DEBOUNCE_MS);
+  },
+
+
+  renderSuggestions(districts) {
+
+    this.elements.suggestions.innerHTML = "";
+
+    if (districts.length === 0) {
+      this.hideSuggestions();
+      this.elements.searchStatus.textContent =
+        "No active ApnaBite service district matched your search.";
+      return;
+    }
+
+    districts.forEach((district) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "address-suggestion-button";
+      button.setAttribute("role", "option");
+
+      const icon = document.createElement("span");
+      icon.className = "address-suggestion-icon";
+      icon.textContent = "📍";
+
+      const content = document.createElement("span");
+      content.className = "address-suggestion-content";
+
+      const title = document.createElement("strong");
+      title.textContent = district.districtName;
+
+      const state = document.createElement("small");
+      state.textContent = district.state + " • ApnaBite service district";
+
+      content.appendChild(title);
+      content.appendChild(state);
+      button.appendChild(icon);
+      button.appendChild(content);
+      button.addEventListener("click", () => {
+        this.selectDistrictSuggestion(district);
+      });
+      this.elements.suggestions.appendChild(button);
+    });
+
+    this.elements.suggestions.classList.remove("hidden");
+    this.elements.searchStatus.textContent =
+      districts.length + " service location" +
+      (districts.length === 1 ? "" : "s") + " found.";
+  },
+
+
+  selectDistrictSuggestion(district) {
+
+    this.elements.district.value = district.districtId;
+    this.elements.searchInput.value =
+      district.districtName + ", " + district.state;
+    this.elements.city.value = district.districtName || "";
+    this.elements.state.value = district.state || "";
+    this.elements.placeProvider.value = "APNABITE_DISTRICTS";
+    this.elements.placeReference.value = district.districtId;
+    this.hideSuggestions();
+
+    const districtLocation = this.getDistrictCoordinates(district);
+
+    if (districtLocation) {
+      this.placePin(districtLocation, { setAnchor: true, center: true });
+      this.resolvePinLocation(districtLocation, {
+        mode: "FULL",
+        setAnchor: true
+      });
+    } else {
+      this.setMapStatus(
+        "District selected. Tap Current to place the exact delivery pin.",
+        ""
+      );
+    }
+
+    this.elements.searchStatus.textContent =
+      "Service district selected. Set the exact delivery pin.";
+  },
+
+
+  getDistrictCoordinates(district) {
+
+    const latitude = Number(
+      district.latitude || district.centerLatitude || district.Latitude
+    );
+    const longitude = Number(
+      district.longitude || district.centerLongitude || district.Longitude
+    );
+
+    const location = { latitude: latitude, longitude: longitude, accuracy: "" };
+    return this.isValidLocation(location) ? location : null;
+  },
+
+
+  /* FORM DATA */
+
+  getFormData() {
+
+    const selectedType = this.elements.form.querySelector(
+      'input[name="addressType"]:checked'
+    );
+    const addressType = selectedType ? selectedType.value : "HOME";
+
+    return {
+      addressType: addressType,
+      label: this.getAddressTypeLabel(addressType),
+      addressLine1: this.elements.line1.value.trim(),
+      addressLine2: this.elements.line2.value.trim(),
+      landmark: this.elements.landmark.value.trim(),
+      city: this.elements.city.value.trim(),
+      districtId: this.elements.district.value,
+      areaLocality: this.elements.area.value.trim(),
+      pincode: this.elements.pincode.value.replace(/\D/g, ""),
+      latitude: Number(this.elements.latitude.value),
+      longitude: Number(this.elements.longitude.value),
+      receiverName: this.elements.receiverName.value.trim(),
+      receiverMobile: this.elements.receiverMobile.value.replace(/\D/g, ""),
+      locationSource: this.elements.locationSource.value || "MAP_PIN",
+      placeProvider: this.elements.placeProvider.value.trim(),
+      placeReference: this.elements.placeReference.value.trim(),
+      locationAccuracyMeters: this.elements.accuracy.value
+        ? Number(this.elements.accuracy.value)
+        : "",
+      isDefault: false
+    };
+  },
+
+
+  validateFormData(data) {
+
+    if (!data.addressLine1 || data.addressLine1.length < 3) {
+      return { valid: false, message: "Enter your house, flat or building details." };
+    }
+
+    if (!data.areaLocality || data.areaLocality.length < 2) {
+      return { valid: false, message: "Enter your area or locality." };
+    }
+
+    if (!data.city) {
+      return { valid: false, message: "Enter the city." };
+    }
+
+    if (!data.districtId) {
+      return {
+        valid: false,
+        message: "The selected pin is not matched to an active ApnaBite service district."
+      };
+    }
+
+    if (!data.pincode || !/^\d{6}$/.test(data.pincode)) {
+      return {
+        valid: false,
+        message: "A valid pincode could not be detected for this pin location."
+      };
+    }
+
+    if (!this.isValidLocation(data)) {
+      return {
+        valid: false,
+        message: "Set the exact delivery location on the map before saving."
+      };
+    }
+
+    if (!data.receiverName || data.receiverName.length < 2) {
+      return { valid: false, message: "Enter the receiver name." };
+    }
+
+    if (!/^[6-9]\d{9}$/.test(data.receiverMobile)) {
+      return {
+        valid: false,
+        message: "Enter a valid 10-digit receiver mobile number."
+      };
+    }
+
+    return { valid: true };
+  },
+
+
+  /* SAVE/REMOVE */
+
+  async saveAddress() {
+
+    if (this.state.saving) {
+      return { success: false, reason: "ADDRESS_SAVE_RUNNING" };
+    }
+
+    if (this.state.reverseGeocoding) {
+      this.showFormError("Please wait while the selected pin location is verified.");
+      return { success: false, reason: "LOCATION_LOOKUP_RUNNING" };
+    }
+
+    const data = this.getFormData();
+    const validation = this.validateFormData(data);
+
+    if (!validation.valid) {
+      this.showFormError(validation.message);
+      return { success: false, reason: "FORM_VALIDATION_FAILED" };
+    }
+
+    this.state.saving = true;
+    this.setSaveLoading(true);
+    this.clearFormError();
+
+    try {
+      const editing = Boolean(this.state.editingAddressId);
+      const action = editing
+        ? "update_customer_address"
+        : "create_customer_address";
+      const payload = editing
+        ? {
+            sessionId: this.getSessionId(),
+            addressId: this.state.editingAddressId,
+            updates: data
+          }
+        : {
+            sessionId: this.getSessionId(),
+            address: data
+          };
+
+      const response = await API.request(action, payload);
+      this.closeForm(true);
+      await this.loadAddresses();
+      this.showMessage(
+        editing
+          ? "Delivery address updated successfully."
+          : "Delivery address saved successfully.",
+        "success"
+      );
+
+      document.dispatchEvent(
+        new CustomEvent("apnabite:addresses-updated", {
+          detail: {
+            action: editing ? "UPDATED" : "CREATED",
+            result: response.data
+          }
+        })
+      );
+
+      return { success: true, editing: editing, result: response.data };
+    } catch (error) {
+      this.showFormError(error.message || "Address could not be saved.");
+      return { success: false, error: error.message, code: error.code || "" };
+    } finally {
+      this.state.saving = false;
+      this.setSaveLoading(false);
+    }
+  },
+
+
+  async removeAddress(addressId) {
+
+    const address = this.state.addresses.find(
+      (item) => item.addressId === addressId
+    );
+
+    if (!address) {
+      return { success: false, reason: "ADDRESS_NOT_FOUND" };
+    }
+
+    const confirmed = window.confirm(
+      "Remove " + this.getAddressTypeLabel(address.addressType) + " address?"
+    );
+
+    if (!confirmed) {
+      return { success: false, reason: "USER_CANCELLED" };
+    }
+
+    try {
+      const response = await API.request(
+        "remove_customer_address",
+        { sessionId: this.getSessionId(), addressId: addressId }
+      );
+
+      await this.loadAddresses();
+      this.showMessage("Saved address removed.", "success");
+      return { success: true, result: response.data };
+    } catch (error) {
+      this.showMessage(error.message || "Address could not be removed.", "error");
+      return { success: false, error: error.message, code: error.code || "" };
+    }
+  },
+
+
+  /* UI */
+
+  setPageLoading(isLoading) {
+    this.elements.refreshButton.disabled = isLoading;
+    this.elements.refreshButton.classList.toggle("is-loading", isLoading);
+    this.elements.loading.classList.toggle("hidden", !isLoading);
+
+    if (isLoading) {
+      this.elements.list.classList.add("hidden");
+      this.elements.empty.classList.add("hidden");
+      this.elements.error.classList.add("hidden");
+    }
+  },
+
+
+  setDeviceLoading(isLoading) {
+    this.elements.deviceButton.disabled = isLoading;
+    const title = this.elements.deviceButton.querySelector("strong");
+
+    if (title) {
+      title.textContent = isLoading
+        ? "Detecting location..."
+        : "Use current location";
+    }
+  },
+
+
+  setSaveLoading(isLoading) {
+    this.elements.saveButton.disabled = isLoading;
+    this.elements.saveButton.textContent = isLoading
+      ? "Saving Address..."
+      : this.state.editingAddressId
+        ? "Update Address"
+        : "Save Address";
+  },
+
+
+  showLoadError(message) {
+    this.elements.loading.classList.add("hidden");
+    this.elements.list.classList.add("hidden");
+    this.elements.empty.classList.add("hidden");
+    this.elements.errorMessage.textContent = message;
+    this.elements.error.classList.remove("hidden");
+  },
+
+
+  hideError() {
+    this.elements.error.classList.add("hidden");
+  },
+
+
+  showMessage(message, type = "success") {
+    this.elements.message.textContent = message;
+    this.elements.message.dataset.messageType = type;
+    this.elements.message.classList.remove("hidden");
+  },
+
+
+  clearMessage() {
+    this.elements.message.textContent = "";
+    this.elements.message.classList.add("hidden");
+    delete this.elements.message.dataset.messageType;
+  },
+
+
+  showFormError(message) {
+    this.elements.formError.textContent = message;
+    this.elements.formError.classList.remove("hidden");
+    this.elements.formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  },
+
+
+  clearFormError() {
+    this.elements.formError.textContent = "";
+    this.elements.formError.classList.add("hidden");
+  },
+
+
+  hideSuggestions() {
+    this.elements.suggestions.innerHTML = "";
+    this.elements.suggestions.classList.add("hidden");
+  },
+
+
+  /* HELPERS */
+
+  isValidLocation(location) {
+    return Boolean(
+      location &&
+      LocationManager.isValidCoordinates(
+        Number(location.latitude),
+        Number(location.longitude)
+      )
+    );
+  },
+
+
+  normalizeText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  },
+
+
+  setAddressType(type) {
+    const normalizedType = String(type || "HOME").toUpperCase();
+    const input = this.elements.form.querySelector(
+      'input[name="addressType"][value="' + normalizedType + '"]'
+    );
+
+    if (input) {
+      input.checked = true;
+    }
+  },
+
+
+  getAddressIcon(type) {
+    const icons = { HOME: "🏠", WORK: "💼", OTHER: "📍" };
+    return icons[String(type || "OTHER").toUpperCase()] || "📍";
+  },
+
+
+  getAddressTypeLabel(type) {
+    const labels = { HOME: "Home", WORK: "Work", OTHER: "Other" };
+    return labels[String(type || "OTHER").toUpperCase()] || "Address";
+  },
+
+
+  coordinateToInput(value) {
+    if (value === null || value === undefined || value === "") {
+      return "";
+    }
+    return String(value);
+  },
+
+
+  formatAddressText(address) {
+    return [
+      address.addressLine1,
+      address.areaLocality,
+      address.addressLine2,
+      address.city,
+      address.district,
+      address.state,
+      address.pincode
+    ].filter(Boolean).join(", ");
+  },
+
+
+  getLocationError(error) {
+
+    const code = error && error.code ? error.code : "LOCATION_ERROR";
+    const messages = {
+      LOCATION_PERMISSION_DENIED:
+        "Location permission is blocked. Allow location access in browser settings and try again.",
+      LOCATION_UNAVAILABLE:
+        "Your current location is unavailable. Check device location services.",
+      LOCATION_NOT_AVAILABLE:
+        "Your current location could not be detected.",
+      LOCATION_TIMEOUT:
+        "Location detection took too long. Please try again.",
+      LOCATION_UNSUPPORTED:
+        "Location is not supported on this device or browser.",
+      INVALID_LOCATION:
+        "The device returned an invalid location.",
+      LOCATION_ERROR:
+        "Unable to detect your current location."
+    };
+
+    return {
+      code: code,
+      message: messages[code] || error.message || messages.LOCATION_ERROR
+    };
+  },
+
+
+  /* TEST */
+
+  async test() {
+
+    console.log("========================================");
+    console.log("APNABITE CUSTOMER ADDRESSES MAP TEST");
+    console.log("========================================");
+
+    try {
+      const districtResult = await this.loadDistricts();
+      const addressResult = await this.loadAddresses();
+      const requiredRole = document.body.dataset.requiredRole;
+      const navigationItems = this.elements.bottomNavigation
+        ? this.elements.bottomNavigation.querySelectorAll(".customer-nav-item").length
+        : 0;
+      const accountActive = Boolean(
+        this.elements.bottomNavigation &&
+        this.elements.bottomNavigation.querySelector(
+          '.customer-nav-item[href="account.html"].is-active'
+        )
+      );
+      const mapLibraryAvailable = typeof window.L !== "undefined";
+      const reverseGeocodingSupported =
+        typeof this.resolvePinLocation === "function";
+      const pinRuleSupported =
+        this.NEAREST_ADDRESS_THRESHOLD_METERS === 500 &&
+        this.MAP_DRAG_DEBOUNCE_MS === 700;
+      const lockedFields =
+        this.elements.district.disabled === true &&
+        this.elements.state.readOnly === true &&
+        this.elements.pincode.readOnly === true;
+      const cityEditable = this.elements.city.readOnly === false;
+
+      const results = [
+        {
+          test: "Required role",
+          expected: "Customer",
+          actual: requiredRole,
+          passed: requiredRole === "Customer"
+        },
+        {
+          test: "Live address API",
+          expected: true,
+          actual: addressResult.success,
+          passed: addressResult.success === true
+        },
+        {
+          test: "Service districts",
+          expected: "At least 1",
+          actual: districtResult.count || 0,
+          passed: districtResult.success === true && districtResult.count > 0
+        },
+        {
+          test: "Leaflet map library",
+          expected: true,
+          actual: mapLibraryAvailable,
+          passed: mapLibraryAvailable
+        },
+        {
+          test: "Reverse geocoding support",
+          expected: true,
+          actual: reverseGeocodingSupported,
+          passed: reverseGeocodingSupported
+        },
+        {
+          test: "500m area-only pin rule",
+          expected: true,
+          actual: pinRuleSupported,
+          passed: pinRuleSupported
+        },
+        {
+          test: "District/state/pincode locked",
+          expected: true,
+          actual: lockedFields,
+          passed: lockedFields
+        },
+        {
+          test: "City editable",
+          expected: true,
+          actual: cityEditable,
+          passed: cityEditable
+        },
+        {
+          test: "Bottom navigation",
+          expected: 4,
+          actual: navigationItems,
+          passed: navigationItems === 4
+        },
+        {
+          test: "Account navigation active",
+          expected: true,
+          actual: accountActive,
+          passed: accountActive
+        }
+      ];
+
+      const passed = results.every((result) => result.passed);
+      console.table(results);
+      console.log("Loaded Addresses:", this.state.addresses);
+      console.log(
+        passed
+          ? "Customer Addresses Map Test: PASS"
+          : "Customer Addresses Map Test: FAIL"
+      );
+
+      return {
+        success: passed,
+        status: passed ? "PASS" : "FAIL",
+        addressCount: this.state.addresses.length,
+        districtCount: this.state.districts.length,
+        results: results
+      };
+    } catch (error) {
+      console.error("Customer Addresses Map Test: FAIL", error);
+      return {
+        success: false,
+        status: "FAIL",
+        error: error.message,
+        code: error.code || ""
+      };
+    }
   }
-
-  .customer-addresses .customer-page-message,
-  .addresses-intro,
-  .addresses-actions,
-  .saved-addresses-section {
-    margin-right: 24px;
-    margin-left: 24px;
-  }
-
-  .addresses-intro {
-    padding: 24px;
-  }
-
-  .addresses-intro h2 {
-    font-size: 24px;
-  }
-
-  .addresses-intro-icon {
-    width: 72px;
-    height: 72px;
-    font-size: 38px;
-  }
-
-  .addresses-action-grid {
-    grid-template-columns: repeat(2, minmax(0,1fr));
-  }
-
-  .address-action-card {
-    min-height: 94px;
-  }
-
-  .address-dialog {
-    align-items: center;
-    padding: 24px;
-  }
-
-  .address-dialog-sheet {
-    max-width: 600px;
-    max-height: calc(100vh - 48px);
-    max-height: calc(100dvh - 48px);
-    border-radius: 24px;
-  }
-
-  .address-map,
-  .address-map-wrap {
-    height: 300px;
-  }
-}
+};
 
 
-/* SMALL MOBILE */
-
-@media (max-width: 360px) {
-  .addresses-header {
-    grid-template-columns: 40px minmax(0,1fr) 40px;
-    padding-right: 12px;
-    padding-left: 12px;
-  }
-
-  .addresses-back-button,
-  .addresses-refresh-button {
-    width: 39px;
-    height: 39px;
-  }
-
-  .addresses-intro {
-    gap: 12px;
-    padding: 17px;
-  }
-
-  .addresses-intro h2 {
-    font-size: 18px;
-  }
-
-  .addresses-intro-icon {
-    width: 52px;
-    height: 52px;
-    font-size: 27px;
-  }
-
-  .saved-address-main {
-    padding: 14px;
-  }
-
-  .saved-address-title-row {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .saved-address-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .address-dialog-sheet {
-    padding-right: 14px;
-    padding-left: 14px;
-  }
-
-  .address-map-heading {
-    align-items: center;
-  }
-
-  .address-map-location-button span:last-child {
-    display: none;
-  }
-
-  .address-map-location-button {
-    width: 38px;
-    padding: 6px;
-  }
-}
-
-
-/* REDUCED MOTION */
-
-@media (prefers-reduced-motion: reduce) {
-  .addresses-refresh-button,
-  .address-action-card,
-  .saved-address-button,
-  .address-search-spinner,
-  .address-map-spinner,
-  .address-skeleton-icon::after,
-  .address-skeleton-content span::after {
-    animation: none;
-    transition: none;
-  }
-}
-
-
-@keyframes addresses-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes addresses-shimmer {
-  100% { transform: translateX(100%); }
-}
+document.addEventListener("DOMContentLoaded", () => {
+  CustomerAddresses.init();
+});
