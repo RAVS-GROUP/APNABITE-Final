@@ -23,6 +23,12 @@
     href="../../manifest.json"
   >
 
+  <link
+    rel="icon"
+    type="image/webp"
+    href="../../shared/assets/images/apnabite-logo.webp"
+  >
+
   <title>Saved Addresses | ApnaBite</title>
 
   <!-- Shared styles -->
@@ -85,9 +91,7 @@
         aria-hidden="true"
       ></div>
 
-      <p>
-        Loading your addresses...
-      </p>
+      <p>Opening your addresses...</p>
     </div>
 
 
@@ -123,13 +127,9 @@
 
         <div class="addresses-header-title">
 
-          <h1>
-            Saved Addresses
-          </h1>
+          <h1>Saved Addresses</h1>
 
-          <p>
-            Manage your delivery locations
-          </p>
+          <p>Manage your delivery locations</p>
 
         </div>
 
@@ -138,7 +138,7 @@
           class="addresses-refresh-button"
           id="refreshAddressesButton"
           type="button"
-          aria-label="Refresh addresses"
+          aria-label="Refresh saved addresses"
         >
           <svg
             viewBox="0 0 24 24"
@@ -184,7 +184,7 @@
       </div>
 
 
-      <!-- Status message -->
+      <!-- Page status -->
 
       <div
         class="customer-page-message hidden"
@@ -194,14 +194,14 @@
       ></div>
 
 
-      <!-- Address information banner -->
+      <!-- Introduction -->
 
       <section
         class="addresses-intro"
         aria-labelledby="addressesIntroTitle"
       >
 
-        <div>
+        <div class="addresses-intro-content">
 
           <span class="addresses-intro-label">
             Delivery locations
@@ -212,8 +212,8 @@
           </h2>
 
           <p>
-            Select your current location or choose an active
-            ApnaBite service district.
+            Save complete addresses for faster checkout and
+            accurate delivery.
           </p>
 
         </div>
@@ -229,7 +229,7 @@
       </section>
 
 
-      <!-- Add location actions -->
+      <!-- Quick actions -->
 
       <section
         class="addresses-actions"
@@ -239,11 +239,11 @@
         <div class="addresses-section-heading">
 
           <h2 id="addLocationTitle">
-            Add a location
+            Add delivery address
           </h2>
 
           <p>
-            Choose how you want to set your delivery location
+            Detect your location or enter an address manually
           </p>
 
         </div>
@@ -266,12 +266,10 @@
 
             <span class="address-action-content">
 
-              <strong>
-                Use current location
-              </strong>
+              <strong>Use current location</strong>
 
               <small>
-                Detect location from this device
+                Detect coordinates from this device
               </small>
 
             </span>
@@ -288,7 +286,7 @@
 
           <button
             class="address-action-card"
-            id="chooseDistrictButton"
+            id="addAddressButton"
             type="button"
           >
 
@@ -296,17 +294,15 @@
               class="address-action-icon"
               aria-hidden="true"
             >
-              🗺️
+              ➕
             </span>
 
             <span class="address-action-content">
 
-              <strong>
-                Choose service district
-              </strong>
+              <strong>Enter new address</strong>
 
               <small>
-                Select an active ApnaBite district
+                Search or fill address details
               </small>
 
             </span>
@@ -325,22 +321,36 @@
       </section>
 
 
-      <!-- Current saved location -->
+      <!-- Saved addresses -->
 
       <section
         class="saved-addresses-section"
         aria-labelledby="savedAddressesTitle"
       >
 
-        <div class="addresses-section-heading">
+        <div class="addresses-section-title-row">
 
-          <h2 id="savedAddressesTitle">
-            Current delivery location
-          </h2>
+          <div class="addresses-section-heading">
 
-          <p>
-            This location is used to show nearby food options
-          </p>
+            <h2 id="savedAddressesTitle">
+              Your saved addresses
+            </h2>
+
+            <p>
+              The nearest address within 500 metres can be
+              selected automatically.
+            </p>
+
+          </div>
+
+
+          <span
+            class="addresses-count"
+            id="addressesCount"
+            aria-label="Saved address count"
+          >
+            0
+          </span>
 
         </div>
 
@@ -354,7 +364,7 @@
           aria-live="polite"
         >
 
-          <div class="address-skeleton">
+          <article class="address-skeleton">
 
             <span class="address-skeleton-icon"></span>
 
@@ -364,82 +374,66 @@
               <span></span>
             </div>
 
-          </div>
+          </article>
+
+
+          <article class="address-skeleton">
+
+            <span class="address-skeleton-icon"></span>
+
+            <div class="address-skeleton-content">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+          </article>
 
         </div>
 
 
-        <!-- Saved location card -->
+        <!-- Address API error -->
 
-        <article
-          class="saved-address-card hidden"
-          id="savedAddressCard"
+        <div
+          class="addresses-error hidden"
+          id="addressesError"
+          role="alert"
         >
 
-          <div class="saved-address-main">
-
-            <div
-              class="saved-address-icon"
-              id="savedAddressIcon"
-              aria-hidden="true"
-            >
-              📍
-            </div>
-
-
-            <div class="saved-address-content">
-
-              <div class="saved-address-title-row">
-
-                <h3 id="savedAddressTitle">
-                  Delivery location
-                </h3>
-
-                <span
-                  class="saved-address-active-badge"
-                >
-                  Active
-                </span>
-
-              </div>
-
-              <p id="savedAddressDescription">
-                Your saved ApnaBite delivery location
-              </p>
-
-              <small id="savedAddressSource">
-                Saved location
-              </small>
-
-            </div>
-
+          <div
+            class="addresses-error-icon"
+            aria-hidden="true"
+          >
+            !
           </div>
 
+          <h3>Addresses could not be loaded</h3>
 
-          <div class="saved-address-actions">
+          <p id="addressesErrorMessage">
+            Please check your connection and try again.
+          </p>
 
-            <button
-              class="saved-address-button"
-              id="updateAddressButton"
-              type="button"
-            >
-              Update
-            </button>
+          <button
+            class="app-button app-button-secondary"
+            id="retryAddressesButton"
+            type="button"
+          >
+            Try Again
+          </button>
 
-            <button
-              class="saved-address-button saved-address-button-danger"
-              id="removeAddressButton"
-              type="button"
-            >
-              Remove
-            </button>
-
-          </div>
-
-        </article>
+        </div>
 
 
-        <!-- Empty location -->
+        <!-- Multiple saved address cards -->
+
+        <div
+          class="saved-addresses-list hidden"
+          id="savedAddressesList"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- Empty state -->
 
         <div
           class="addresses-empty hidden"
@@ -453,51 +447,60 @@
             📌
           </div>
 
-          <h3>
-            No delivery location saved
-          </h3>
+          <h3>No saved addresses</h3>
 
           <p>
-            Add your current location or choose a service
-            district to discover nearby food.
+            Add a delivery address now, or add one while
+            placing your first order.
           </p>
+
+          <button
+            class="app-button app-button-primary"
+            id="emptyAddAddressButton"
+            type="button"
+          >
+            Add Delivery Address
+          </button>
 
         </div>
 
       </section>
 
 
-      <!-- Manual district dialog -->
+      <!-- Add/Edit address dialog -->
 
       <div
         class="address-dialog hidden"
-        id="districtDialog"
+        id="addressFormDialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="districtDialogTitle"
+        aria-labelledby="addressFormTitle"
       >
 
         <div
           class="address-dialog-backdrop"
-          data-close-address-dialog="true"
+          data-close-address-form="true"
         ></div>
 
 
-        <div class="address-dialog-sheet">
+        <div class="address-dialog-sheet address-form-sheet">
 
-          <div class="address-dialog-handle"></div>
+          <div
+            class="address-dialog-handle"
+            aria-hidden="true"
+          ></div>
 
 
           <div class="address-dialog-header">
 
             <div>
 
-              <h2 id="districtDialogTitle">
-                Select service district
+              <h2 id="addressFormTitle">
+                Add delivery address
               </h2>
 
-              <p>
-                Choose a district where ApnaBite service is active.
+              <p id="addressFormDescription">
+                Search your area and complete the delivery details.
               </p>
 
             </div>
@@ -505,9 +508,9 @@
 
             <button
               class="address-dialog-close"
-              id="closeDistrictDialogButton"
+              id="closeAddressFormButton"
               type="button"
-              aria-label="Close district selection"
+              aria-label="Close address form"
             >
               ×
             </button>
@@ -515,56 +518,452 @@
           </div>
 
 
-          <div
-            class="address-dialog-loading hidden"
-            id="districtDialogLoading"
-          >
-            <span
-              class="address-dialog-spinner"
-              aria-hidden="true"
-            ></span>
-
-            <span>
-              Loading service districts...
-            </span>
-          </div>
-
-
-          <div
-            class="address-dialog-form"
-            id="districtDialogForm"
+          <form
+            class="address-form"
+            id="addressForm"
+            novalidate
           >
 
-            <label for="addressDistrictSelect">
-              Service district
+            <input
+              id="addressIdInput"
+              type="hidden"
+            >
+
+
+            <input
+              id="addressLatitudeInput"
+              type="hidden"
+            >
+
+
+            <input
+              id="addressLongitudeInput"
+              type="hidden"
+            >
+
+
+            <input
+              id="addressLocationSourceInput"
+              type="hidden"
+              value="MANUAL"
+            >
+
+
+            <input
+              id="addressPlaceProviderInput"
+              type="hidden"
+            >
+
+
+            <input
+              id="addressPlaceReferenceInput"
+              type="hidden"
+            >
+
+
+            <input
+              id="addressAccuracyInput"
+              type="hidden"
+            >
+
+
+            <!-- Address suggestion search -->
+
+            <div class="address-form-group address-search-group">
+
+              <label for="addressSearchInput">
+                Search area or address
+              </label>
+
+              <div class="address-search-wrap">
+
+                <span
+                  class="address-search-icon"
+                  aria-hidden="true"
+                >
+                  🔍
+                </span>
+
+                <input
+                  class="address-form-input address-search-input"
+                  id="addressSearchInput"
+                  type="search"
+                  autocomplete="off"
+                  placeholder="Start typing area, road or landmark"
+                >
+
+                <span
+                  class="address-search-spinner hidden"
+                  id="addressSearchSpinner"
+                  aria-hidden="true"
+                ></span>
+
+              </div>
+
+
+              <p
+                class="address-field-note"
+                id="addressSearchStatus"
+                aria-live="polite"
+              >
+                Suggestions will help fill area, city, district,
+                state and pincode.
+              </p>
+
+
+              <div
+                class="address-suggestions hidden"
+                id="addressSuggestions"
+                role="listbox"
+                aria-label="Address suggestions"
+              ></div>
+
+            </div>
+
+
+            <!-- Address type -->
+
+            <fieldset class="address-form-group">
+
+              <legend>Address type</legend>
+
+              <div class="address-type-options">
+
+                <label class="address-type-option">
+
+                  <input
+                    type="radio"
+                    name="addressType"
+                    value="HOME"
+                    checked
+                  >
+
+                  <span>🏠 Home</span>
+
+                </label>
+
+
+                <label class="address-type-option">
+
+                  <input
+                    type="radio"
+                    name="addressType"
+                    value="WORK"
+                  >
+
+                  <span>💼 Work</span>
+
+                </label>
+
+
+                <label class="address-type-option">
+
+                  <input
+                    type="radio"
+                    name="addressType"
+                    value="OTHER"
+                  >
+
+                  <span>📍 Other</span>
+
+                </label>
+
+              </div>
+
+            </fieldset>
+
+
+            <!-- Label -->
+
+            <div class="address-form-group">
+
+              <label for="addressLabelInput">
+                Address label
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressLabelInput"
+                type="text"
+                maxlength="50"
+                placeholder="Example: Home, Office, Parents"
+              >
+
+            </div>
+
+
+            <!-- Area/locality -->
+
+            <div class="address-form-group">
+
+              <label for="addressAreaInput">
+                Area or locality
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressAreaInput"
+                type="text"
+                maxlength="120"
+                autocomplete="address-level3"
+                placeholder="Sector, colony, village or locality"
+              >
+
+            </div>
+
+
+            <!-- House/flat -->
+
+            <div class="address-form-group">
+
+              <label for="addressLine1Input">
+                House, flat or building
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressLine1Input"
+                type="text"
+                maxlength="150"
+                autocomplete="address-line1"
+                placeholder="Flat number, house number or building"
+                required
+              >
+
+            </div>
+
+
+            <!-- Street -->
+
+            <div class="address-form-group">
+
+              <label for="addressLine2Input">
+                Street or road
+                <span class="address-optional-label">
+                  (optional)
+                </span>
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressLine2Input"
+                type="text"
+                maxlength="150"
+                autocomplete="address-line2"
+                placeholder="Street, road or block"
+              >
+
+            </div>
+
+
+            <!-- Landmark -->
+
+            <div class="address-form-group">
+
+              <label for="addressLandmarkInput">
+                Landmark
+                <span class="address-optional-label">
+                  (optional)
+                </span>
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressLandmarkInput"
+                type="text"
+                maxlength="120"
+                placeholder="Near school, market or hospital"
+              >
+
+            </div>
+
+
+            <!-- District -->
+
+            <div class="address-form-group">
+
+              <label for="addressDistrictSelect">
+                Service district
+              </label>
+
+              <select
+                class="address-form-input"
+                id="addressDistrictSelect"
+                required
+              >
+                <option value="">
+                  Select service district
+                </option>
+              </select>
+
+            </div>
+
+
+            <!-- City and state -->
+
+            <div class="address-form-grid">
+
+              <div class="address-form-group">
+
+                <label for="addressCityInput">
+                  City
+                </label>
+
+                <input
+                  class="address-form-input"
+                  id="addressCityInput"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="address-level2"
+                  required
+                >
+
+              </div>
+
+
+              <div class="address-form-group">
+
+                <label for="addressStateInput">
+                  State
+                </label>
+
+                <input
+                  class="address-form-input"
+                  id="addressStateInput"
+                  type="text"
+                  maxlength="80"
+                  autocomplete="address-level1"
+                  readonly
+                  required
+                >
+
+              </div>
+
+            </div>
+
+
+            <!-- Pincode -->
+
+            <div class="address-form-group">
+
+              <label for="addressPincodeInput">
+                Pincode
+              </label>
+
+              <input
+                class="address-form-input"
+                id="addressPincodeInput"
+                type="text"
+                inputmode="numeric"
+                autocomplete="postal-code"
+                maxlength="6"
+                placeholder="6-digit pincode"
+                required
+              >
+
+            </div>
+
+
+            <!-- Receiver details -->
+
+            <div class="address-form-section">
+
+              <h3>Receiver details</h3>
+
+              <p>
+                Who should the delivery partner contact?
+              </p>
+
+            </div>
+
+
+            <div class="address-form-group">
+
+              <label for="receiverNameInput">
+                Receiver name
+              </label>
+
+              <input
+                class="address-form-input"
+                id="receiverNameInput"
+                type="text"
+                maxlength="100"
+                autocomplete="name"
+                placeholder="Enter receiver name"
+                required
+              >
+
+            </div>
+
+
+            <div class="address-form-group">
+
+              <label for="receiverMobileInput">
+                Receiver mobile
+              </label>
+
+              <div class="receiver-mobile-wrap">
+
+                <span>+91</span>
+
+                <input
+                  class="address-form-input"
+                  id="receiverMobileInput"
+                  type="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                  maxlength="10"
+                  placeholder="10-digit mobile number"
+                  required
+                >
+
+              </div>
+
+            </div>
+
+
+            <!-- Default address -->
+
+            <label class="address-default-option">
+
+              <input
+                id="addressDefaultInput"
+                type="checkbox"
+              >
+
+              <span>
+
+                <strong>Set as default address</strong>
+
+                <small>
+                  Use this address first during checkout
+                </small>
+
+              </span>
+
             </label>
 
-            <select
-              class="address-district-select"
-              id="addressDistrictSelect"
-            >
-              <option value="">
-                Select your district
-              </option>
-            </select>
 
+            <!-- Form error -->
 
             <p
-              class="address-dialog-error hidden"
-              id="districtDialogError"
+              class="address-form-error hidden"
+              id="addressFormError"
               role="alert"
             ></p>
 
 
+            <!-- Save -->
+
             <button
-              class="app-button app-button-primary"
-              id="confirmDistrictButton"
-              type="button"
+              class="app-button app-button-primary address-save-button"
+              id="saveAddressButton"
+              type="submit"
             >
-              Save Delivery Location
+              Save Address
             </button>
 
-          </div>
+          </form>
 
         </div>
 
@@ -589,7 +988,7 @@
             🏠
           </span>
 
-          <span>Home</span>
+          <strong>Home</strong>
         </a>
 
 
@@ -604,7 +1003,7 @@
             📦
           </span>
 
-          <span>Orders</span>
+          <strong>Orders</strong>
         </a>
 
 
@@ -619,12 +1018,12 @@
             🍽️
           </span>
 
-          <span>Dine-In</span>
+          <strong>Dine-In</strong>
         </a>
 
 
         <a
-          class="customer-nav-item is-active"
+          class="customer-nav-item is-active active"
           href="account.html"
           aria-current="page"
         >
@@ -635,7 +1034,7 @@
             👤
           </span>
 
-          <span>Account</span>
+          <strong>Account</strong>
         </a>
 
       </nav>
