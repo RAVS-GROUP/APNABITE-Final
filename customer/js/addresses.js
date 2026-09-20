@@ -2,12 +2,22 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: customer/js/addresses.js
- * PURPOSE: Customer delivery location management
- * VERSION: 1.0.0
+ * PURPOSE: Customer delivery address management
+ * VERSION: 2.0.0
  * ============================================================
  */
 
 const CustomerAddresses = {
+
+  /*
+   * ----------------------------------------------------------
+   * SETTINGS
+   * ----------------------------------------------------------
+   */
+
+  SEARCH_DEBOUNCE_MS:
+    300,
+
 
   /*
    * ----------------------------------------------------------
@@ -16,23 +26,31 @@ const CustomerAddresses = {
    */
 
   state: {
+
     loading:
+      false,
+
+    saving:
       false,
 
     deviceRequestRunning:
       false,
 
-    districtRequestRunning:
-      false,
+    addresses: [],
 
-    currentSource:
-      "NONE"
+    districts: [],
+
+    editingAddressId:
+      "",
+
+    searchTimer:
+      null
   },
 
 
   /*
    * ----------------------------------------------------------
-   * DOM ELEMENTS
+   * ELEMENTS
    * ----------------------------------------------------------
    */
 
@@ -59,9 +77,14 @@ const CustomerAddresses = {
           "useDeviceLocationButton"
         ),
 
-      districtButton:
+      addButton:
         document.getElementById(
-          "chooseDistrictButton"
+          "addAddressButton"
+        ),
+
+      emptyAddButton:
+        document.getElementById(
+          "emptyAddAddressButton"
         ),
 
       loading:
@@ -69,29 +92,24 @@ const CustomerAddresses = {
           "addressesLoading"
         ),
 
-      addressCard:
+      error:
         document.getElementById(
-          "savedAddressCard"
+          "addressesError"
         ),
 
-      addressIcon:
+      errorMessage:
         document.getElementById(
-          "savedAddressIcon"
+          "addressesErrorMessage"
         ),
 
-      addressTitle:
+      retryButton:
         document.getElementById(
-          "savedAddressTitle"
+          "retryAddressesButton"
         ),
 
-      addressDescription:
+      list:
         document.getElementById(
-          "savedAddressDescription"
-        ),
-
-      addressSource:
-        document.getElementById(
-          "savedAddressSource"
+          "savedAddressesList"
         ),
 
       empty:
@@ -99,14 +117,9 @@ const CustomerAddresses = {
           "addressesEmpty"
         ),
 
-      updateButton:
+      count:
         document.getElementById(
-          "updateAddressButton"
-        ),
-
-      removeButton:
-        document.getElementById(
-          "removeAddressButton"
+          "addressesCount"
         ),
 
       message:
@@ -116,37 +129,152 @@ const CustomerAddresses = {
 
       dialog:
         document.getElementById(
-          "districtDialog"
+          "addressFormDialog"
         ),
 
-      dialogCloseButton:
+      closeDialogButton:
         document.getElementById(
-          "closeDistrictDialogButton"
+          "closeAddressFormButton"
         ),
 
-      dialogLoading:
+      formTitle:
         document.getElementById(
-          "districtDialogLoading"
+          "addressFormTitle"
         ),
 
-      dialogForm:
+      formDescription:
         document.getElementById(
-          "districtDialogForm"
+          "addressFormDescription"
         ),
 
-      districtSelect:
+      form:
+        document.getElementById(
+          "addressForm"
+        ),
+
+      formError:
+        document.getElementById(
+          "addressFormError"
+        ),
+
+      saveButton:
+        document.getElementById(
+          "saveAddressButton"
+        ),
+
+      addressId:
+        document.getElementById(
+          "addressIdInput"
+        ),
+
+      latitude:
+        document.getElementById(
+          "addressLatitudeInput"
+        ),
+
+      longitude:
+        document.getElementById(
+          "addressLongitudeInput"
+        ),
+
+      locationSource:
+        document.getElementById(
+          "addressLocationSourceInput"
+        ),
+
+      placeProvider:
+        document.getElementById(
+          "addressPlaceProviderInput"
+        ),
+
+      placeReference:
+        document.getElementById(
+          "addressPlaceReferenceInput"
+        ),
+
+      accuracy:
+        document.getElementById(
+          "addressAccuracyInput"
+        ),
+
+      searchInput:
+        document.getElementById(
+          "addressSearchInput"
+        ),
+
+      searchSpinner:
+        document.getElementById(
+          "addressSearchSpinner"
+        ),
+
+      searchStatus:
+        document.getElementById(
+          "addressSearchStatus"
+        ),
+
+      suggestions:
+        document.getElementById(
+          "addressSuggestions"
+        ),
+
+      label:
+        document.getElementById(
+          "addressLabelInput"
+        ),
+
+      area:
+        document.getElementById(
+          "addressAreaInput"
+        ),
+
+      line1:
+        document.getElementById(
+          "addressLine1Input"
+        ),
+
+      line2:
+        document.getElementById(
+          "addressLine2Input"
+        ),
+
+      landmark:
+        document.getElementById(
+          "addressLandmarkInput"
+        ),
+
+      district:
         document.getElementById(
           "addressDistrictSelect"
         ),
 
-      dialogError:
+      city:
         document.getElementById(
-          "districtDialogError"
+          "addressCityInput"
         ),
 
-      confirmDistrictButton:
+      state:
         document.getElementById(
-          "confirmDistrictButton"
+          "addressStateInput"
+        ),
+
+      pincode:
+        document.getElementById(
+          "addressPincodeInput"
+        ),
+
+      receiverName:
+        document.getElementById(
+          "receiverNameInput"
+        ),
+
+      receiverMobile:
+        document.getElementById(
+          "receiverMobileInput"
+        ),
+
+      isDefault:
+        document.getElementById(
+          "addressDefaultInput"
         ),
 
       bottomNavigation:
@@ -158,8 +286,8 @@ const CustomerAddresses = {
 
     if (!this.hasRequiredElements()) {
 
-      console.warn(
-        "Customer Addresses page elements were not found."
+      console.error(
+        "Customer Addresses page elements are missing."
       );
 
       return false;
@@ -167,7 +295,12 @@ const CustomerAddresses = {
 
 
     this.bindEvents();
-    this.refreshAddressState();
+
+    /*
+     * Page UI does not wait for device GPS.
+     */
+
+    this.loadInitialData();
 
 
     console.log(
@@ -181,39 +314,66 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * CHECK REQUIRED ELEMENTS
+   * REQUIRED ELEMENTS
    * ----------------------------------------------------------
    */
 
   hasRequiredElements() {
 
-    return Boolean(
-      this.elements.refreshButton &&
-      this.elements.deviceButton &&
-      this.elements.districtButton &&
-      this.elements.loading &&
-      this.elements.addressCard &&
-      this.elements.addressTitle &&
-      this.elements.addressDescription &&
-      this.elements.addressSource &&
-      this.elements.empty &&
-      this.elements.updateButton &&
-      this.elements.removeButton &&
-      this.elements.message &&
-      this.elements.dialog &&
-      this.elements.dialogCloseButton &&
-      this.elements.dialogLoading &&
-      this.elements.dialogForm &&
-      this.elements.districtSelect &&
-      this.elements.dialogError &&
-      this.elements.confirmDistrictButton
+    const required = [
+
+      "refreshButton",
+      "deviceButton",
+      "addButton",
+      "emptyAddButton",
+      "loading",
+      "error",
+      "errorMessage",
+      "retryButton",
+      "list",
+      "empty",
+      "count",
+      "message",
+      "dialog",
+      "closeDialogButton",
+      "formTitle",
+      "form",
+      "formError",
+      "saveButton",
+      "addressId",
+      "latitude",
+      "longitude",
+      "locationSource",
+      "searchInput",
+      "searchStatus",
+      "suggestions",
+      "label",
+      "area",
+      "line1",
+      "line2",
+      "landmark",
+      "district",
+      "city",
+      "state",
+      "pincode",
+      "receiverName",
+      "receiverMobile",
+      "isDefault"
+    ];
+
+
+    return required.every(
+      (name) =>
+        Boolean(
+          this.elements[name]
+        )
     );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * BIND EVENTS
+   * EVENT BINDINGS
    * ----------------------------------------------------------
    */
 
@@ -224,7 +384,17 @@ const CustomerAddresses = {
         "click",
         () => {
 
-          this.refreshAddressState();
+          this.loadAddresses();
+        }
+      );
+
+
+    this.elements.retryButton
+      .addEventListener(
+        "click",
+        () => {
+
+          this.loadAddresses();
         }
       );
 
@@ -239,52 +409,32 @@ const CustomerAddresses = {
       );
 
 
-    this.elements.districtButton
+    this.elements.addButton
       .addEventListener(
         "click",
         () => {
 
-          this.openDistrictDialog();
+          this.openCreateForm();
         }
       );
 
 
-    this.elements.updateButton
+    this.elements.emptyAddButton
       .addEventListener(
         "click",
         () => {
 
-          if (
-            this.state.currentSource ===
-            "MANUAL"
-          ) {
-
-            this.openDistrictDialog();
-
-          } else {
-
-            this.useCurrentLocation();
-          }
+          this.openCreateForm();
         }
       );
 
 
-    this.elements.removeButton
+    this.elements.closeDialogButton
       .addEventListener(
         "click",
         () => {
 
-          this.removeSavedLocation();
-        }
-      );
-
-
-    this.elements.dialogCloseButton
-      .addEventListener(
-        "click",
-        () => {
-
-          this.closeDistrictDialog();
+          this.closeForm();
         }
       );
 
@@ -296,22 +446,144 @@ const CustomerAddresses = {
 
           if (
             event.target.dataset
-              .closeAddressDialog ===
+              .closeAddressForm ===
             "true"
           ) {
 
-            this.closeDistrictDialog();
+            this.closeForm();
           }
         }
       );
 
 
-    this.elements.confirmDistrictButton
+    this.elements.form
+      .addEventListener(
+        "submit",
+        (event) => {
+
+          event.preventDefault();
+
+          this.saveAddress();
+        }
+      );
+
+
+    this.elements.list
       .addEventListener(
         "click",
+        (event) => {
+
+          const button =
+            event.target.closest(
+              "[data-address-action]"
+            );
+
+
+          if (!button) {
+            return;
+          }
+
+
+          const action =
+            button.dataset
+              .addressAction;
+
+
+          const addressId =
+            button.dataset
+              .addressId;
+
+
+          if (
+            action === "edit"
+          ) {
+
+            this.openEditForm(
+              addressId
+            );
+          }
+
+
+          if (
+            action === "default"
+          ) {
+
+            this.setDefaultAddress(
+              addressId
+            );
+          }
+
+
+          if (
+            action === "remove"
+          ) {
+
+            this.removeAddress(
+              addressId
+            );
+          }
+        }
+      );
+
+
+    this.elements.district
+      .addEventListener(
+        "change",
         () => {
 
-          this.confirmDistrict();
+          this.handleDistrictChange();
+        }
+      );
+
+
+    this.elements.searchInput
+      .addEventListener(
+        "input",
+        () => {
+
+          this.handleAddressSearch();
+        }
+      );
+
+
+    this.elements.pincode
+      .addEventListener(
+        "input",
+        () => {
+
+          this.elements.pincode.value =
+            this.elements.pincode
+              .value
+              .replace(
+                /\D/g,
+                ""
+              )
+              .slice(
+                0,
+                6
+              );
+        }
+      );
+
+
+    this.elements.receiverMobile
+      .addEventListener(
+        "input",
+        () => {
+
+          this.elements.receiverMobile
+            .value =
+              this.elements
+                .receiverMobile
+                .value
+                .replace(
+                  /\D/g,
+                  ""
+                )
+                .slice(
+                  0,
+                  10
+                );
         }
       );
 
@@ -328,7 +600,7 @@ const CustomerAddresses = {
             )
         ) {
 
-          this.closeDistrictDialog();
+          this.closeForm();
         }
       }
     );
@@ -337,11 +609,30 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * REFRESH SAVED LOCATION STATE
+   * SESSION
    * ----------------------------------------------------------
    */
 
-  refreshAddressState() {
+  getSessionId() {
+
+    const session =
+      SessionManager.get();
+
+
+    return session &&
+      session.sessionId
+        ? session.sessionId
+        : "";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * INITIAL DATA
+   * ----------------------------------------------------------
+   */
+
+  async loadInitialData() {
 
     this.setPageLoading(
       true
@@ -350,75 +641,13 @@ const CustomerAddresses = {
 
     try {
 
-      const manualLocation =
-        ServiceLocation.getSaved();
-
-
-      if (manualLocation) {
-
-        this.state.currentSource =
-          "MANUAL";
-
-
-        this.renderManualLocation(
-          manualLocation
-        );
-
-
-        return {
-          success: true,
-          source:
-            "MANUAL",
-          location:
-            manualLocation
-        };
-      }
-
-
-      const deviceLocation =
-        LocationManager.getSaved();
-
-
-      if (
-        deviceLocation &&
-        LocationManager.isFresh(
-          deviceLocation
-        )
-      ) {
-
-        this.state.currentSource =
-          "DEVICE";
-
-
-        this.renderDeviceLocation(
-          deviceLocation
-        );
-
-
-        return {
-          success: true,
-          source:
-            "DEVICE",
-          location:
-            deviceLocation
-        };
-      }
-
-
-      this.state.currentSource =
-        "NONE";
-
-
-      this.renderEmptyState();
-
-
-      return {
-        success: false,
-        source:
-          "NONE",
-        location:
-          null
-      };
+      await Promise.all([
+        this.loadDistricts(),
+        this.loadAddresses({
+          manageLoading:
+            false
+        })
+      ]);
 
     } finally {
 
@@ -431,97 +660,328 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * RENDER MANUAL LOCATION
+   * LOAD DISTRICTS
    * ----------------------------------------------------------
    */
 
-  renderManualLocation(location) {
+  async loadDistricts() {
 
-    this.elements.addressIcon
-      .textContent =
-        "📍";
+    try {
 
-
-    this.elements.addressTitle
-      .textContent =
-        location.districtName ||
-        "Selected district";
+      const result =
+        await ServiceLocation
+          .getAvailable();
 
 
-    this.elements.addressDescription
-      .textContent =
-        location.state
-          ? location.districtName +
+      const districts =
+        Array.isArray(
+          result.districts
+        )
+          ? result.districts
+          : [];
+
+
+      this.state.districts =
+        districts;
+
+
+      this.renderDistrictOptions();
+
+
+      return {
+        success: true,
+        count:
+          districts.length,
+        districts:
+          districts
+      };
+
+    } catch (error) {
+
+      console.error(
+        "Address districts failed:",
+        error
+      );
+
+
+      this.state.districts =
+        [];
+
+
+      this.renderDistrictOptions();
+
+
+      return {
+        success: false,
+        error:
+          error.message,
+        code:
+          error.code || ""
+      };
+    }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * RENDER DISTRICTS
+   * ----------------------------------------------------------
+   */
+
+  renderDistrictOptions() {
+
+    const selectedValue =
+      this.elements.district.value;
+
+
+    this.elements.district
+      .innerHTML =
+        "";
+
+
+    const placeholder =
+      document.createElement(
+        "option"
+      );
+
+
+    placeholder.value =
+      "";
+
+
+    placeholder.textContent =
+      this.state.districts.length > 0
+        ? "Select service district"
+        : "No active district available";
+
+
+    this.elements.district
+      .appendChild(
+        placeholder
+      );
+
+
+    this.state.districts
+      .forEach(
+        (district) => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            district.districtId;
+
+
+          option.textContent =
+            district.districtName +
             ", " +
-            location.state
-          : location.districtName;
+            district.state;
 
 
-    this.elements.addressSource
-      .textContent =
-        "Selected service district";
+          this.elements.district
+            .appendChild(
+              option
+            );
+        }
+      );
 
 
-    this.elements.updateButton
-      .textContent =
-        "Change District";
+    if (selectedValue) {
 
-
-    this.showAddressCard();
+      this.elements.district.value =
+        selectedValue;
+    }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * RENDER DEVICE LOCATION
+   * LOAD SAVED ADDRESSES
    * ----------------------------------------------------------
    */
 
-  renderDeviceLocation(location) {
+  async loadAddresses(
+    options = {}
+  ) {
 
-    this.elements.addressIcon
-      .textContent =
-        "🎯";
+    if (this.state.loading) {
 
-
-    this.elements.addressTitle
-      .textContent =
-        "Current device location";
-
-
-    this.elements.addressDescription
-      .textContent =
-        "Latitude " +
-        Number(
-          location.latitude
-        ).toFixed(5) +
-        ", Longitude " +
-        Number(
-          location.longitude
-        ).toFixed(5);
+      return {
+        success: false,
+        reason:
+          "ADDRESS_REQUEST_ALREADY_RUNNING"
+      };
+    }
 
 
-    this.elements.addressSource
-      .textContent =
-        "Detected from this device";
+    this.state.loading =
+      true;
 
 
-    this.elements.updateButton
-      .textContent =
-        "Update Location";
+    if (
+      options.manageLoading !== false
+    ) {
+
+      this.setPageLoading(
+        true
+      );
+    }
 
 
-    this.showAddressCard();
+    this.clearMessage();
+    this.hideError();
+
+
+    try {
+
+      const response =
+        await API.request(
+          "get_customer_addresses",
+          {
+            sessionId:
+              this.getSessionId()
+          }
+        );
+
+
+      const result =
+        response.data || {};
+
+
+      const addresses =
+        Array.isArray(
+          result.addresses
+        )
+          ? result.addresses
+          : [];
+
+
+      this.state.addresses =
+        addresses;
+
+
+      this.renderAddresses(
+        addresses
+      );
+
+
+      return {
+        success: true,
+        count:
+          addresses.length,
+        addresses:
+          addresses,
+        requestId:
+          response.requestId || ""
+      };
+
+    } catch (error) {
+
+      this.showLoadError(
+        error.message ||
+        "Unable to load your addresses."
+      );
+
+
+      return {
+        success: false,
+        error:
+          error.message,
+        code:
+          error.code || ""
+      };
+
+    } finally {
+
+      this.state.loading =
+        false;
+
+
+      if (
+        options.manageLoading !== false
+      ) {
+
+        this.setPageLoading(
+          false
+        );
+      }
+    }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * SHOW SAVED ADDRESS CARD
+   * RENDER ADDRESSES
    * ----------------------------------------------------------
    */
 
-  showAddressCard() {
+  renderAddresses(addresses) {
+
+    const safeAddresses =
+      Array.isArray(addresses)
+        ? addresses
+        : [];
+
+
+    this.elements.count
+      .textContent =
+        String(
+          safeAddresses.length
+        );
+
+
+    this.elements.list
+      .innerHTML =
+        "";
+
+
+    this.elements.loading
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.error
+      .classList.add(
+        "hidden"
+      );
+
+
+    if (
+      safeAddresses.length === 0
+    ) {
+
+      this.elements.list
+        .classList.add(
+          "hidden"
+        );
+
+
+      this.elements.empty
+        .classList.remove(
+          "hidden"
+        );
+
+
+      return;
+    }
+
+
+    safeAddresses.forEach(
+      (address) => {
+
+        this.elements.list
+          .appendChild(
+            this.createAddressCard(
+              address
+            )
+          );
+      }
+    );
+
 
     this.elements.empty
       .classList.add(
@@ -529,7 +989,7 @@ const CustomerAddresses = {
       );
 
 
-    this.elements.addressCard
+    this.elements.list
       .classList.remove(
         "hidden"
       );
@@ -538,28 +998,770 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * SHOW EMPTY STATE
+   * CREATE ADDRESS CARD
    * ----------------------------------------------------------
    */
 
-  renderEmptyState() {
+  createAddressCard(address) {
 
-    this.elements.addressCard
-      .classList.add(
-        "hidden"
+    const card =
+      document.createElement(
+        "article"
       );
 
 
-    this.elements.empty
-      .classList.remove(
-        "hidden"
+    card.className =
+      "saved-address-card";
+
+
+    if (address.isDefault) {
+
+      card.classList.add(
+        "is-default"
       );
+    }
+
+
+    const main =
+      document.createElement(
+        "div"
+      );
+
+
+    main.className =
+      "saved-address-main";
+
+
+    const icon =
+      document.createElement(
+        "div"
+      );
+
+
+    icon.className =
+      "saved-address-icon";
+
+
+    icon.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+    icon.textContent =
+      this.getAddressIcon(
+        address.addressType
+      );
+
+
+    const content =
+      document.createElement(
+        "div"
+      );
+
+
+    content.className =
+      "saved-address-content";
+
+
+    const titleRow =
+      document.createElement(
+        "div"
+      );
+
+
+    titleRow.className =
+      "saved-address-title-row";
+
+
+    const title =
+      document.createElement(
+        "h3"
+      );
+
+
+    title.textContent =
+      address.label ||
+      this.getAddressTypeLabel(
+        address.addressType
+      );
+
+
+    titleRow.appendChild(
+      title
+    );
+
+
+    if (address.isDefault) {
+
+      const badge =
+        document.createElement(
+          "span"
+        );
+
+
+      badge.className =
+        "saved-address-default-badge";
+
+
+      badge.textContent =
+        "Default";
+
+
+      titleRow.appendChild(
+        badge
+      );
+    }
+
+
+    const addressText =
+      document.createElement(
+        "p"
+      );
+
+
+    addressText.className =
+      "saved-address-text";
+
+
+    addressText.textContent =
+      this.formatAddressText(
+        address
+      );
+
+
+    content.appendChild(
+      titleRow
+    );
+
+
+    content.appendChild(
+      addressText
+    );
+
+
+    if (address.landmark) {
+
+      const landmark =
+        document.createElement(
+          "p"
+        );
+
+
+      landmark.className =
+        "saved-address-landmark";
+
+
+      landmark.textContent =
+        "Landmark: " +
+        address.landmark;
+
+
+      content.appendChild(
+        landmark
+      );
+    }
+
+
+    const receiver =
+      document.createElement(
+        "div"
+      );
+
+
+    receiver.className =
+      "saved-address-receiver";
+
+
+    const receiverName =
+      document.createElement(
+        "span"
+      );
+
+
+    receiverName.textContent =
+      "👤 " +
+      (
+        address.receiverName ||
+        "Receiver"
+      );
+
+
+    const receiverMobile =
+      document.createElement(
+        "span"
+      );
+
+
+    receiverMobile.textContent =
+      "☎ +91 " +
+      (
+        address.receiverMobile ||
+        ""
+      );
+
+
+    receiver.appendChild(
+      receiverName
+    );
+
+
+    receiver.appendChild(
+      receiverMobile
+    );
+
+
+    content.appendChild(
+      receiver
+    );
+
+
+    const meta =
+      document.createElement(
+        "div"
+      );
+
+
+    meta.className =
+      "saved-address-meta";
+
+
+    const source =
+      document.createElement(
+        "span"
+      );
+
+
+    source.textContent =
+      address.locationSource ||
+      "SAVED";
+
+
+    const district =
+      document.createElement(
+        "span"
+      );
+
+
+    district.textContent =
+      address.district ||
+      "District";
+
+
+    meta.appendChild(
+      source
+    );
+
+
+    meta.appendChild(
+      district
+    );
+
+
+    content.appendChild(
+      meta
+    );
+
+
+    main.appendChild(
+      icon
+    );
+
+
+    main.appendChild(
+      content
+    );
+
+
+    const actions =
+      document.createElement(
+        "div"
+      );
+
+
+    actions.className =
+      "saved-address-actions";
+
+
+    const defaultButton =
+      this.createCardButton(
+        address.isDefault
+          ? "Default"
+          : "Make Default",
+        "default",
+        address.addressId
+      );
+
+
+    defaultButton.disabled =
+      Boolean(
+        address.isDefault
+      );
+
+
+    const editButton =
+      this.createCardButton(
+        "Edit",
+        "edit",
+        address.addressId
+      );
+
+
+    const removeButton =
+      this.createCardButton(
+        "Remove",
+        "remove",
+        address.addressId,
+        true
+      );
+
+
+    actions.appendChild(
+      defaultButton
+    );
+
+
+    actions.appendChild(
+      editButton
+    );
+
+
+    actions.appendChild(
+      removeButton
+    );
+
+
+    card.appendChild(
+      main
+    );
+
+
+    card.appendChild(
+      actions
+    );
+
+
+    return card;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * USE CURRENT DEVICE LOCATION
+   * CARD BUTTON
+   * ----------------------------------------------------------
+   */
+
+  createCardButton(
+    text,
+    action,
+    addressId,
+    danger = false
+  ) {
+
+    const button =
+      document.createElement(
+        "button"
+      );
+
+
+    button.type =
+      "button";
+
+
+    button.className =
+      "saved-address-button";
+
+
+    if (danger) {
+
+      button.classList.add(
+        "saved-address-button-danger"
+      );
+    }
+
+
+    button.dataset.addressAction =
+      action;
+
+
+    button.dataset.addressId =
+      addressId;
+
+
+    button.textContent =
+      text;
+
+
+    return button;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * OPEN CREATE FORM
+   * ----------------------------------------------------------
+   */
+
+  openCreateForm() {
+
+    this.resetForm();
+
+
+    this.state.editingAddressId =
+      "";
+
+
+    this.elements.formTitle
+      .textContent =
+        "Add delivery address";
+
+
+    this.elements.formDescription
+      .textContent =
+        "Complete your address and receiver details.";
+
+
+    this.elements.saveButton
+      .textContent =
+        "Save Address";
+
+
+    const savedLocation =
+      LocationManager.getSaved();
+
+
+    if (
+      savedLocation &&
+      LocationManager
+        .isValidCoordinates(
+          savedLocation.latitude,
+          savedLocation.longitude
+        )
+    ) {
+
+      this.applyDeviceCoordinates(
+        savedLocation
+      );
+    }
+
+
+    const savedDistrict =
+      ServiceLocation.getSaved();
+
+
+    if (savedDistrict) {
+
+      this.elements.district.value =
+        savedDistrict.districtId ||
+        "";
+
+
+      this.applySelectedDistrict();
+    }
+
+
+    this.openForm();
+
+
+    return {
+      success: true,
+      mode:
+        "CREATE"
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * OPEN EDIT FORM
+   * ----------------------------------------------------------
+   */
+
+  openEditForm(addressId) {
+
+    const address =
+      this.state.addresses.find(
+        (item) =>
+          item.addressId ===
+          addressId
+      );
+
+
+    if (!address) {
+
+      this.showMessage(
+        "Saved address could not be found.",
+        "error"
+      );
+
+
+      return {
+        success: false,
+        reason:
+          "ADDRESS_NOT_FOUND"
+      };
+    }
+
+
+    this.resetForm();
+
+
+    this.state.editingAddressId =
+      addressId;
+
+
+    this.elements.formTitle
+      .textContent =
+        "Edit delivery address";
+
+
+    this.elements.formDescription
+      .textContent =
+        "Update address or receiver details.";
+
+
+    this.elements.saveButton
+      .textContent =
+        "Update Address";
+
+
+    this.elements.addressId.value =
+      address.addressId || "";
+
+
+    this.setAddressType(
+      address.addressType
+    );
+
+
+    this.elements.label.value =
+      address.label || "";
+
+
+    this.elements.area.value =
+      address.areaLocality || "";
+
+
+    this.elements.line1.value =
+      address.addressLine1 || "";
+
+
+    this.elements.line2.value =
+      address.addressLine2 || "";
+
+
+    this.elements.landmark.value =
+      address.landmark || "";
+
+
+    this.elements.district.value =
+      address.districtId || "";
+
+
+    this.elements.city.value =
+      address.city || "";
+
+
+    this.elements.state.value =
+      address.state || "";
+
+
+    this.elements.pincode.value =
+      address.pincode || "";
+
+
+    this.elements.latitude.value =
+      String(
+        address.latitude || ""
+      );
+
+
+    this.elements.longitude.value =
+      String(
+        address.longitude || ""
+      );
+
+
+    this.elements.locationSource.value =
+      address.locationSource ||
+      "MANUAL";
+
+
+    this.elements.placeProvider.value =
+      address.placeProvider || "";
+
+
+    this.elements.placeReference.value =
+      address.placeReference || "";
+
+
+    this.elements.accuracy.value =
+      address.locationAccuracyMeters ??
+      "";
+
+
+    this.elements.receiverName.value =
+      address.receiverName || "";
+
+
+    this.elements.receiverMobile.value =
+      address.receiverMobile || "";
+
+
+    this.elements.isDefault.checked =
+      Boolean(
+        address.isDefault
+      );
+
+
+    this.elements.searchInput.value =
+      [
+        address.areaLocality,
+        address.city,
+        address.district
+      ]
+        .filter(
+          Boolean
+        )
+        .join(", ");
+
+
+    this.openForm();
+
+
+    return {
+      success: true,
+      mode:
+        "EDIT",
+      address:
+        address
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * OPEN/CLOSE FORM
+   * ----------------------------------------------------------
+   */
+
+  openForm() {
+
+    this.clearFormError();
+    this.hideSuggestions();
+
+
+    this.elements.dialog
+      .classList.remove(
+        "hidden"
+      );
+
+
+    document.body
+      .classList.add(
+        "address-dialog-open"
+      );
+
+
+    window.setTimeout(
+      () => {
+
+        this.elements.searchInput
+          .focus();
+      },
+      50
+    );
+  },
+
+
+  closeForm() {
+
+    if (this.state.saving) {
+      return false;
+    }
+
+
+    this.elements.dialog
+      .classList.add(
+        "hidden"
+      );
+
+
+    document.body
+      .classList.remove(
+        "address-dialog-open"
+      );
+
+
+    this.hideSuggestions();
+    this.clearFormError();
+
+
+    return true;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * RESET FORM
+   * ----------------------------------------------------------
+   */
+
+  resetForm() {
+
+    this.elements.form.reset();
+
+
+    this.elements.addressId.value =
+      "";
+
+
+    this.elements.latitude.value =
+      "";
+
+
+    this.elements.longitude.value =
+      "";
+
+
+    this.elements.locationSource.value =
+      "MANUAL";
+
+
+    this.elements.placeProvider.value =
+      "";
+
+
+    this.elements.placeReference.value =
+      "";
+
+
+    this.elements.accuracy.value =
+      "";
+
+
+    this.elements.searchInput.value =
+      "";
+
+
+    this.elements.searchStatus
+      .textContent =
+        "Search currently suggests active ApnaBite service districts.";
+
+
+    this.setAddressType(
+      "HOME"
+    );
+
+
+    this.hideSuggestions();
+    this.clearFormError();
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * USE CURRENT LOCATION
    * ----------------------------------------------------------
    */
 
@@ -581,34 +1783,19 @@ const CustomerAddresses = {
       true;
 
 
-    this.clearMessage();
     this.setDeviceLoading(
       true
     );
 
 
+    this.clearMessage();
+
+
     try {
 
-      const permissionState =
+      const result =
         await LocationManager
-          .getPermissionState();
-
-
-      if (
-        permissionState === "denied"
-      ) {
-
-        throw LocationManager
-          .createError(
-            "Location permission is blocked.",
-            "LOCATION_PERMISSION_DENIED"
-          );
-      }
-
-
-      const location =
-        await LocationManager
-          .getCurrentPosition({
+          .requestAfterUserAction({
             persist:
               true,
             enableHighAccuracy:
@@ -620,7 +1807,15 @@ const CustomerAddresses = {
           });
 
 
+      const location =
+        result &&
+        result.location
+          ? result.location
+          : result;
+
+
       if (
+        !location ||
         !LocationManager
           .isValidCoordinates(
             location.latitude,
@@ -636,46 +1831,27 @@ const CustomerAddresses = {
       }
 
 
-      /*
-       * Device location becomes active.
-       * Clear any older manual district.
-       */
-
-      ServiceLocation.clear();
+      this.openCreateForm();
 
 
-      this.state.currentSource =
-        "DEVICE";
-
-
-      this.renderDeviceLocation(
+      this.applyDeviceCoordinates(
         location
       );
+
+
+      this.elements.searchStatus
+        .textContent =
+          "Current coordinates detected. Complete the address fields below.";
 
 
       this.showMessage(
-        "Current device location saved successfully.",
+        "Current location detected. Complete the delivery address.",
         "success"
-      );
-
-
-      this.dispatchLocationReady(
-        "DEVICE",
-        location
-      );
-
-
-      console.log(
-        "Customer Device Address: PASS"
       );
 
 
       return {
         success: true,
-        status:
-          "PASS",
-        source:
-          "DEVICE",
         location:
           location
       };
@@ -694,16 +1870,8 @@ const CustomerAddresses = {
       );
 
 
-      console.error(
-        "Customer Device Address: FAIL",
-        displayError
-      );
-
-
       return {
         success: false,
-        status:
-          "FAIL",
         code:
           displayError.code,
         error:
@@ -725,119 +1893,749 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * OPEN DISTRICT DIALOG
+   * APPLY DEVICE COORDINATES
    * ----------------------------------------------------------
    */
 
-  async openDistrictDialog() {
+  applyDeviceCoordinates(location) {
 
-    this.elements.dialog
-      .classList.remove(
-        "hidden"
+    this.elements.latitude.value =
+      String(
+        location.latitude
       );
 
 
-    document.body
-      .classList.add(
-        "address-dialog-open"
+    this.elements.longitude.value =
+      String(
+        location.longitude
       );
 
 
-    this.clearDialogError();
+    this.elements.accuracy.value =
+      location.accuracy ===
+        null ||
+      location.accuracy ===
+        undefined
+        ? ""
+        : String(
+            location.accuracy
+          );
 
 
-    await this.loadDistricts();
+    this.elements.locationSource.value =
+      "DEVICE";
   },
 
 
   /*
    * ----------------------------------------------------------
-   * CLOSE DISTRICT DIALOG
+   * LOCAL DISTRICT SEARCH
    * ----------------------------------------------------------
    */
 
-  closeDistrictDialog() {
+  handleAddressSearch() {
+
+    window.clearTimeout(
+      this.state.searchTimer
+    );
+
+
+    const query =
+      this.elements.searchInput
+        .value
+        .trim()
+        .toLowerCase();
+
 
     if (
-      this.state.districtRequestRunning
+      query.length < 2
     ) {
 
-      return false;
+      this.hideSuggestions();
+
+
+      this.elements.searchStatus
+        .textContent =
+          "Type at least 2 characters to search service districts.";
+
+
+      return;
     }
 
 
-    this.elements.dialog
-      .classList.add(
-        "hidden"
+    this.state.searchTimer =
+      window.setTimeout(
+        () => {
+
+          const matches =
+            this.state.districts
+              .filter(
+                (district) => {
+
+                  const searchable =
+                    (
+                      district.districtName +
+                      " " +
+                      district.state
+                    )
+                      .toLowerCase();
+
+
+                  return searchable
+                    .includes(
+                      query
+                    );
+                }
+              )
+              .slice(
+                0,
+                6
+              );
+
+
+          this.renderSuggestions(
+            matches
+          );
+        },
+        this.SEARCH_DEBOUNCE_MS
       );
-
-
-    document.body
-      .classList.remove(
-        "address-dialog-open"
-      );
-
-
-    this.clearDialogError();
-
-
-    return true;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOAD ACTIVE SERVICE DISTRICTS
+   * RENDER DISTRICT SUGGESTIONS
    * ----------------------------------------------------------
    */
 
-  async loadDistricts() {
+  renderSuggestions(districts) {
 
-    this.elements.dialogLoading
+    this.elements.suggestions
+      .innerHTML =
+        "";
+
+
+    if (
+      districts.length === 0
+    ) {
+
+      this.hideSuggestions();
+
+
+      this.elements.searchStatus
+        .textContent =
+          "No active ApnaBite service district matched your search.";
+
+
+      return;
+    }
+
+
+    districts.forEach(
+      (district) => {
+
+        const button =
+          document.createElement(
+            "button"
+          );
+
+
+        button.type =
+          "button";
+
+
+        button.className =
+          "address-suggestion-button";
+
+
+        button.setAttribute(
+          "role",
+          "option"
+        );
+
+
+        const icon =
+          document.createElement(
+            "span"
+          );
+
+
+        icon.className =
+          "address-suggestion-icon";
+
+
+        icon.textContent =
+          "📍";
+
+
+        const content =
+          document.createElement(
+            "span"
+          );
+
+
+        content.className =
+          "address-suggestion-content";
+
+
+        const title =
+          document.createElement(
+            "strong"
+          );
+
+
+        title.textContent =
+          district.districtName;
+
+
+        const state =
+          document.createElement(
+            "small"
+          );
+
+
+        state.textContent =
+          district.state +
+          " • ApnaBite service district";
+
+
+        content.appendChild(
+          title
+        );
+
+
+        content.appendChild(
+          state
+        );
+
+
+        button.appendChild(
+          icon
+        );
+
+
+        button.appendChild(
+          content
+        );
+
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            this.selectDistrictSuggestion(
+              district
+            );
+          }
+        );
+
+
+        this.elements.suggestions
+          .appendChild(
+            button
+          );
+      }
+    );
+
+
+    this.elements.suggestions
       .classList.remove(
         "hidden"
       );
 
 
-    this.elements.dialogForm
-      .classList.add(
-        "hidden"
+    this.elements.searchStatus
+      .textContent =
+        districts.length +
+        " service location" +
+        (
+          districts.length === 1
+            ? ""
+            : "s"
+        ) +
+        " found.";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SELECT DISTRICT SUGGESTION
+   * ----------------------------------------------------------
+   */
+
+  selectDistrictSuggestion(
+    district
+  ) {
+
+    this.elements.district.value =
+      district.districtId;
+
+
+    this.elements.searchInput.value =
+      district.districtName +
+      ", " +
+      district.state;
+
+
+    this.elements.area.value =
+      this.elements.area.value ||
+      district.districtName;
+
+
+    this.elements.city.value =
+      this.elements.city.value ||
+      district.districtName;
+
+
+    this.elements.state.value =
+      district.state;
+
+
+    this.elements.placeProvider.value =
+      "APNABITE_DISTRICTS";
+
+
+    this.elements.placeReference.value =
+      district.districtId;
+
+
+    this.applySelectedDistrict();
+
+
+    this.hideSuggestions();
+
+
+    this.elements.searchStatus
+      .textContent =
+        "Service district selected. Complete house and receiver details.";
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * DISTRICT CHANGE
+   * ----------------------------------------------------------
+   */
+
+  handleDistrictChange() {
+
+    this.applySelectedDistrict();
+  },
+
+
+  applySelectedDistrict() {
+
+    const districtId =
+      this.elements.district.value;
+
+
+    const district =
+      this.state.districts.find(
+        (item) =>
+          item.districtId ===
+          districtId
       );
+
+
+    if (!district) {
+
+      this.elements.state.value =
+        "";
+
+      return;
+    }
+
+
+    this.elements.state.value =
+      district.state || "";
+
+
+    if (!this.elements.city.value) {
+
+      this.elements.city.value =
+        district.districtName || "";
+    }
+
+
+    if (!this.elements.area.value) {
+
+      this.elements.area.value =
+        district.districtName || "";
+    }
+
+
+    ServiceLocation.save(
+      district
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * FORM DATA
+   * ----------------------------------------------------------
+   */
+
+  getFormData() {
+
+    const selectedType =
+      this.elements.form
+        .querySelector(
+          'input[name="addressType"]:checked'
+        );
+
+
+    return {
+
+      addressType:
+        selectedType
+          ? selectedType.value
+          : "HOME",
+
+      label:
+        this.elements.label
+          .value
+          .trim(),
+
+      addressLine1:
+        this.elements.line1
+          .value
+          .trim(),
+
+      addressLine2:
+        this.elements.line2
+          .value
+          .trim(),
+
+      landmark:
+        this.elements.landmark
+          .value
+          .trim(),
+
+      city:
+        this.elements.city
+          .value
+          .trim(),
+
+      districtId:
+        this.elements.district
+          .value,
+
+      areaLocality:
+        this.elements.area
+          .value
+          .trim(),
+
+      pincode:
+        this.elements.pincode
+          .value
+          .replace(
+            /\D/g,
+            ""
+          ),
+
+      latitude:
+        Number(
+          this.elements.latitude
+            .value
+        ),
+
+      longitude:
+        Number(
+          this.elements.longitude
+            .value
+        ),
+
+      receiverName:
+        this.elements.receiverName
+          .value
+          .trim(),
+
+      receiverMobile:
+        this.elements.receiverMobile
+          .value
+          .replace(
+            /\D/g,
+            ""
+          ),
+
+      locationSource:
+        this.elements.locationSource
+          .value ||
+        "MANUAL",
+
+      placeProvider:
+        this.elements.placeProvider
+          .value
+          .trim(),
+
+      placeReference:
+        this.elements.placeReference
+          .value
+          .trim(),
+
+      locationAccuracyMeters:
+        this.elements.accuracy.value
+          ? Number(
+              this.elements.accuracy
+                .value
+            )
+          : "",
+
+      isDefault:
+        this.elements.isDefault
+          .checked
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * CLIENT VALIDATION
+   * ----------------------------------------------------------
+   */
+
+  validateFormData(data) {
+
+    if (
+      !data.addressLine1 ||
+      data.addressLine1.length < 3
+    ) {
+
+      return {
+        valid: false,
+        message:
+          "Enter your house, flat or building details."
+      };
+    }
+
+
+    if (!data.districtId) {
+
+      return {
+        valid: false,
+        message:
+          "Select an active ApnaBite service district."
+      };
+    }
+
+
+    if (!data.city) {
+
+      return {
+        valid: false,
+        message:
+          "Enter the city."
+      };
+    }
+
+
+    if (
+      !/^\d{6}$/.test(
+        data.pincode
+      )
+    ) {
+
+      return {
+        valid: false,
+        message:
+          "Enter a valid 6-digit pincode."
+      };
+    }
+
+
+    if (
+      !LocationManager
+        .isValidCoordinates(
+          data.latitude,
+          data.longitude
+        )
+    ) {
+
+      return {
+        valid: false,
+        message:
+          "Accurate coordinates are required. Close this form and tap Use current location."
+      };
+    }
+
+
+    if (
+      !data.receiverName ||
+      data.receiverName.length < 2
+    ) {
+
+      return {
+        valid: false,
+        message:
+          "Enter the receiver name."
+      };
+    }
+
+
+    if (
+      !/^[6-9]\d{9}$/.test(
+        data.receiverMobile
+      )
+    ) {
+
+      return {
+        valid: false,
+        message:
+          "Enter a valid 10-digit receiver mobile number."
+      };
+    }
+
+
+    return {
+      valid: true
+    };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SAVE ADDRESS
+   * ----------------------------------------------------------
+   */
+
+  async saveAddress() {
+
+    if (this.state.saving) {
+
+      return {
+        success: false,
+        reason:
+          "ADDRESS_SAVE_RUNNING"
+      };
+    }
+
+
+    const data =
+      this.getFormData();
+
+
+    const validation =
+      this.validateFormData(
+        data
+      );
+
+
+    if (!validation.valid) {
+
+      this.showFormError(
+        validation.message
+      );
+
+
+      return {
+        success: false,
+        reason:
+          "FORM_VALIDATION_FAILED"
+      };
+    }
+
+
+    this.state.saving =
+      true;
+
+
+    this.setSaveLoading(
+      true
+    );
+
+
+    this.clearFormError();
 
 
     try {
 
-      const result =
-        await ServiceLocation
-          .getAvailable();
+      const editing =
+        Boolean(
+          this.state.editingAddressId
+        );
 
 
-      const districts =
-        Array.isArray(
-          result.districts
+      const action =
+        editing
+          ? "update_customer_address"
+          : "create_customer_address";
+
+
+      const payload =
+        editing
+          ? {
+              sessionId:
+                this.getSessionId(),
+
+              addressId:
+                this.state
+                  .editingAddressId,
+
+              updates:
+                data
+            }
+          : {
+              sessionId:
+                this.getSessionId(),
+
+              address:
+                data
+            };
+
+
+      const response =
+        await API.request(
+          action,
+          payload
+        );
+
+
+      this.closeForm();
+
+
+      await this.loadAddresses();
+
+
+      this.showMessage(
+        editing
+          ? "Delivery address updated successfully."
+          : "Delivery address saved successfully.",
+        "success"
+      );
+
+
+      document.dispatchEvent(
+        new CustomEvent(
+          "apnabite:addresses-updated",
+          {
+            detail: {
+              action:
+                editing
+                  ? "UPDATED"
+                  : "CREATED",
+
+              result:
+                response.data
+            }
+          }
         )
-          ? result.districts
-          : [];
-
-
-      this.renderDistrictOptions(
-        districts
       );
 
 
       return {
         success: true,
-        count:
-          districts.length,
-        districts:
-          districts
+        editing:
+          editing,
+        result:
+          response.data
       };
 
     } catch (error) {
 
-      this.setDialogError(
+      this.showFormError(
         error.message ||
-        "Unable to load service districts."
+        "Address could not be saved."
       );
 
 
@@ -851,328 +2649,184 @@ const CustomerAddresses = {
 
     } finally {
 
-      this.elements.dialogLoading
-        .classList.add(
-          "hidden"
-        );
+      this.state.saving =
+        false;
 
 
-      this.elements.dialogForm
-        .classList.remove(
-          "hidden"
-        );
+      this.setSaveLoading(
+        false
+      );
     }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * RENDER DISTRICT OPTIONS
+   * SET DEFAULT
    * ----------------------------------------------------------
    */
 
-  renderDistrictOptions(districts) {
+  async setDefaultAddress(
+    addressId
+  ) {
 
-    const select =
-      this.elements.districtSelect;
-
-
-    select.innerHTML = "";
-
-
-    const placeholder =
-      document.createElement(
-        "option"
-      );
-
-
-    placeholder.value =
-      "";
-
-    placeholder.textContent =
-      districts.length > 0
-        ? "Select your district"
-        : "No service district available";
-
-
-    select.appendChild(
-      placeholder
-    );
-
-
-    districts.forEach(
-      (district) => {
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        option.value =
-          district.districtId;
-
-
-        option.textContent =
-          district.districtName +
-          ", " +
-          district.state;
-
-
-        select.appendChild(
-          option
-        );
-      }
-    );
-
-
-    const savedDistrict =
-      ServiceLocation.getSaved();
-
-
-    if (savedDistrict) {
-
-      select.value =
-        savedDistrict.districtId;
-    }
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * CONFIRM MANUAL DISTRICT
-   * ----------------------------------------------------------
-   */
-
-  async confirmDistrict() {
-
-    if (
-      this.state.districtRequestRunning
-    ) {
-
-      return {
-        success: false,
-        reason:
-          "DISTRICT_REQUEST_ALREADY_RUNNING"
-      };
-    }
-
-
-    const districtId =
-      this.elements
-        .districtSelect
-        .value;
-
-
-    if (!districtId) {
-
-      this.setDialogError(
-        "Please select a service district."
-      );
-
-
-      return {
-        success: false,
-        reason:
-          "DISTRICT_REQUIRED"
-      };
-    }
-
-
-    this.state.districtRequestRunning =
-      true;
-
-
-    this.clearDialogError();
-    this.setDistrictLoading(
-      true
-    );
+    this.clearMessage();
 
 
     try {
 
-      const result =
-        await ServiceLocation
-          .selectDistrict(
-            districtId
-          );
+      const response =
+        await API.request(
+          "set_default_customer_address",
+          {
+            sessionId:
+              this.getSessionId(),
+
+            addressId:
+              addressId
+          }
+        );
 
 
-      const district =
-        result.district;
-
-
-      /*
-       * Manual district becomes active.
-       * Clear older device coordinates.
-       */
-
-      LocationManager.clear();
-
-
-      this.state.currentSource =
-        "MANUAL";
-
-
-      this.renderManualLocation(
-        district
-      );
+      await this.loadAddresses();
 
 
       this.showMessage(
-        district.districtName +
-        ", " +
-        district.state +
-        " saved as your delivery location.",
+        "Default delivery address updated.",
         "success"
-      );
-
-
-      this.dispatchLocationReady(
-        "MANUAL",
-        district
-      );
-
-
-      console.log(
-        "Customer Manual Address: PASS"
       );
 
 
       return {
         success: true,
-        status:
-          "PASS",
-        source:
-          "MANUAL",
-        district:
-          district
+        result:
+          response.data
       };
 
     } catch (error) {
 
-      this.setDialogError(
+      this.showMessage(
         error.message ||
-        "Unable to save this district."
-      );
-
-
-      console.error(
-        "Customer Manual Address: FAIL",
-        error
+        "Default address could not be updated.",
+        "error"
       );
 
 
       return {
         success: false,
-        status:
-          "FAIL",
-        code:
-          error.code || "",
         error:
-          error.message
+          error.message,
+        code:
+          error.code || ""
       };
-
-    } finally {
-
-      this.state.districtRequestRunning =
-        false;
-
-
-      this.setDistrictLoading(
-        false
-      );
-
-
-      if (
-        this.state.currentSource ===
-        "MANUAL"
-      ) {
-
-        this.closeDistrictDialog();
-      }
     }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * REMOVE SAVED LOCATION
+   * REMOVE ADDRESS
    * ----------------------------------------------------------
    */
 
-  removeSavedLocation() {
+  async removeAddress(addressId) {
 
-    ServiceLocation.clear();
-    LocationManager.clear();
-
-
-    this.state.currentSource =
-      "NONE";
-
-
-    this.renderEmptyState();
+    const address =
+      this.state.addresses.find(
+        (item) =>
+          item.addressId ===
+          addressId
+      );
 
 
-    this.showMessage(
-      "Saved delivery location removed.",
-      "success"
-    );
+    if (!address) {
+
+      return {
+        success: false,
+        reason:
+          "ADDRESS_NOT_FOUND"
+      };
+    }
 
 
-    document.dispatchEvent(
-      new CustomEvent(
-        "apnabite:location-removed"
-      )
-    );
+    const confirmed =
+      window.confirm(
+        "Remove " +
+        (
+          address.label ||
+          "this address"
+        ) +
+        "?"
+      );
 
 
-    return {
-      success: true,
-      removed:
-        true
-    };
-  },
+    if (!confirmed) {
+
+      return {
+        success: false,
+        reason:
+          "USER_CANCELLED"
+      };
+    }
 
 
-  /*
-   * ----------------------------------------------------------
-   * LOCATION READY EVENT
-   * ----------------------------------------------------------
-   */
+    try {
 
-  dispatchLocationReady(
-    source,
-    location
-  ) {
+      const response =
+        await API.request(
+          "remove_customer_address",
+          {
+            sessionId:
+              this.getSessionId(),
 
-    document.dispatchEvent(
-      new CustomEvent(
-        "apnabite:location-ready",
-        {
-          detail: {
-            source:
-              source,
-            location:
-              location
+            addressId:
+              addressId
           }
-        }
-      )
-    );
+        );
+
+
+      await this.loadAddresses();
+
+
+      this.showMessage(
+        "Saved address removed.",
+        "success"
+      );
+
+
+      return {
+        success: true,
+        result:
+          response.data
+      };
+
+    } catch (error) {
+
+      this.showMessage(
+        error.message ||
+        "Address could not be removed.",
+        "error"
+      );
+
+
+      return {
+        success: false,
+        error:
+          error.message,
+        code:
+          error.code || ""
+      };
+    }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * BUTTON LOADING STATES
+   * UI STATES
    * ----------------------------------------------------------
    */
 
   setPageLoading(isLoading) {
-
-    this.state.loading =
-      isLoading;
-
 
     this.elements.refreshButton
       .disabled =
@@ -1191,6 +2845,27 @@ const CustomerAddresses = {
         "hidden",
         !isLoading
       );
+
+
+    if (isLoading) {
+
+      this.elements.list
+        .classList.add(
+          "hidden"
+        );
+
+
+      this.elements.empty
+        .classList.add(
+          "hidden"
+        );
+
+
+      this.elements.error
+        .classList.add(
+          "hidden"
+        );
+    }
   },
 
 
@@ -1218,26 +2893,63 @@ const CustomerAddresses = {
   },
 
 
-  setDistrictLoading(isLoading) {
+  setSaveLoading(isLoading) {
 
-    this.elements.confirmDistrictButton
+    this.elements.saveButton
       .disabled =
         isLoading;
 
 
-    this.elements.confirmDistrictButton
+    this.elements.saveButton
       .textContent =
         isLoading
-          ? "Saving Location..."
-          : "Save Delivery Location";
+          ? "Saving Address..."
+          : this.state.editingAddressId
+            ? "Update Address"
+            : "Save Address";
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * PAGE MESSAGE
-   * ----------------------------------------------------------
-   */
+  showLoadError(message) {
+
+    this.elements.loading
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.list
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.empty
+      .classList.add(
+        "hidden"
+      );
+
+
+    this.elements.errorMessage
+      .textContent =
+        message;
+
+
+    this.elements.error
+      .classList.remove(
+        "hidden"
+      );
+  },
+
+
+  hideError() {
+
+    this.elements.error
+      .classList.add(
+        "hidden"
+      );
+  },
+
 
   showMessage(
     message,
@@ -1250,14 +2962,14 @@ const CustomerAddresses = {
 
 
     this.elements.message
-      .classList.remove(
-        "hidden"
-      );
+      .dataset.messageType =
+        type;
 
 
     this.elements.message
-      .dataset.messageType =
-        type;
+      .classList.remove(
+        "hidden"
+      );
   },
 
 
@@ -1281,34 +2993,51 @@ const CustomerAddresses = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * DIALOG ERROR
-   * ----------------------------------------------------------
-   */
+  showFormError(message) {
 
-  setDialogError(message) {
-
-    this.elements.dialogError
+    this.elements.formError
       .textContent =
         message;
 
 
-    this.elements.dialogError
+    this.elements.formError
       .classList.remove(
+        "hidden"
+      );
+
+
+    this.elements.formError
+      .scrollIntoView({
+        behavior:
+          "smooth",
+        block:
+          "nearest"
+      });
+  },
+
+
+  clearFormError() {
+
+    this.elements.formError
+      .textContent =
+        "";
+
+
+    this.elements.formError
+      .classList.add(
         "hidden"
       );
   },
 
 
-  clearDialogError() {
+  hideSuggestions() {
 
-    this.elements.dialogError
-      .textContent =
+    this.elements.suggestions
+      .innerHTML =
         "";
 
 
-    this.elements.dialogError
+    this.elements.suggestions
       .classList.add(
         "hidden"
       );
@@ -1317,9 +3046,94 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * LOCATION ERROR MAPPING
+   * HELPERS
    * ----------------------------------------------------------
    */
+
+  setAddressType(type) {
+
+    const input =
+      this.elements.form
+        .querySelector(
+          'input[name="addressType"][value="' +
+          String(
+            type || "HOME"
+          ).toUpperCase() +
+          '"]'
+        );
+
+
+    if (input) {
+
+      input.checked =
+        true;
+    }
+  },
+
+
+  getAddressIcon(type) {
+
+    const icons = {
+
+      HOME:
+        "🏠",
+
+      WORK:
+        "💼",
+
+      OTHER:
+        "📍"
+    };
+
+
+    return icons[
+      String(
+        type || "OTHER"
+      ).toUpperCase()
+    ] || "📍";
+  },
+
+
+  getAddressTypeLabel(type) {
+
+    const labels = {
+
+      HOME:
+        "Home",
+
+      WORK:
+        "Work",
+
+      OTHER:
+        "Other"
+    };
+
+
+    return labels[
+      String(
+        type || "OTHER"
+      ).toUpperCase()
+    ] || "Address";
+  },
+
+
+  formatAddressText(address) {
+
+    return [
+      address.addressLine1,
+      address.addressLine2,
+      address.areaLocality,
+      address.city,
+      address.district,
+      address.state,
+      address.pincode
+    ]
+      .filter(
+        Boolean
+      )
+      .join(", ");
+  },
+
 
   getLocationError(error) {
 
@@ -1336,7 +3150,7 @@ const CustomerAddresses = {
         "Location permission is blocked. Allow location access in browser settings and try again.",
 
       LOCATION_UNAVAILABLE:
-        "Your current location is unavailable. Check location services and try again.",
+        "Your current location is unavailable. Check device location services.",
 
       LOCATION_TIMEOUT:
         "Location detection took too long. Please try again.",
@@ -1355,6 +3169,7 @@ const CustomerAddresses = {
     return {
       code:
         code,
+
       message:
         messages[code] ||
         messages.LOCATION_ERROR
@@ -1364,7 +3179,7 @@ const CustomerAddresses = {
 
   /*
    * ----------------------------------------------------------
-   * PAGE INTEGRATION TEST
+   * PAGE TEST
    *
    * Browser console:
    * CustomerAddresses.test()
@@ -1388,38 +3203,17 @@ const CustomerAddresses = {
 
     try {
 
+      const districtResult =
+        await this.loadDistricts();
+
+
+      const addressResult =
+        await this.loadAddresses();
+
+
       const requiredRole =
         document.body.dataset
           .requiredRole;
-
-
-      const addressState =
-        this.refreshAddressState();
-
-
-      const available =
-        await ServiceLocation
-          .getAvailable();
-
-
-      const districts =
-        Array.isArray(
-          available.districts
-        )
-          ? available.districts
-          : [];
-
-
-      this.renderDistrictOptions(
-        districts
-      );
-
-
-      const optionCount =
-        this.elements
-          .districtSelect
-          .options
-          .length;
 
 
       const navigationItems =
@@ -1445,16 +3239,6 @@ const CustomerAddresses = {
         );
 
 
-      const passed =
-        requiredRole ===
-          "Customer" &&
-        districts.length > 0 &&
-        optionCount ===
-          districts.length + 1 &&
-        navigationItems === 4 &&
-        accountActive === true;
-
-
       const results = [
 
         {
@@ -1471,25 +3255,57 @@ const CustomerAddresses = {
 
         {
           test:
-            "Service districts",
+            "Live address API",
           expected:
-            "At least 1",
+            true,
           actual:
-            districts.length,
+            addressResult.success,
           passed:
-            districts.length > 0
+            addressResult.success ===
+              true
         },
 
         {
           test:
-            "District options",
+            "Address array",
           expected:
-            districts.length + 1,
+            true,
           actual:
-            optionCount,
+            Array.isArray(
+              this.state.addresses
+            ),
           passed:
-            optionCount ===
-              districts.length + 1
+            Array.isArray(
+              this.state.addresses
+            )
+        },
+
+        {
+          test:
+            "Service districts",
+          expected:
+            "At least 1",
+          actual:
+            districtResult.count || 0,
+          passed:
+            districtResult.success ===
+              true &&
+            districtResult.count > 0
+        },
+
+        {
+          test:
+            "Address form",
+          expected:
+            true,
+          actual:
+            Boolean(
+              this.elements.form
+            ),
+          passed:
+            Boolean(
+              this.elements.form
+            )
         },
 
         {
@@ -1516,20 +3332,21 @@ const CustomerAddresses = {
       ];
 
 
+      const passed =
+        results.every(
+          (result) =>
+            result.passed
+        );
+
+
       console.table(
         results
       );
 
 
       console.log(
-        "Current Address State:",
-        addressState
-      );
-
-
-      console.log(
-        "Available Districts:",
-        districts
+        "Loaded Addresses:",
+        this.state.addresses
       );
 
 
@@ -1543,16 +3360,21 @@ const CustomerAddresses = {
       return {
         success:
           passed,
+
         status:
           passed
             ? "PASS"
             : "FAIL",
-        currentAddress:
-          addressState,
+
+        addressCount:
+          this.state.addresses.length,
+
         districtCount:
-          districts.length,
+          this.state.districts.length,
+
         bottomNavigationItems:
           navigationItems,
+
         results:
           results
       };
@@ -1582,7 +3404,7 @@ const CustomerAddresses = {
 
 /*
  * ------------------------------------------------------------
- * INITIALIZE AFTER DOM IS READY
+ * INITIALIZE
  * ------------------------------------------------------------
  */
 
