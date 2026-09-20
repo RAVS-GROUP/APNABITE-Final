@@ -2,1049 +2,290 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  >
-
-  <meta
-    name="theme-color"
-    content="#ffffff"
-  >
-
-  <meta
-    name="description"
-    content="Manage your ApnaBite delivery addresses"
-  >
-
-  <link
-    rel="manifest"
-    href="../../manifest.json"
-  >
-
-  <link
-    rel="icon"
-    type="image/webp"
-    href="../../shared/assets/images/apnabite-logo.webp"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Manage your ApnaBite delivery addresses">
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
   <title>Saved Addresses | ApnaBite</title>
 
-  <!-- Shared styles -->
-
-  <link
-    rel="stylesheet"
-    href="../../shared/css/reset.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="../../shared/css/variables.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="../../shared/css/common.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="../../shared/css/components.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="../../shared/css/responsive.css"
-  >
-
-  <!-- Customer styles -->
-
-  <link
-    rel="stylesheet"
-    href="../css/customer-common.css"
-  >
-
-  <link
-    rel="stylesheet"
-    href="../css/addresses.css"
-  >
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../../shared/css/responsive.css">
+  <link rel="stylesheet" href="../css/customer-common.css">
+  <link rel="stylesheet" href="../css/addresses.css">
 </head>
 
 <body data-required-role="Customer">
+  <main class="customer-app customer-page" id="customerAddressesPage">
 
-  <main
-    class="customer-app customer-page"
-    id="customerAddressesPage"
-  >
-
-    <!-- Customer access loader -->
-
-    <div
-      class="customer-page-loader"
-      id="roleHomeLoader"
-      role="status"
-      aria-live="polite"
-    >
-      <div
-        class="loader-spinner"
-        aria-hidden="true"
-      ></div>
-
+    <div class="customer-page-loader" id="roleHomeLoader" role="status" aria-live="polite">
+      <div class="loader-spinner" aria-hidden="true"></div>
       <p>Opening your addresses...</p>
     </div>
 
-
-    <!-- Protected page content -->
-
-    <div
-      class="customer-addresses customer-bottom-safe-area hidden"
-      id="roleHomeContent"
-    >
-
-      <!-- Header -->
+    <div class="customer-addresses customer-bottom-safe-area hidden" id="roleHomeContent">
 
       <header class="addresses-header">
-
-        <a
-          class="addresses-back-button"
-          href="account.html"
-          aria-label="Back to account"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
+        <a class="addresses-back-button" href="account.html" aria-label="Back to account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m15 18-6-6 6-6"></path>
           </svg>
         </a>
 
-
         <div class="addresses-header-title">
-
           <h1>Saved Addresses</h1>
-
           <p>Manage your delivery locations</p>
-
         </div>
 
-
-        <button
-          class="addresses-refresh-button"
-          id="refreshAddressesButton"
-          type="button"
-          aria-label="Refresh saved addresses"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 11a8.1 8.1 0 0 0-15.5-2"
-            ></path>
-
+        <button class="addresses-refresh-button" id="refreshAddressesButton" type="button" aria-label="Refresh saved addresses">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 11a8.1 8.1 0 0 0-15.5-2"></path>
             <path d="M4 4v5h5"></path>
-
-            <path
-              d="M4 13a8.1 8.1 0 0 0 15.5 2"
-            ></path>
-
+            <path d="M4 13a8.1 8.1 0 0 0 15.5 2"></path>
             <path d="M20 20v-5h-5"></path>
           </svg>
         </button>
-
       </header>
 
-
-      <!-- Required role information -->
-
-      <div
-        class="hidden"
-        aria-hidden="true"
-      >
+      <div class="hidden" aria-hidden="true">
         <span id="roleHomeUserRole"></span>
         <span id="roleHomeUserMobile"></span>
-
-        <button
-          id="roleLogoutButton"
-          type="button"
-        >
-          Logout
-        </button>
+        <button id="roleLogoutButton" type="button">Logout</button>
       </div>
 
+      <div class="customer-page-message hidden" id="roleHomeMessage" role="alert" aria-live="polite"></div>
 
-      <!-- Page status -->
-
-      <div
-        class="customer-page-message hidden"
-        id="roleHomeMessage"
-        role="alert"
-        aria-live="polite"
-      ></div>
-
-
-      <!-- Introduction -->
-
-      <section
-        class="addresses-intro"
-        aria-labelledby="addressesIntroTitle"
-      >
-
+      <section class="addresses-intro" aria-labelledby="addressesIntroTitle">
         <div class="addresses-intro-content">
-
-          <span class="addresses-intro-label">
-            Delivery locations
-          </span>
-
-          <h2 id="addressesIntroTitle">
-            Where should we deliver?
-          </h2>
-
-          <p>
-            Save complete addresses for faster checkout and
-            accurate delivery.
-          </p>
-
+          <span class="addresses-intro-label">Delivery locations</span>
+          <h2 id="addressesIntroTitle">Where should we deliver?</h2>
+          <p>Save complete addresses for faster checkout and accurate delivery.</p>
         </div>
-
-
-        <div
-          class="addresses-intro-icon"
-          aria-hidden="true"
-        >
-          📍
-        </div>
-
+        <div class="addresses-intro-icon" aria-hidden="true">📍</div>
       </section>
 
-
-      <!-- Quick actions -->
-
-      <section
-        class="addresses-actions"
-        aria-labelledby="addLocationTitle"
-      >
-
+      <section class="addresses-actions" aria-labelledby="addLocationTitle">
         <div class="addresses-section-heading">
-
-          <h2 id="addLocationTitle">
-            Add delivery address
-          </h2>
-
-          <p>
-            Detect your location or enter an address manually
-          </p>
-
+          <h2 id="addLocationTitle">Add delivery address</h2>
+          <p>Detect your location or enter an address manually</p>
         </div>
-
 
         <div class="addresses-action-grid">
-
-          <button
-            class="address-action-card"
-            id="useDeviceLocationButton"
-            type="button"
-          >
-
-            <span
-              class="address-action-icon"
-              aria-hidden="true"
-            >
-              🎯
-            </span>
-
+          <button class="address-action-card" id="useDeviceLocationButton" type="button">
+            <span class="address-action-icon" aria-hidden="true">🎯</span>
             <span class="address-action-content">
-
               <strong>Use current location</strong>
-
-              <small>
-                Detect coordinates from this device
-              </small>
-
+              <small>Detect coordinates from this device</small>
             </span>
-
-            <span
-              class="address-action-arrow"
-              aria-hidden="true"
-            >
-              ›
-            </span>
-
+            <span class="address-action-arrow" aria-hidden="true">›</span>
           </button>
 
-
-          <button
-            class="address-action-card"
-            id="addAddressButton"
-            type="button"
-          >
-
-            <span
-              class="address-action-icon"
-              aria-hidden="true"
-            >
-              ➕
-            </span>
-
+          <button class="address-action-card" id="addAddressButton" type="button">
+            <span class="address-action-icon" aria-hidden="true">➕</span>
             <span class="address-action-content">
-
               <strong>Enter new address</strong>
-
-              <small>
-                Search or fill address details
-              </small>
-
+              <small>Search or fill address details</small>
             </span>
-
-            <span
-              class="address-action-arrow"
-              aria-hidden="true"
-            >
-              ›
-            </span>
-
+            <span class="address-action-arrow" aria-hidden="true">›</span>
           </button>
-
         </div>
-
       </section>
 
-
-      <!-- Saved addresses -->
-
-      <section
-        class="saved-addresses-section"
-        aria-labelledby="savedAddressesTitle"
-      >
-
+      <section class="saved-addresses-section" aria-labelledby="savedAddressesTitle">
         <div class="addresses-section-title-row">
-
           <div class="addresses-section-heading">
-
-            <h2 id="savedAddressesTitle">
-              Your saved addresses
-            </h2>
-
-            <p>
-              The nearest address within 500 metres can be
-              selected automatically.
-            </p>
-
+            <h2 id="savedAddressesTitle">Your saved addresses</h2>
+            <p>The nearest address within 500 metres can be selected automatically.</p>
           </div>
-
-
-          <span
-            class="addresses-count"
-            id="addressesCount"
-            aria-label="Saved address count"
-          >
-            0
-          </span>
-
+          <span class="addresses-count" id="addressesCount" aria-label="Saved address count">0</span>
         </div>
 
-
-        <!-- Loading -->
-
-        <div
-          class="addresses-loading hidden"
-          id="addressesLoading"
-          role="status"
-          aria-live="polite"
-        >
-
+        <div class="addresses-loading hidden" id="addressesLoading" role="status" aria-live="polite">
           <article class="address-skeleton">
-
             <span class="address-skeleton-icon"></span>
-
-            <div class="address-skeleton-content">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-
+            <div class="address-skeleton-content"><span></span><span></span><span></span></div>
           </article>
-
-
           <article class="address-skeleton">
-
             <span class="address-skeleton-icon"></span>
-
-            <div class="address-skeleton-content">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-
+            <div class="address-skeleton-content"><span></span><span></span><span></span></div>
           </article>
-
         </div>
 
-
-        <!-- Address API error -->
-
-        <div
-          class="addresses-error hidden"
-          id="addressesError"
-          role="alert"
-        >
-
-          <div
-            class="addresses-error-icon"
-            aria-hidden="true"
-          >
-            !
-          </div>
-
+        <div class="addresses-error hidden" id="addressesError" role="alert">
+          <div class="addresses-error-icon" aria-hidden="true">!</div>
           <h3>Addresses could not be loaded</h3>
-
-          <p id="addressesErrorMessage">
-            Please check your connection and try again.
-          </p>
-
-          <button
-            class="app-button app-button-secondary"
-            id="retryAddressesButton"
-            type="button"
-          >
-            Try Again
-          </button>
-
+          <p id="addressesErrorMessage">Please check your connection and try again.</p>
+          <button class="app-button app-button-secondary" id="retryAddressesButton" type="button">Try Again</button>
         </div>
 
+        <div class="saved-addresses-list hidden" id="savedAddressesList" aria-live="polite"></div>
 
-        <!-- Multiple saved address cards -->
-
-        <div
-          class="saved-addresses-list hidden"
-          id="savedAddressesList"
-          aria-live="polite"
-        ></div>
-
-
-        <!-- Empty state -->
-
-        <div
-          class="addresses-empty hidden"
-          id="addressesEmpty"
-        >
-
-          <div
-            class="addresses-empty-icon"
-            aria-hidden="true"
-          >
-            📌
-          </div>
-
+        <div class="addresses-empty hidden" id="addressesEmpty">
+          <div class="addresses-empty-icon" aria-hidden="true">📌</div>
           <h3>No saved addresses</h3>
-
-          <p>
-            Add a delivery address now, or add one while
-            placing your first order.
-          </p>
-
-          <button
-            class="app-button app-button-primary"
-            id="emptyAddAddressButton"
-            type="button"
-          >
-            Add Delivery Address
-          </button>
-
+          <p>Add a delivery address now, or add one while placing your first order.</p>
+          <button class="app-button app-button-primary" id="emptyAddAddressButton" type="button">Add Delivery Address</button>
         </div>
-
       </section>
 
-
-      <!-- Add/Edit address dialog -->
-
-      <div
-        class="address-dialog hidden"
-        id="addressFormDialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="addressFormTitle"
-      >
-
-        <div
-          class="address-dialog-backdrop"
-          data-close-address-form="true"
-        ></div>
-
+      <div class="address-dialog hidden" id="addressFormDialog" role="dialog" aria-modal="true" aria-labelledby="addressFormTitle">
+        <div class="address-dialog-backdrop" data-close-address-form="true"></div>
 
         <div class="address-dialog-sheet address-form-sheet">
-
-          <div
-            class="address-dialog-handle"
-            aria-hidden="true"
-          ></div>
-
+          <div class="address-dialog-handle" aria-hidden="true"></div>
 
           <div class="address-dialog-header">
-
             <div>
-
-              <h2 id="addressFormTitle">
-                Add delivery address
-              </h2>
-
-              <p id="addressFormDescription">
-                Search your area and complete the delivery details.
-              </p>
-
+              <h2 id="addressFormTitle">Add delivery address</h2>
+              <p id="addressFormDescription">Search your area and complete the delivery details.</p>
             </div>
-
-
-            <button
-              class="address-dialog-close"
-              id="closeAddressFormButton"
-              type="button"
-              aria-label="Close address form"
-            >
-              ×
-            </button>
-
+            <button class="address-dialog-close" id="closeAddressFormButton" type="button" aria-label="Close address form">×</button>
           </div>
 
+          <form class="address-form" id="addressForm" novalidate>
+            <input id="addressIdInput" type="hidden">
+            <input id="addressLatitudeInput" type="hidden">
+            <input id="addressLongitudeInput" type="hidden">
+            <input id="addressLocationSourceInput" type="hidden" value="MANUAL">
+            <input id="addressPlaceProviderInput" type="hidden">
+            <input id="addressPlaceReferenceInput" type="hidden">
+            <input id="addressAccuracyInput" type="hidden">
 
-          <form
-            class="address-form"
-            id="addressForm"
-            novalidate
-          >
-
-            <input
-              id="addressIdInput"
-              type="hidden"
-            >
-
-
-            <input
-              id="addressLatitudeInput"
-              type="hidden"
-            >
-
-
-            <input
-              id="addressLongitudeInput"
-              type="hidden"
-            >
-
-
-            <input
-              id="addressLocationSourceInput"
-              type="hidden"
-              value="MANUAL"
-            >
-
-
-            <input
-              id="addressPlaceProviderInput"
-              type="hidden"
-            >
-
-
-            <input
-              id="addressPlaceReferenceInput"
-              type="hidden"
-            >
-
-
-            <input
-              id="addressAccuracyInput"
-              type="hidden"
-            >
-
-
-            <!-- Address suggestion search -->
+            <!-- Kept hidden temporarily for compatibility with current addresses.js. -->
+            <input id="addressLabelInput" type="hidden">
+            <input id="addressDefaultInput" type="hidden">
 
             <div class="address-form-group address-search-group">
-
-              <label for="addressSearchInput">
-                Search area or address
-              </label>
-
+              <label for="addressSearchInput">Search area or address</label>
               <div class="address-search-wrap">
-
-                <span
-                  class="address-search-icon"
-                  aria-hidden="true"
-                >
-                  🔍
-                </span>
-
-                <input
-                  class="address-form-input address-search-input"
-                  id="addressSearchInput"
-                  type="search"
-                  autocomplete="off"
-                  placeholder="Start typing area, road or landmark"
-                >
-
-                <span
-                  class="address-search-spinner hidden"
-                  id="addressSearchSpinner"
-                  aria-hidden="true"
-                ></span>
-
+                <span class="address-search-icon" aria-hidden="true">🔍</span>
+                <input class="address-form-input address-search-input" id="addressSearchInput" type="search" autocomplete="off" placeholder="Start typing area, road or landmark">
+                <span class="address-search-spinner hidden" id="addressSearchSpinner" aria-hidden="true"></span>
               </div>
-
-
-              <p
-                class="address-field-note"
-                id="addressSearchStatus"
-                aria-live="polite"
-              >
-                Suggestions will help fill area, city, district,
-                state and pincode.
+              <p class="address-field-note" id="addressSearchStatus" aria-live="polite">
+                Suggestions will help fill area, city, district, state and pincode.
               </p>
-
-
-              <div
-                class="address-suggestions hidden"
-                id="addressSuggestions"
-                role="listbox"
-                aria-label="Address suggestions"
-              ></div>
-
+              <div class="address-suggestions hidden" id="addressSuggestions" role="listbox" aria-label="Address suggestions"></div>
             </div>
-
-
-            <!-- Address type -->
 
             <fieldset class="address-form-group">
-
               <legend>Address type</legend>
-
               <div class="address-type-options">
-
                 <label class="address-type-option">
-
-                  <input
-                    type="radio"
-                    name="addressType"
-                    value="HOME"
-                    checked
-                  >
-
+                  <input type="radio" name="addressType" value="HOME" checked>
                   <span>🏠 Home</span>
-
                 </label>
-
-
                 <label class="address-type-option">
-
-                  <input
-                    type="radio"
-                    name="addressType"
-                    value="WORK"
-                  >
-
+                  <input type="radio" name="addressType" value="WORK">
                   <span>💼 Work</span>
-
                 </label>
-
-
                 <label class="address-type-option">
-
-                  <input
-                    type="radio"
-                    name="addressType"
-                    value="OTHER"
-                  >
-
+                  <input type="radio" name="addressType" value="OTHER">
                   <span>📍 Other</span>
-
                 </label>
-
               </div>
-
             </fieldset>
 
-
-            <!-- Label -->
-
+            <!-- 1. House, flat or building -->
             <div class="address-form-group">
-
-              <label for="addressLabelInput">
-                Address label
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressLabelInput"
-                type="text"
-                maxlength="50"
-                placeholder="Example: Home, Office, Parents"
-              >
-
+              <label for="addressLine1Input">House, flat or building</label>
+              <input class="address-form-input" id="addressLine1Input" type="text" maxlength="150" autocomplete="address-line1" placeholder="Flat number, house number or building" required>
             </div>
 
-
-            <!-- Area/locality -->
-
+            <!-- 2. Area or locality -->
             <div class="address-form-group">
-
-              <label for="addressAreaInput">
-                Area or locality
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressAreaInput"
-                type="text"
-                maxlength="120"
-                autocomplete="address-level3"
-                placeholder="Sector, colony, village or locality"
-              >
-
+              <label for="addressAreaInput">Area or locality</label>
+              <input class="address-form-input" id="addressAreaInput" type="text" maxlength="120" autocomplete="address-level3" placeholder="Sector, colony, village or locality" required>
             </div>
 
-
-            <!-- House/flat -->
-
+            <!-- 3. Street or road -->
             <div class="address-form-group">
-
-              <label for="addressLine1Input">
-                House, flat or building
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressLine1Input"
-                type="text"
-                maxlength="150"
-                autocomplete="address-line1"
-                placeholder="Flat number, house number or building"
-                required
-              >
-
+              <label for="addressLine2Input">Street or road <span class="address-optional-label">(optional)</span></label>
+              <input class="address-form-input" id="addressLine2Input" type="text" maxlength="150" autocomplete="address-line2" placeholder="Street, road or block">
             </div>
 
-
-            <!-- Street -->
-
+            <!-- 4. Landmark -->
             <div class="address-form-group">
-
-              <label for="addressLine2Input">
-                Street or road
-                <span class="address-optional-label">
-                  (optional)
-                </span>
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressLine2Input"
-                type="text"
-                maxlength="150"
-                autocomplete="address-line2"
-                placeholder="Street, road or block"
-              >
-
+              <label for="addressLandmarkInput">Landmark <span class="address-optional-label">(optional)</span></label>
+              <input class="address-form-input" id="addressLandmarkInput" type="text" maxlength="120" placeholder="Near school, market or hospital">
             </div>
 
-
-            <!-- Landmark -->
-
+            <!-- 5. City -->
             <div class="address-form-group">
-
-              <label for="addressLandmarkInput">
-                Landmark
-                <span class="address-optional-label">
-                  (optional)
-                </span>
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressLandmarkInput"
-                type="text"
-                maxlength="120"
-                placeholder="Near school, market or hospital"
-              >
-
+              <label for="addressCityInput">City</label>
+              <input class="address-form-input" id="addressCityInput" type="text" maxlength="80" autocomplete="address-level2" placeholder="Enter city" required>
             </div>
 
-
-            <!-- District -->
-
+            <!-- 6. District -->
             <div class="address-form-group">
-
-              <label for="addressDistrictSelect">
-                Service district
-              </label>
-
-              <select
-                class="address-form-input"
-                id="addressDistrictSelect"
-                required
-              >
-                <option value="">
-                  Select service district
-                </option>
+              <label for="addressDistrictSelect">District</label>
+              <select class="address-form-input" id="addressDistrictSelect" required>
+                <option value="">Select service district</option>
               </select>
-
             </div>
 
-
-            <!-- City and state -->
-
-            <div class="address-form-grid">
-
-              <div class="address-form-group">
-
-                <label for="addressCityInput">
-                  City
-                </label>
-
-                <input
-                  class="address-form-input"
-                  id="addressCityInput"
-                  type="text"
-                  maxlength="80"
-                  autocomplete="address-level2"
-                  required
-                >
-
-              </div>
-
-
-              <div class="address-form-group">
-
-                <label for="addressStateInput">
-                  State
-                </label>
-
-                <input
-                  class="address-form-input"
-                  id="addressStateInput"
-                  type="text"
-                  maxlength="80"
-                  autocomplete="address-level1"
-                  readonly
-                  required
-                >
-
-              </div>
-
+            <!-- 7. State -->
+            <div class="address-form-group">
+              <label for="addressStateInput">State</label>
+              <input class="address-form-input" id="addressStateInput" type="text" maxlength="80" autocomplete="address-level1" readonly required>
             </div>
-
-
-            <!-- Pincode -->
 
             <div class="address-form-group">
-
-              <label for="addressPincodeInput">
-                Pincode
-              </label>
-
-              <input
-                class="address-form-input"
-                id="addressPincodeInput"
-                type="text"
-                inputmode="numeric"
-                autocomplete="postal-code"
-                maxlength="6"
-                placeholder="6-digit pincode"
-                required
-              >
-
+              <label for="addressPincodeInput">Pincode</label>
+              <input class="address-form-input" id="addressPincodeInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="6" placeholder="6-digit pincode" required>
             </div>
 
-
-            <!-- Receiver details -->
-
+            <!-- 8. Receiver details -->
             <div class="address-form-section">
-
               <h3>Receiver details</h3>
-
-              <p>
-                Who should the delivery partner contact?
-              </p>
-
+              <p>Who should the delivery partner contact?</p>
             </div>
 
-
             <div class="address-form-group">
-
-              <label for="receiverNameInput">
-                Receiver name
-              </label>
-
-              <input
-                class="address-form-input"
-                id="receiverNameInput"
-                type="text"
-                maxlength="100"
-                autocomplete="name"
-                placeholder="Enter receiver name"
-                required
-              >
-
+              <label for="receiverNameInput">Receiver name</label>
+              <input class="address-form-input" id="receiverNameInput" type="text" maxlength="100" autocomplete="name" placeholder="Enter receiver name" required>
             </div>
 
-
             <div class="address-form-group">
-
-              <label for="receiverMobileInput">
-                Receiver mobile
-              </label>
-
+              <label for="receiverMobileInput">Receiver mobile</label>
               <div class="receiver-mobile-wrap">
-
                 <span>+91</span>
-
-                <input
-                  class="address-form-input"
-                  id="receiverMobileInput"
-                  type="tel"
-                  inputmode="numeric"
-                  autocomplete="tel"
-                  maxlength="10"
-                  placeholder="10-digit mobile number"
-                  required
-                >
-
+                <input class="address-form-input" id="receiverMobileInput" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="10-digit mobile number" required>
               </div>
-
             </div>
 
+            <p class="address-form-error hidden" id="addressFormError" role="alert"></p>
 
-            <!-- Default address -->
-
-            <label class="address-default-option">
-
-              <input
-                id="addressDefaultInput"
-                type="checkbox"
-              >
-
-              <span>
-
-                <strong>Set as default address</strong>
-
-                <small>
-                  Use this address first during checkout
-                </small>
-
-              </span>
-
-            </label>
-
-
-            <!-- Form error -->
-
-            <p
-              class="address-form-error hidden"
-              id="addressFormError"
-              role="alert"
-            ></p>
-
-
-            <!-- Save -->
-
-            <button
-              class="app-button app-button-primary address-save-button"
-              id="saveAddressButton"
-              type="submit"
-            >
+            <button class="app-button app-button-primary address-save-button" id="saveAddressButton" type="submit">
               Save Address
             </button>
-
           </form>
-
         </div>
-
       </div>
 
-
-      <!-- Customer navigation -->
-
-      <nav
-        class="customer-bottom-nav"
-        aria-label="Customer navigation"
-      >
-
-        <a
-          class="customer-nav-item"
-          href="home.html"
-        >
-          <span
-            class="customer-nav-icon"
-            aria-hidden="true"
-          >
-            🏠
-          </span>
-
+      <nav class="customer-bottom-nav" aria-label="Customer navigation">
+        <a class="customer-nav-item" href="home.html">
+          <span class="customer-nav-icon" aria-hidden="true">🏠</span>
           <strong>Home</strong>
         </a>
-
-
-        <a
-          class="customer-nav-item"
-          href="orders.html"
-        >
-          <span
-            class="customer-nav-icon"
-            aria-hidden="true"
-          >
-            📦
-          </span>
-
+        <a class="customer-nav-item" href="orders.html">
+          <span class="customer-nav-icon" aria-hidden="true">📦</span>
           <strong>Orders</strong>
         </a>
-
-
-        <a
-          class="customer-nav-item"
-          href="dine-in.html"
-        >
-          <span
-            class="customer-nav-icon"
-            aria-hidden="true"
-          >
-            🍽️
-          </span>
-
+        <a class="customer-nav-item" href="dine-in.html">
+          <span class="customer-nav-icon" aria-hidden="true">🍽️</span>
           <strong>Dine-In</strong>
         </a>
-
-
-        <a
-          class="customer-nav-item is-active active"
-          href="account.html"
-          aria-current="page"
-        >
-          <span
-            class="customer-nav-icon"
-            aria-hidden="true"
-          >
-            👤
-          </span>
-
+        <a class="customer-nav-item is-active active" href="account.html" aria-current="page">
+          <span class="customer-nav-icon" aria-hidden="true">👤</span>
           <strong>Account</strong>
         </a>
-
       </nav>
-
     </div>
-
   </main>
-
-
-  <!-- Shared JavaScript -->
 
   <script src="../../shared/js/storage.js"></script>
   <script src="../../shared/js/cache.js"></script>
@@ -1055,10 +296,6 @@
   <script src="../../shared/js/service-location.js"></script>
   <script src="../../shared/js/app-router.js"></script>
   <script src="../../shared/js/role-home.js"></script>
-
-  <!-- Customer page JavaScript -->
-
   <script src="../js/addresses.js"></script>
-
 </body>
 </html>
