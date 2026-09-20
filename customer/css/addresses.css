@@ -571,7 +571,7 @@
 
 .saved-address-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 8px;
   padding: 11px 12px 13px;
   background: #fafafa;
@@ -1334,4 +1334,3 @@ body.address-dialog-open {
 @keyframes addresses-shimmer {
   100% { transform: translateX(100%); }
 }
-
