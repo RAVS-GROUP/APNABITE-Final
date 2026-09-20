@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="../../shared/css/components.css">
   <link rel="stylesheet" href="../../shared/css/responsive.css">
   <link rel="stylesheet" href="../css/customer-common.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="../css/addresses.css">
 </head>
 
@@ -78,7 +79,7 @@
             <span class="address-action-icon" aria-hidden="true">🎯</span>
             <span class="address-action-content">
               <strong>Use current location</strong>
-              <small>Detect coordinates from this device</small>
+              <small>Place the map pin at your current position</small>
             </span>
             <span class="address-action-arrow" aria-hidden="true">›</span>
           </button>
@@ -87,7 +88,7 @@
             <span class="address-action-icon" aria-hidden="true">➕</span>
             <span class="address-action-content">
               <strong>Enter new address</strong>
-              <small>Search or fill address details</small>
+              <small>Choose the location and complete its details</small>
             </span>
             <span class="address-action-arrow" aria-hidden="true">›</span>
           </button>
@@ -140,7 +141,7 @@
           <div class="address-dialog-header">
             <div>
               <h2 id="addressFormTitle">Add delivery address</h2>
-              <p id="addressFormDescription">Search your area and complete the delivery details.</p>
+              <p id="addressFormDescription">Place the pin and complete the delivery details.</p>
             </div>
             <button class="address-dialog-close" id="closeAddressFormButton" type="button" aria-label="Close address form">×</button>
           </div>
@@ -153,8 +154,6 @@
             <input id="addressPlaceProviderInput" type="hidden">
             <input id="addressPlaceReferenceInput" type="hidden">
             <input id="addressAccuracyInput" type="hidden">
-
-            <!-- Kept hidden temporarily for compatibility with current addresses.js. -->
             <input id="addressLabelInput" type="hidden">
             <input id="addressDefaultInput" type="hidden">
 
@@ -162,14 +161,42 @@
               <label for="addressSearchInput">Search area or address</label>
               <div class="address-search-wrap">
                 <span class="address-search-icon" aria-hidden="true">🔍</span>
-                <input class="address-form-input address-search-input" id="addressSearchInput" type="search" autocomplete="off" placeholder="Start typing area, road or landmark">
+                <input class="address-form-input address-search-input" id="addressSearchInput" type="search" autocomplete="off" placeholder="Start typing area, city or district">
                 <span class="address-search-spinner hidden" id="addressSearchSpinner" aria-hidden="true"></span>
               </div>
               <p class="address-field-note" id="addressSearchStatus" aria-live="polite">
-                Suggestions will help fill area, city, district, state and pincode.
+                Search an active service district or use your current location.
               </p>
               <div class="address-suggestions hidden" id="addressSuggestions" role="listbox" aria-label="Address suggestions"></div>
             </div>
+
+            <section class="address-map-section" id="addressMapSection" aria-labelledby="addressMapTitle">
+              <div class="address-map-heading">
+                <div>
+                  <h3 id="addressMapTitle">Set exact delivery location</h3>
+                  <p>Drag the pin to the correct building or entrance.</p>
+                </div>
+                <button class="address-map-location-button" id="recenterAddressMapButton" type="button" aria-label="Move pin to current location">
+                  <span aria-hidden="true">🎯</span>
+                  <span>Current</span>
+                </button>
+              </div>
+
+              <div class="address-map-wrap">
+                <div class="address-map" id="addressMap" aria-label="Delivery location map"></div>
+                <div class="address-map-loading hidden" id="addressMapLoading" role="status" aria-live="polite">
+                  <span class="address-map-spinner" aria-hidden="true"></span>
+                  <strong>Finding this location...</strong>
+                </div>
+              </div>
+
+              <div class="address-map-status" id="addressMapStatus" aria-live="polite">
+                Use current location or select a service area to place the pin.
+              </div>
+              <p class="address-map-rule">
+                Within 500 metres, moving the pin updates only Area or locality. A larger move rechecks city, district, state and pincode.
+              </p>
+            </section>
 
             <fieldset class="address-form-group">
               <legend>Address type</legend>
@@ -189,56 +216,50 @@
               </div>
             </fieldset>
 
-            <!-- 1. House, flat or building -->
             <div class="address-form-group">
               <label for="addressLine1Input">House, flat or building</label>
               <input class="address-form-input" id="addressLine1Input" type="text" maxlength="150" autocomplete="address-line1" placeholder="Flat number, house number or building" required>
             </div>
 
-            <!-- 2. Area or locality -->
             <div class="address-form-group">
               <label for="addressAreaInput">Area or locality</label>
               <input class="address-form-input" id="addressAreaInput" type="text" maxlength="120" autocomplete="address-level3" placeholder="Sector, colony, village or locality" required>
             </div>
 
-            <!-- 3. Street or road -->
             <div class="address-form-group">
               <label for="addressLine2Input">Street or road <span class="address-optional-label">(optional)</span></label>
               <input class="address-form-input" id="addressLine2Input" type="text" maxlength="150" autocomplete="address-line2" placeholder="Street, road or block">
             </div>
 
-            <!-- 4. Landmark -->
             <div class="address-form-group">
               <label for="addressLandmarkInput">Landmark <span class="address-optional-label">(optional)</span></label>
               <input class="address-form-input" id="addressLandmarkInput" type="text" maxlength="120" placeholder="Near school, market or hospital">
             </div>
 
-            <!-- 5. City -->
             <div class="address-form-group">
               <label for="addressCityInput">City</label>
               <input class="address-form-input" id="addressCityInput" type="text" maxlength="80" autocomplete="address-level2" placeholder="Enter city" required>
             </div>
 
-            <!-- 6. District -->
             <div class="address-form-group">
-              <label for="addressDistrictSelect">District</label>
-              <select class="address-form-input" id="addressDistrictSelect" required>
+              <label for="addressDistrictSelect">Service district</label>
+              <select class="address-form-input address-system-field" id="addressDistrictSelect" aria-describedby="addressDistrictNote" disabled required>
                 <option value="">Select service district</option>
               </select>
+              <small class="address-locked-note" id="addressDistrictNote">🔒 Selected automatically from the delivery location</small>
             </div>
 
-            <!-- 7. State -->
             <div class="address-form-group">
               <label for="addressStateInput">State</label>
-              <input class="address-form-input" id="addressStateInput" type="text" maxlength="80" autocomplete="address-level1" readonly required>
+              <input class="address-form-input address-system-field" id="addressStateInput" type="text" maxlength="80" autocomplete="address-level1" readonly required>
             </div>
 
             <div class="address-form-group">
               <label for="addressPincodeInput">Pincode</label>
-              <input class="address-form-input" id="addressPincodeInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="6" placeholder="6-digit pincode" required>
+              <input class="address-form-input address-system-field" id="addressPincodeInput" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="6" placeholder="Detected from map location" readonly required>
+              <small class="address-locked-note">🔒 Determined from the selected map location</small>
             </div>
 
-            <!-- 8. Receiver details -->
             <div class="address-form-section">
               <h3>Receiver details</h3>
               <p>Who should the delivery partner contact?</p>
@@ -259,9 +280,7 @@
 
             <p class="address-form-error hidden" id="addressFormError" role="alert"></p>
 
-            <button class="app-button app-button-primary address-save-button" id="saveAddressButton" type="submit">
-              Save Address
-            </button>
+            <button class="app-button app-button-primary address-save-button" id="saveAddressButton" type="submit">Save Address</button>
           </form>
         </div>
       </div>
@@ -296,6 +315,7 @@
   <script src="../../shared/js/service-location.js"></script>
   <script src="../../shared/js/app-router.js"></script>
   <script src="../../shared/js/role-home.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="../js/addresses.js"></script>
 </body>
 </html>
