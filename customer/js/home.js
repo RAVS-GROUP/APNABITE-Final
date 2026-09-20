@@ -3,184 +3,77 @@
  * APNABITE CUSTOMER
  * FILE: customer/js/home.js
  * PURPOSE: Customer Home page controller
- * VERSION: 2.0.0
- * ============================================================
- *
- * LOCATION BEHAVIOUR:
- * - Home page location ke liye wait nahi karti.
- * - Saved location turant show hoti hai.
- * - Device location background mein refresh hoti hai.
- * - Permission prompt sirf user ke location button tap par aata hai.
- * - Background location failure Home ko block nahi karta.
+ * VERSION: 2.1.0
  * ============================================================
  */
 
 const CustomerHome = {
 
-  /*
-   * ----------------------------------------------------------
-   * SETTINGS
-   * ----------------------------------------------------------
-   */
+  SEARCH_DEBOUNCE_MS: 300,
+  DISCOVERY_PLACEHOLDER_DELAY_MS: 800,
+  NEAREST_ADDRESS_THRESHOLD_METERS: 500,
+  RESOLVED_LOCATION_STORAGE_KEY: "apnabite_home_resolved_location",
 
-  SEARCH_DEBOUNCE_MS:
-    300,
-
-  DISCOVERY_PLACEHOLDER_DELAY_MS:
-    800,
-
-
-  /*
-   * ----------------------------------------------------------
-   * STATE
-   * ----------------------------------------------------------
-   */
-
-  selectedFoodType:
-    "ALL",
-
-  selectedCategory:
-    "",
-
-  searchTimer:
-    null,
-
-  backgroundLocationStarted:
-    false,
+  selectedFoodType: "ALL",
+  selectedCategory: "",
+  searchTimer: null,
+  backgroundLocationStarted: false,
+  locationResolutionRunning: false,
 
   locationState: {
     success: false,
     source: "NONE",
     label: "Select location",
     location: null,
-    district: null
+    district: null,
+    address: null
   },
 
   elements: {},
 
 
-  /*
-   * ----------------------------------------------------------
-   * INITIALIZE
-   * ----------------------------------------------------------
-   */
+  /* INITIALIZE */
 
   init() {
 
     this.elements = {
-
-      locationButton:
-        document.getElementById(
-          "customerLocationButton"
-        ),
-
-      locationText:
-        document.getElementById(
-          "customerLocationText"
-        ),
-
-      notificationButton:
-        document.getElementById(
-          "notificationButton"
-        ),
-
-      notificationDot:
-        document.getElementById(
-          "notificationDot"
-        ),
-
-      searchInput:
-        document.getElementById(
-          "customerSearchInput"
-        ),
-
-      searchClearButton:
-        document.getElementById(
-          "searchClearButton"
-        ),
-
-      foodTypeButtons:
-        Array.from(
-          document.querySelectorAll(
-            ".food-type-chip"
-          )
-        ),
-
-      categoryButtons:
-        Array.from(
-          document.querySelectorAll(
-            ".category-item"
-          )
-        ),
-
-      kitchenList:
-        document.getElementById(
-          "kitchenList"
-        ),
-
-      kitchenEmptyState:
-        document.getElementById(
-          "kitchenEmptyState"
-        ),
-
-      refreshKitchensButton:
-        document.getElementById(
-          "refreshKitchensButton"
-        ),
-
-      message:
-        document.getElementById(
-          "roleHomeMessage"
-        ),
-
-      bottomNavigation:
-        Array.from(
-          document.querySelectorAll(
-            ".customer-nav-item"
-          )
-        )
+      locationButton: document.getElementById("customerLocationButton"),
+      locationText: document.getElementById("customerLocationText"),
+      notificationButton: document.getElementById("notificationButton"),
+      notificationDot: document.getElementById("notificationDot"),
+      searchInput: document.getElementById("customerSearchInput"),
+      searchClearButton: document.getElementById("searchClearButton"),
+      foodTypeButtons: Array.from(document.querySelectorAll(".food-type-chip")),
+      categoryButtons: Array.from(document.querySelectorAll(".category-item")),
+      kitchenList: document.getElementById("kitchenList"),
+      kitchenEmptyState: document.getElementById("kitchenEmptyState"),
+      refreshKitchensButton: document.getElementById("refreshKitchensButton"),
+      message: document.getElementById("roleHomeMessage"),
+      bottomNavigation: Array.from(
+        document.querySelectorAll(".customer-nav-item")
+      )
     };
 
-
     if (!this.hasRequiredElements()) {
-
-      console.error(
-        "Customer Home elements are missing."
-      );
-
+      console.error("Customer Home elements are missing.");
       return false;
     }
 
-
-    /*
-     * Home UI is initialized immediately.
-     * Background location is started afterwards without await.
-     */
-
     this.bindEvents();
-
-    this.locationState =
-      this.restoreLocation();
-
+    this.locationState = this.restoreLocation();
     this.prepareDiscoveryState();
 
+    /*
+     * Resolve the already-saved device coordinates immediately.
+     * Home rendering does not wait for this request.
+     */
+    this.resolveSavedDeviceLocation();
     this.startBackgroundLocation();
 
-
-    console.log(
-      "ApnaBite Customer Home initialized."
-    );
-
-
+    console.log("ApnaBite Customer Home initialized.");
     return true;
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * REQUIRED ELEMENT CHECK
-   * ----------------------------------------------------------
-   */
 
   hasRequiredElements() {
 
@@ -198,331 +91,198 @@ const CustomerHome = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * EVENT BINDINGS
-   * ----------------------------------------------------------
-   */
+  /* EVENTS */
 
   bindEvents() {
 
-    this.elements.locationButton
-      .addEventListener(
-        "click",
-        () => {
+    this.elements.locationButton.addEventListener("click", () => {
+      this.handleLocationButton();
+    });
 
-          this.handleLocationButton();
-        }
-      );
+    this.elements.notificationButton.addEventListener("click", () => {
+      this.showMessage("You have no new notifications.");
+    });
 
+    this.elements.searchInput.addEventListener("input", () => {
+      this.handleSearchInput();
+    });
 
-    this.elements.notificationButton
-      .addEventListener(
-        "click",
-        () => {
+    this.elements.searchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        window.clearTimeout(this.searchTimer);
+        this.search(this.elements.searchInput.value);
+      }
+    });
 
-          this.showMessage(
-            "You have no new notifications."
-          );
-        }
-      );
+    this.elements.searchClearButton.addEventListener("click", () => {
+      this.clearSearch();
+    });
 
+    this.elements.foodTypeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        this.selectFoodType(button.dataset.foodType);
+      });
+    });
 
-    this.elements.searchInput
-      .addEventListener(
-        "input",
-        () => {
+    this.elements.categoryButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        this.selectCategory(button.dataset.category);
+      });
+    });
 
-          this.handleSearchInput();
-        }
-      );
+    this.elements.refreshKitchensButton.addEventListener("click", () => {
+      this.loadNearbyKitchens();
+    });
 
+    document.addEventListener("apnabite:background-location", (event) => {
+      this.handleBackgroundLocation(event.detail || {});
+    });
 
-    this.elements.searchInput
-      .addEventListener(
-        "keydown",
-        (event) => {
+    document.addEventListener("apnabite:location-permission-required", () => {
+      this.handleLocationPermissionRequired();
+    });
 
-          if (
-            event.key === "Enter"
-          ) {
+    document.addEventListener("apnabite:location-permission-denied", () => {
+      this.handleLocationPermissionDenied();
+    });
 
-            event.preventDefault();
+    document.addEventListener("apnabite:background-location-error", (event) => {
+      this.handleBackgroundLocationError(event.detail || {});
+    });
 
-            window.clearTimeout(
-              this.searchTimer
-            );
+    document.addEventListener("apnabite:addresses-updated", () => {
+      this.clearResolvedLocationCache();
+      this.resolveSavedDeviceLocation();
+    });
 
-            this.search(
-              this.elements
-                .searchInput
-                .value
-            );
-          }
-        }
-      );
+    document.addEventListener("apnabite:address-selected", (event) => {
+      const detail = event.detail || {};
 
-
-    this.elements.searchClearButton
-      .addEventListener(
-        "click",
-        () => {
-
-          this.clearSearch();
-        }
-      );
-
-
-    this.elements.foodTypeButtons
-      .forEach(
-        (button) => {
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              this.selectFoodType(
-                button.dataset
-                  .foodType
-              );
-            }
-          );
-        }
-      );
-
-
-    this.elements.categoryButtons
-      .forEach(
-        (button) => {
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              this.selectCategory(
-                button.dataset
-                  .category
-              );
-            }
-          );
-        }
-      );
-
-
-    this.elements.refreshKitchensButton
-      .addEventListener(
-        "click",
-        () => {
-
-          this.loadNearbyKitchens();
-        }
-      );
-
-
-    /*
-     * LocationManager background events.
-     */
-
-    document.addEventListener(
-      "apnabite:background-location",
-      (event) => {
-
-        this.handleBackgroundLocation(
-          event.detail || {}
+      if (detail.address) {
+        this.applySavedAddressLocation(
+          detail.address,
+          LocationManager.getSaved(),
+          detail.distanceMeters
         );
       }
-    );
-
-
-    document.addEventListener(
-      "apnabite:location-permission-required",
-      () => {
-
-        this.handleLocationPermissionRequired();
-      }
-    );
-
-
-    document.addEventListener(
-      "apnabite:location-permission-denied",
-      () => {
-
-        this.handleLocationPermissionDenied();
-      }
-    );
-
-
-    document.addEventListener(
-      "apnabite:background-location-error",
-      (event) => {
-
-        this.handleBackgroundLocationError(
-          event.detail || {}
-        );
-      }
-    );
+    });
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * RESTORE IMMEDIATE LOCATION
-   *
-   * This method is synchronous. It never waits for GPS.
-   * ----------------------------------------------------------
-   */
+  /* IMMEDIATE LOCATION RESTORE */
 
   restoreLocation() {
 
-    const manualLocation =
-      ServiceLocation.getSaved();
+    const deviceLocation = LocationManager.getSaved();
+    const cachedResolved = this.getResolvedLocationCache(deviceLocation);
 
+    if (cachedResolved) {
+      this.setLocationLabel(cachedResolved.label);
+
+      return {
+        success: true,
+        source: cachedResolved.source || "SAVED_ADDRESS",
+        label: cachedResolved.label,
+        location: deviceLocation,
+        district: cachedResolved.district || null,
+        address: cachedResolved.address || null,
+        distanceMeters: cachedResolved.distanceMeters ?? null,
+        restoredFromCache: true
+      };
+    }
+
+    const manualLocation = ServiceLocation.getSaved();
 
     if (manualLocation) {
-
-      const locationParts = [
-        manualLocation.districtName,
-        manualLocation.state
-      ]
-        .filter(
-          Boolean
-        );
-
-
-      const label =
-        locationParts.length > 0
-          ? locationParts.join(", ")
-          : "Saved location";
-
-
-      this.setLocationLabel(
-        label
-      );
-
+      const label = this.formatDistrictLabel(manualLocation);
+      this.setLocationLabel(label);
 
       return {
         success: true,
-        source:
-          "MANUAL",
-        label:
-          label,
-        district:
-          manualLocation,
-        location:
-          LocationManager.getSaved()
+        source: "MANUAL_DISTRICT",
+        label: label,
+        district: manualLocation,
+        location: deviceLocation,
+        address: null
       };
     }
-
-
-    const deviceLocation =
-      LocationManager.getSaved();
-
 
     if (deviceLocation) {
-
-      this.setLocationLabel(
-        "Current location"
-      );
-
+      this.setLocationLabel("Finding address...");
 
       return {
         success: true,
-        source:
-          LocationManager.isFresh(
-            deviceLocation
-          )
-            ? "DEVICE"
-            : "STALE_DEVICE",
-        label:
-          "Current location",
-        location:
-          deviceLocation,
-        district:
-          null
+        source: LocationManager.isFresh(deviceLocation)
+          ? "DEVICE_RESOLVING"
+          : "STALE_DEVICE_RESOLVING",
+        label: "Finding address...",
+        location: deviceLocation,
+        district: null,
+        address: null
       };
     }
 
-
-    this.setLocationLabel(
-      "Select location"
-    );
-
+    this.setLocationLabel("Select location");
 
     return {
       success: false,
-      source:
-        "NONE",
-      label:
-        "Select location",
-      location:
-        null,
-      district:
-        null
+      source: "NONE",
+      label: "Select location",
+      location: null,
+      district: null,
+      address: null
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * START BACKGROUND LOCATION
-   *
-   * IMPORTANT:
-   * This is intentionally not awaited by init().
-   * ----------------------------------------------------------
-   */
+  async resolveSavedDeviceLocation() {
+
+    const location = LocationManager.getSaved();
+
+    if (!location) {
+      return {
+        success: false,
+        reason: "DEVICE_LOCATION_NOT_FOUND"
+      };
+    }
+
+    return this.resolveLocationDisplay(location, {
+      reason: "SAVED_DEVICE"
+    });
+  },
+
+
+  /* BACKGROUND LOCATION */
 
   startBackgroundLocation() {
 
     if (this.backgroundLocationStarted) {
-
       return {
         success: true,
         alreadyStarted: true
       };
     }
 
-
     if (
-      typeof LocationManager ===
-        "undefined" ||
-      typeof LocationManager
-        .initBackgroundRefresh !==
-        "function"
+      typeof LocationManager === "undefined" ||
+      typeof LocationManager.initBackgroundRefresh !== "function"
     ) {
-
-      console.warn(
-        "Background location manager is unavailable."
-      );
+      console.warn("Background location manager is unavailable.");
 
       return {
         success: false,
-        reason:
-          "BACKGROUND_LOCATION_UNAVAILABLE"
+        reason: "BACKGROUND_LOCATION_UNAVAILABLE"
       };
     }
 
-
-    this.backgroundLocationStarted =
-      true;
-
+    this.backgroundLocationStarted = true;
 
     Promise.resolve(
-      LocationManager
-        .initBackgroundRefresh({
-          allowPrompt:
-            false
-        })
-    )
-      .catch(
-        (error) => {
-
-          console.warn(
-            "Background location initialization failed:",
-            error
-          );
-        }
-      );
-
+      LocationManager.initBackgroundRefresh({ allowPrompt: false })
+    ).catch((error) => {
+      console.warn("Background location initialization failed:", error);
+    });
 
     return {
       success: true,
@@ -531,837 +291,685 @@ const CustomerHome = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * BACKGROUND LOCATION RECEIVED
-   * ----------------------------------------------------------
-   */
-
-  handleBackgroundLocation(detail) {
+  async handleBackgroundLocation(detail) {
 
     const location =
       detail.location ||
-      (
-        detail.result &&
-        detail.result.location
-      ) ||
+      (detail.result && detail.result.location) ||
       LocationManager.getSaved();
 
-
     if (!location) {
+      return {
+        success: false,
+        reason: "LOCATION_NOT_FOUND"
+      };
+    }
+
+    const result = await this.resolveLocationDisplay(location, {
+      reason: "BACKGROUND"
+    });
+
+    console.log("Customer background location updated:", this.locationState);
+    return result;
+  },
+
+
+  /*
+   * Location display priority:
+   * 1. Saved address within 500 metres
+   * 2. Selected service district name
+   * 3. Clear instruction to add an address
+   */
+  async resolveLocationDisplay(location, options = {}) {
+
+    if (
+      !location ||
+      !LocationManager.isValidCoordinates(
+        location.latitude,
+        location.longitude
+      )
+    ) {
+      return {
+        success: false,
+        reason: "INVALID_LOCATION"
+      };
+    }
+
+    if (this.locationResolutionRunning) {
+      return {
+        success: false,
+        reason: "LOCATION_RESOLUTION_RUNNING"
+      };
+    }
+
+    this.locationResolutionRunning = true;
+
+    try {
+      const nearest = await this.findNearestSavedAddress(location);
+
+      if (nearest.matched && nearest.address) {
+        return this.applySavedAddressLocation(
+          nearest.address,
+          location,
+          nearest.distanceMeters
+        );
+      }
+
+      const manualLocation = ServiceLocation.getSaved();
+
+      if (manualLocation) {
+        const label = this.formatDistrictLabel(manualLocation);
+
+        this.setLocationLabel(label);
+
+        this.locationState = {
+          success: true,
+          source: "DEVICE_DISTRICT",
+          label: label,
+          district: manualLocation,
+          location: location,
+          address: null,
+          nearestMatched: false,
+          resolutionReason: options.reason || ""
+        };
+
+        this.saveResolvedLocationCache(this.locationState);
+        this.clearLocationMessage();
+
+        return {
+          success: true,
+          matched: false,
+          locationState: this.locationState
+        };
+      }
+
+      const label = "Add address for this location";
+      this.setLocationLabel(label);
+
+      this.locationState = {
+        success: true,
+        source: "NEW_DEVICE_LOCATION",
+        label: label,
+        district: null,
+        location: location,
+        address: null,
+        nearestMatched: false,
+        resolutionReason: options.reason || ""
+      };
+
+      this.clearResolvedLocationCache();
+
+      return {
+        success: true,
+        matched: false,
+        locationState: this.locationState
+      };
+
+    } catch (error) {
+      console.warn("Home nearest-address resolution failed:", error);
+
+      const manualLocation = ServiceLocation.getSaved();
+
+      if (manualLocation) {
+        const label = this.formatDistrictLabel(manualLocation);
+        this.setLocationLabel(label);
+
+        this.locationState = {
+          success: true,
+          source: "DISTRICT_FALLBACK",
+          label: label,
+          district: manualLocation,
+          location: location,
+          address: null,
+          resolutionError: error.code || "ADDRESS_LOOKUP_FAILED"
+        };
+
+        return {
+          success: true,
+          fallback: true,
+          locationState: this.locationState
+        };
+      }
+
+      this.setLocationLabel("Choose delivery address");
 
       return {
         success: false,
-        reason:
-          "LOCATION_NOT_FOUND"
+        reason: error.code || "ADDRESS_LOOKUP_FAILED",
+        error: error.message
       };
+
+    } finally {
+      this.locationResolutionRunning = false;
     }
+  },
 
 
-    /*
-     * A manually selected service district remains the visible
-     * delivery label. Device coordinates are still refreshed
-     * silently for later nearby discovery and 500m matching.
-     */
+  async findNearestSavedAddress(location) {
 
-    const manualLocation =
-      ServiceLocation.getSaved();
-
-
-    if (manualLocation) {
-
-      const parts = [
-        manualLocation.districtName,
-        manualLocation.state
-      ]
-        .filter(
-          Boolean
-        );
-
-
-      const label =
-        parts.length > 0
-          ? parts.join(", ")
-          : "Saved location";
-
-
-      this.setLocationLabel(
-        label
-      );
-
-
-      this.locationState = {
-        success: true,
-        source:
-          "MANUAL",
-        label:
-          label,
-        district:
-          manualLocation,
-        location:
-          location,
-        backgroundRefreshed:
-          true
-      };
-
-    } else {
-
-      this.setLocationLabel(
-        "Current location"
-      );
-
-
-      this.locationState = {
-        success: true,
-        source:
-          "DEVICE",
-        label:
-          "Current location",
-        district:
-          null,
-        location:
-          location,
-        backgroundRefreshed:
-          true
-      };
-    }
-
-
-    this.clearLocationMessage();
-
-
-    console.log(
-      "Customer background location updated:",
-      this.locationState
+    const response = await API.request(
+      "find_nearest_customer_address",
+      {
+        sessionId: this.getSessionId(),
+        latitude: Number(location.latitude),
+        longitude: Number(location.longitude),
+        thresholdMeters: this.NEAREST_ADDRESS_THRESHOLD_METERS
+      }
     );
 
+    const result = response.data || {};
+
+    return {
+      success: result.success === true,
+      matched: result.matched === true,
+      address: result.address || result.nearestAddress || null,
+      distanceMeters: Number(result.distanceMeters || 0),
+      thresholdMeters: Number(
+        result.thresholdMeters || this.NEAREST_ADDRESS_THRESHOLD_METERS
+      ),
+      requestId: response.requestId || ""
+    };
+  },
+
+
+  applySavedAddressLocation(address, location, distanceMeters) {
+
+    const label = this.formatSavedAddressLabel(address);
+    this.setLocationLabel(label);
+
+    this.locationState = {
+      success: true,
+      source: "SAVED_ADDRESS",
+      label: label,
+      location: location || LocationManager.getSaved(),
+      district: {
+        districtId: address.districtId || "",
+        districtName: address.district || "",
+        state: address.state || ""
+      },
+      address: address,
+      distanceMeters:
+        distanceMeters === null || distanceMeters === undefined
+          ? null
+          : Number(distanceMeters),
+      nearestMatched: true
+    };
+
+    this.saveResolvedLocationCache(this.locationState);
+    this.clearLocationMessage();
 
     return {
       success: true,
-      locationState:
-        this.locationState
+      matched: true,
+      address: address,
+      distanceMeters: this.locationState.distanceMeters,
+      locationState: this.locationState
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * PERMISSION REQUIRED
-   *
-   * No automatic browser permission popup is opened.
-   * ----------------------------------------------------------
-   */
+  /* LOCATION CACHE */
+
+  saveResolvedLocationCache(locationState) {
+
+    if (!locationState || !locationState.location || !locationState.label) {
+      return false;
+    }
+
+    AppStorage.set(this.RESOLVED_LOCATION_STORAGE_KEY, {
+      label: locationState.label,
+      source: locationState.source,
+      latitude: Number(locationState.location.latitude),
+      longitude: Number(locationState.location.longitude),
+      district: locationState.district || null,
+      address: locationState.address || null,
+      distanceMeters: locationState.distanceMeters ?? null,
+      resolvedAt: new Date().toISOString()
+    });
+
+    return true;
+  },
+
+
+  getResolvedLocationCache(deviceLocation) {
+
+    if (!deviceLocation) {
+      return null;
+    }
+
+    const cached = AppStorage.get(
+      this.RESOLVED_LOCATION_STORAGE_KEY,
+      null
+    );
+
+    if (
+      !cached ||
+      !cached.label ||
+      !LocationManager.isValidCoordinates(
+        cached.latitude,
+        cached.longitude
+      )
+    ) {
+      return null;
+    }
+
+    try {
+      const distanceKm = LocationManager.calculateDistanceKm(
+        deviceLocation.latitude,
+        deviceLocation.longitude,
+        cached.latitude,
+        cached.longitude
+      );
+
+      if (
+        distanceKm * 1000 >
+        this.NEAREST_ADDRESS_THRESHOLD_METERS
+      ) {
+        this.clearResolvedLocationCache();
+        return null;
+      }
+
+      return cached;
+    } catch (error) {
+      this.clearResolvedLocationCache();
+      return null;
+    }
+  },
+
+
+  clearResolvedLocationCache() {
+    AppStorage.remove(this.RESOLVED_LOCATION_STORAGE_KEY);
+    return true;
+  },
+
+
+  /* PERMISSION AND USER LOCATION */
 
   handleLocationPermissionRequired() {
 
-    if (
-      this.locationState.success ===
-        true
-    ) {
-
+    if (this.locationState.success === true) {
       return {
         success: true,
-        locationAvailable:
-          true
+        locationAvailable: true
       };
     }
 
-
-    this.setLocationLabel(
-      "Enable location"
-    );
-
-
-    this.showMessage(
-      "Tap Enable location to show nearby kitchens."
-    );
-
+    this.setLocationLabel("Enable location");
+    this.showMessage("Tap Enable location to show nearby kitchens.");
 
     return {
       success: false,
-      reason:
-        "LOCATION_PERMISSION_REQUIRED"
+      reason: "LOCATION_PERMISSION_REQUIRED"
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * PERMISSION DENIED
-   * ----------------------------------------------------------
-   */
-
   handleLocationPermissionDenied() {
 
-    const restored =
-      this.restoreLocation();
-
+    const restored = this.restoreLocation();
 
     if (!restored.success) {
-
-      this.setLocationLabel(
-        "Choose address"
-      );
-
-
+      this.setLocationLabel("Choose address");
       this.showMessage(
         "Location permission is off. Tap Choose address to select your delivery area."
       );
     }
 
-
     return {
-      success:
-        restored.success,
-      reason:
-        "LOCATION_PERMISSION_DENIED",
-      location:
-        restored
+      success: restored.success,
+      reason: "LOCATION_PERMISSION_DENIED",
+      location: restored
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * BACKGROUND LOCATION ERROR
-   * ----------------------------------------------------------
-   */
+  handleBackgroundLocationError(detail) {
 
-  handleBackgroundLocationError(
-    detail
-  ) {
-
-    console.warn(
-      "Customer background location error:",
-      detail
-    );
-
-
-    /*
-     * Saved/manual location remains usable.
-     * Do not replace the whole page with an error.
-     */
-
-    const restored =
-      this.restoreLocation();
-
+    console.warn("Customer background location error:", detail);
+    const restored = this.restoreLocation();
 
     if (!restored.success) {
-
       this.showMessage(
         "Current location is unavailable. Tap Select location to choose your area."
       );
     }
 
-
     return {
       success: false,
-      reason:
-        detail.reason ||
-        detail.code ||
-        "BACKGROUND_LOCATION_ERROR",
-      savedLocationAvailable:
-        restored.success
+      reason: detail.reason || detail.code || "BACKGROUND_LOCATION_ERROR",
+      savedLocationAvailable: restored.success
     };
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * LOCATION BUTTON
-   *
-   * Browser permission may be requested only after this tap.
-   * ----------------------------------------------------------
-   */
 
   async handleLocationButton() {
 
     this.clearMessage();
 
-
     if (
-      typeof LocationManager ===
-        "undefined" ||
-      typeof LocationManager
-        .requestAfterUserAction !==
-        "function"
+      typeof LocationManager === "undefined" ||
+      typeof LocationManager.requestAfterUserAction !== "function"
     ) {
-
       this.openLocationSelection();
 
       return {
         success: false,
-        reason:
-          "LOCATION_MANAGER_UNAVAILABLE"
+        reason: "LOCATION_MANAGER_UNAVAILABLE"
       };
     }
 
-
-    const originalLabel =
-      this.elements.locationText
-        .textContent;
-
-
-    this.setLocationLabel(
-      "Detecting location..."
-    );
-
-
-    this.elements.locationButton
-      .setAttribute(
-        "aria-busy",
-        "true"
-      );
-
+    const originalLabel = this.elements.locationText.textContent;
+    this.setLocationLabel("Detecting location...");
+    this.elements.locationButton.setAttribute("aria-busy", "true");
 
     try {
+      const result = await LocationManager.requestAfterUserAction({
+        persist: true,
+        enableHighAccuracy: false
+      });
 
-      const result =
-        await LocationManager
-          .requestAfterUserAction({
-            persist:
-              true,
-            enableHighAccuracy:
-              false
-          });
-
-
-      const location =
-        result &&
-        result.location
-          ? result.location
-          : LocationManager.getSaved();
-
+      const location = result && result.location
+        ? result.location
+        : LocationManager.getSaved();
 
       if (!location) {
-
-        throw LocationManager
-          .createError(
-            "Location could not be detected.",
-            "LOCATION_NOT_AVAILABLE"
-          );
+        throw LocationManager.createError(
+          "Location could not be detected.",
+          "LOCATION_NOT_AVAILABLE"
+        );
       }
 
+      this.clearResolvedLocationCache();
 
-      this.setLocationLabel(
-        "Current location"
-      );
+      const resolved = await this.resolveLocationDisplay(location, {
+        reason: "USER_REQUEST"
+      });
 
-
-      this.locationState = {
-        success: true,
-        source:
-          "DEVICE",
-        label:
-          "Current location",
-        location:
-          location,
-        district:
-          null
-      };
-
-
-      this.showMessage(
-        "Current location updated successfully."
-      );
-
+      if (resolved.matched && resolved.address) {
+        this.showMessage(
+          this.getAddressTypeLabel(resolved.address.addressType) +
+          " address selected for delivery."
+        );
+      } else {
+        this.showMessage(
+          "Location detected. Add a complete address if this is a new delivery location."
+        );
+      }
 
       this.loadNearbyKitchens();
 
-
       return {
         success: true,
-        source:
-          "DEVICE",
-        location:
-          location
+        source: this.locationState.source,
+        location: location,
+        address: this.locationState.address,
+        label: this.locationState.label
       };
 
     } catch (error) {
-
-      console.warn(
-        "Customer location request failed:",
-        error
-      );
-
-
-      const restored =
-        this.restoreLocation();
-
+      console.warn("Customer location request failed:", error);
+      const restored = this.restoreLocation();
 
       if (!restored.success) {
-
         this.setLocationLabel(
-          originalLabel &&
-          originalLabel !==
-            "Detecting location..."
+          originalLabel && originalLabel !== "Detecting location..."
             ? originalLabel
             : "Choose address"
         );
 
-
         this.showMessage(
-          error.code ===
-            "LOCATION_PERMISSION_DENIED"
+          error.code === "LOCATION_PERMISSION_DENIED"
             ? "Location permission is off. Opening address selection."
             : "Current location is unavailable. Opening address selection."
         );
 
-
-        window.setTimeout(
-          () => {
-
-            this.openLocationSelection();
-          },
-          500
-        );
+        window.setTimeout(() => {
+          this.openLocationSelection();
+        }, 500);
       }
-
 
       return {
         success: false,
-        error:
-          error.message,
-        code:
-          error.code ||
-          "LOCATION_ERROR"
+        error: error.message,
+        code: error.code || "LOCATION_ERROR"
       };
 
     } finally {
-
-      this.elements.locationButton
-        .removeAttribute(
-          "aria-busy"
-        );
+      this.elements.locationButton.removeAttribute("aria-busy");
     }
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * OPEN MANUAL LOCATION SELECTION
-   * ----------------------------------------------------------
-   */
-
   openLocationSelection() {
-
-    window.location.href =
-      "addresses.html";
+    window.location.href = "addresses.html";
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * SET LOCATION LABEL
-   * ----------------------------------------------------------
-   */
+  getSessionId() {
+
+    const session = SessionManager.get();
+    return session && session.sessionId ? session.sessionId : "";
+  },
+
 
   setLocationLabel(label) {
-
-    this.elements.locationText
-      .textContent =
-        label || "Select location";
+    this.elements.locationText.textContent = label || "Select location";
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * CLEAR LOCATION-SPECIFIC MESSAGE
-   * ----------------------------------------------------------
-   */
+  formatDistrictLabel(district) {
+
+    const parts = [district.districtName, district.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "Selected district";
+  },
+
+
+  formatSavedAddressLabel(address) {
+
+    const type = this.getAddressTypeLabel(address.addressType);
+    const place =
+      address.areaLocality ||
+      address.addressLine1 ||
+      address.city ||
+      address.district ||
+      "Saved address";
+
+    return type + " • " + place;
+  },
+
+
+  getAddressTypeLabel(type) {
+
+    const labels = {
+      HOME: "Home",
+      WORK: "Work",
+      OTHER: "Other"
+    };
+
+    return labels[String(type || "OTHER").toUpperCase()] || "Address";
+  },
+
 
   clearLocationMessage() {
 
-    const message =
-      this.elements.message
-        .textContent;
-
-
+    const message = this.elements.message.textContent;
     const locationMessages = [
       "Tap Enable location",
       "Location permission",
       "Current location is unavailable",
-      "Select your location"
+      "Select your location",
+      "Location detected"
     ];
 
-
-    const isLocationMessage =
-      locationMessages.some(
-        (text) =>
-          message.includes(
-            text
-          )
-      );
-
+    const isLocationMessage = locationMessages.some((text) =>
+      message.includes(text)
+    );
 
     if (isLocationMessage) {
-
       this.clearMessage();
     }
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * SEARCH INPUT
-   * ----------------------------------------------------------
-   */
+  /* SEARCH AND FILTERS */
 
   handleSearchInput() {
 
-    const query =
-      this.normalizeQuery(
-        this.elements
-          .searchInput
-          .value
-      );
-
-
-    this.elements.searchClearButton
-      .classList.toggle(
-        "hidden",
-        query.length === 0
-      );
-
-
-    window.clearTimeout(
-      this.searchTimer
+    const query = this.normalizeQuery(this.elements.searchInput.value);
+    this.elements.searchClearButton.classList.toggle(
+      "hidden",
+      query.length === 0
     );
 
+    window.clearTimeout(this.searchTimer);
 
-    this.searchTimer =
-      window.setTimeout(
-        () => {
-
-          this.search(
-            query
-          );
-        },
-        this.SEARCH_DEBOUNCE_MS
-      );
+    this.searchTimer = window.setTimeout(() => {
+      this.search(query);
+    }, this.SEARCH_DEBOUNCE_MS);
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * SEARCH
-   * ----------------------------------------------------------
-   */
-
   search(query) {
 
-    const normalizedQuery =
-      this.normalizeQuery(
-        query
-      );
+    const normalizedQuery = this.normalizeQuery(query);
 
-
-    console.log(
-      "Customer Discovery Search:",
-      {
-        query:
-          normalizedQuery,
-        foodType:
-          this.selectedFoodType,
-        category:
-          this.selectedCategory,
-        locationSource:
-          this.locationState.source
-      }
-    );
-
+    console.log("Customer Discovery Search:", {
+      query: normalizedQuery,
+      foodType: this.selectedFoodType,
+      category: this.selectedCategory,
+      locationSource: this.locationState.source,
+      locationLabel: this.locationState.label,
+      addressId: this.locationState.address
+        ? this.locationState.address.addressId
+        : ""
+    });
 
     if (normalizedQuery) {
-
       this.showMessage(
         'Searching for "' +
         normalizedQuery +
         '" will be connected with the Discovery API.'
       );
-
     } else {
-
       this.clearMessage();
     }
 
-
     return {
       success: true,
-      query:
-        normalizedQuery,
-      foodType:
-        this.selectedFoodType,
-      category:
-        this.selectedCategory,
-      location:
-        this.locationState,
-      integrationStatus:
-        "DISCOVERY_API_PENDING"
+      query: normalizedQuery,
+      foodType: this.selectedFoodType,
+      category: this.selectedCategory,
+      location: this.locationState,
+      integrationStatus: "DISCOVERY_API_PENDING"
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * CLEAR SEARCH
-   * ----------------------------------------------------------
-   */
-
   clearSearch() {
 
-    window.clearTimeout(
-      this.searchTimer
-    );
-
-
-    this.elements.searchInput
-      .value =
-        "";
-
-
-    this.elements.searchClearButton
-      .classList.add(
-        "hidden"
-      );
-
-
-    this.selectedCategory =
-      "";
-
-
+    window.clearTimeout(this.searchTimer);
+    this.elements.searchInput.value = "";
+    this.elements.searchClearButton.classList.add("hidden");
+    this.selectedCategory = "";
     this.clearMessage();
-
-
-    this.elements.searchInput
-      .focus();
-
+    this.elements.searchInput.focus();
 
     return this.search("");
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * FOOD TYPE SELECTION
-   * ----------------------------------------------------------
-   */
-
   selectFoodType(foodType) {
 
-    const allowedFoodTypes = [
-      "ALL",
-      "VEG",
-      "NON_VEG"
-    ];
+    const allowedFoodTypes = ["ALL", "VEG", "NON_VEG"];
 
-
-    if (
-      !allowedFoodTypes.includes(
-        foodType
-      )
-    ) {
-
+    if (!allowedFoodTypes.includes(foodType)) {
       return {
         success: false,
-        reason:
-          "INVALID_FOOD_TYPE"
+        reason: "INVALID_FOOD_TYPE"
       };
     }
 
+    this.selectedFoodType = foodType;
 
-    this.selectedFoodType =
-      foodType;
+    this.elements.foodTypeButtons.forEach((button) => {
+      const isSelected = button.dataset.foodType === foodType;
+      button.classList.toggle("active", isSelected);
+      button.setAttribute("aria-pressed", String(isSelected));
+    });
 
-
-    this.elements.foodTypeButtons
-      .forEach(
-        (button) => {
-
-          const isSelected =
-            button.dataset.foodType ===
-            foodType;
-
-
-          button.classList.toggle(
-            "active",
-            isSelected
-          );
-
-
-          button.setAttribute(
-            "aria-pressed",
-            String(
-              isSelected
-            )
-          );
-        }
-      );
-
-
-    this.search(
-      this.elements.searchInput
-        .value
-    );
-
+    this.search(this.elements.searchInput.value);
 
     return {
       success: true,
-      foodType:
-        foodType
+      foodType: foodType
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * CATEGORY SELECTION
-   * ----------------------------------------------------------
-   */
-
   selectCategory(category) {
 
-    const normalizedCategory =
-      this.normalizeQuery(
-        category
-      );
-
+    const normalizedCategory = this.normalizeQuery(category);
 
     if (!normalizedCategory) {
-
       return {
         success: false,
-        reason:
-          "CATEGORY_REQUIRED"
+        reason: "CATEGORY_REQUIRED"
       };
     }
 
+    this.selectedCategory = normalizedCategory;
+    this.elements.searchInput.value = normalizedCategory;
+    this.elements.searchClearButton.classList.remove("hidden");
 
-    this.selectedCategory =
-      normalizedCategory;
-
-
-    this.elements.searchInput
-      .value =
-        normalizedCategory;
-
-
-    this.elements.searchClearButton
-      .classList.remove(
-        "hidden"
-      );
-
-
-    return this.search(
-      normalizedCategory
-    );
+    return this.search(normalizedCategory);
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * INITIAL DISCOVERY STATE
-   * ----------------------------------------------------------
-   */
+  /* DISCOVERY PLACEHOLDER */
 
   prepareDiscoveryState() {
 
     this.showKitchenSkeletons();
 
-
-    window.setTimeout(
-      () => {
-
-        this.showKitchenEmptyState();
-      },
-      this
-        .DISCOVERY_PLACEHOLDER_DELAY_MS
-    );
+    window.setTimeout(() => {
+      this.showKitchenEmptyState();
+    }, this.DISCOVERY_PLACEHOLDER_DELAY_MS);
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * LOAD NEARBY KITCHENS
-   * ----------------------------------------------------------
-   */
 
   loadNearbyKitchens() {
 
     this.clearMessage();
     this.showKitchenSkeletons();
 
-
-    window.setTimeout(
-      () => {
-
-        this.showKitchenEmptyState();
-
-        this.showMessage(
-          "Nearby Kitchen Discovery API is the next backend module."
-        );
-      },
-      this
-        .DISCOVERY_PLACEHOLDER_DELAY_MS
-    );
-
+    window.setTimeout(() => {
+      this.showKitchenEmptyState();
+      this.showMessage(
+        "Nearby Kitchen Discovery API is the next backend module."
+      );
+    }, this.DISCOVERY_PLACEHOLDER_DELAY_MS);
 
     return {
       success: true,
-      status:
-        "DISCOVERY_API_PENDING",
-      location:
-        this.locationState
+      status: "DISCOVERY_API_PENDING",
+      location: this.locationState
     };
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * SKELETON STATE
-   * ----------------------------------------------------------
-   */
-
   showKitchenSkeletons() {
-
-    this.elements.kitchenList
-      .classList.remove(
-        "hidden"
-      );
-
-
-    this.elements.kitchenEmptyState
-      .classList.add(
-        "hidden"
-      );
+    this.elements.kitchenList.classList.remove("hidden");
+    this.elements.kitchenEmptyState.classList.add("hidden");
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * EMPTY STATE
-   * ----------------------------------------------------------
-   */
 
   showKitchenEmptyState() {
-
-    this.elements.kitchenList
-      .classList.add(
-        "hidden"
-      );
-
-
-    this.elements.kitchenEmptyState
-      .classList.remove(
-        "hidden"
-      );
+    this.elements.kitchenList.classList.add("hidden");
+    this.elements.kitchenEmptyState.classList.remove("hidden");
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * PAGE MESSAGE
-   * ----------------------------------------------------------
-   */
+  /* PAGE MESSAGE */
 
   showMessage(message) {
 
@@ -1369,16 +977,8 @@ const CustomerHome = {
       return;
     }
 
-
-    this.elements.message
-      .textContent =
-        message;
-
-
-    this.elements.message
-      .classList.remove(
-        "hidden"
-      );
+    this.elements.message.textContent = message;
+    this.elements.message.classList.remove("hidden");
   },
 
 
@@ -1388,266 +988,133 @@ const CustomerHome = {
       return;
     }
 
-
-    this.elements.message
-      .textContent =
-        "";
-
-
-    this.elements.message
-      .classList.add(
-        "hidden"
-      );
+    this.elements.message.textContent = "";
+    this.elements.message.classList.add("hidden");
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * NORMALIZE SEARCH
-   * ----------------------------------------------------------
-   */
 
   normalizeQuery(value) {
 
-    return String(
-      value || ""
-    )
+    return String(value || "")
       .trim()
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .slice(
-        0,
-        100
-      );
+      .replace(/\s+/g, " ")
+      .slice(0, 100);
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * CUSTOMER HOME TEST
-   *
-   * Browser console:
-   * CustomerHome.test()
-   * ----------------------------------------------------------
-   */
+  /* TEST */
 
-  test() {
+  async test() {
 
-    console.log(
-      "========================================"
-    );
+    console.log("========================================");
+    console.log("APNABITE CUSTOMER HOME LOCATION TEST");
+    console.log("========================================");
 
-    console.log(
-      "APNABITE CUSTOMER HOME TEST"
-    );
+    const locationResult = this.restoreLocation();
+    const backgroundResult = this.startBackgroundLocation();
+    const deviceLocation = LocationManager.getSaved();
 
-    console.log(
-      "========================================"
-    );
+    let resolutionResult = {
+      success: false,
+      reason: "DEVICE_LOCATION_NOT_FOUND"
+    };
 
+    if (deviceLocation) {
+      resolutionResult = await this.resolveLocationDisplay(deviceLocation, {
+        reason: "TEST"
+      });
+    }
 
-    const locationResult =
-      this.restoreLocation();
-
-
-    const backgroundResult =
-      this.startBackgroundLocation();
-
-
-    const vegResult =
-      this.selectFoodType(
-        "VEG"
-      );
-
-
-    const nonVegResult =
-      this.selectFoodType(
-        "NON_VEG"
-      );
-
-
-    const allResult =
-      this.selectFoodType(
-        "ALL"
-      );
-
-
-    const categoryResult =
-      this.selectCategory(
-        "Home Food"
-      );
-
-
+    const vegResult = this.selectFoodType("VEG");
+    const nonVegResult = this.selectFoodType("NON_VEG");
+    const allResult = this.selectFoodType("ALL");
+    const categoryResult = this.selectCategory("Home Food");
     this.clearSearch();
 
-
     const backgroundSupported =
-      typeof LocationManager
-        .initBackgroundRefresh ===
-        "function";
-
-
+      typeof LocationManager.initBackgroundRefresh === "function";
     const userLocationSupported =
-      typeof LocationManager
-        .requestAfterUserAction ===
-        "function";
+      typeof LocationManager.requestAfterUserAction === "function";
+    const nearestSupported =
+      typeof this.findNearestSavedAddress === "function" &&
+      this.NEAREST_ADDRESS_THRESHOLD_METERS === 500;
+    const readableLabel =
+      Boolean(this.locationState.label) &&
+      this.locationState.label !== "Current location";
 
+    const results = [
+      {
+        test: "Immediate location restore",
+        expected: "Location state",
+        actual: locationResult.source,
+        passed: Boolean(locationResult.source)
+      },
+      {
+        test: "Background refresh support",
+        expected: true,
+        actual: backgroundSupported,
+        passed: backgroundSupported === true
+      },
+      {
+        test: "User location request support",
+        expected: true,
+        actual: userLocationSupported,
+        passed: userLocationSupported === true
+      },
+      {
+        test: "500m nearest-address support",
+        expected: true,
+        actual: nearestSupported,
+        passed: nearestSupported === true
+      },
+      {
+        test: "Readable location label",
+        expected: "Not Current location",
+        actual: this.locationState.label,
+        passed: readableLabel
+      },
+      {
+        test: "Background location started",
+        expected: true,
+        actual: backgroundResult.success,
+        passed: backgroundResult.success === true
+      },
+      {
+        test: "Bottom navigation items",
+        expected: 4,
+        actual: this.elements.bottomNavigation.length,
+        passed: this.elements.bottomNavigation.length === 4
+      }
+    ];
 
     const passed =
-      Boolean(
-        this.elements.locationButton
-      ) &&
-      Boolean(
-        this.elements.searchInput
-      ) &&
-      this.elements
-        .foodTypeButtons
-        .length === 3 &&
-      this.elements
-        .categoryButtons
-        .length >= 1 &&
-      this.elements
-        .bottomNavigation
-        .length === 4 &&
-      backgroundSupported === true &&
-      userLocationSupported === true &&
-      backgroundResult.success ===
-        true &&
+      results.every((result) => result.passed) &&
       vegResult.success === true &&
       nonVegResult.success === true &&
       allResult.success === true &&
       categoryResult.success === true;
 
-
-    const results = [
-
-      {
-        test:
-          "Immediate location restore",
-        expected:
-          "Location state",
-        actual:
-          locationResult.source,
-        passed:
-          Boolean(
-            locationResult.source
-          )
-      },
-
-      {
-        test:
-          "Background refresh support",
-        expected:
-          true,
-        actual:
-          backgroundSupported,
-        passed:
-          backgroundSupported ===
-            true
-      },
-
-      {
-        test:
-          "User location request support",
-        expected:
-          true,
-        actual:
-          userLocationSupported,
-        passed:
-          userLocationSupported ===
-            true
-      },
-
-      {
-        test:
-          "Background location started",
-        expected:
-          true,
-        actual:
-          backgroundResult.success,
-        passed:
-          backgroundResult.success ===
-            true
-      },
-
-      {
-        test:
-          "Bottom navigation items",
-        expected:
-          4,
-        actual:
-          this.elements
-            .bottomNavigation
-            .length,
-        passed:
-          this.elements
-            .bottomNavigation
-            .length === 4
-      }
-    ];
-
-
-    console.table(
-      results
-    );
-
-
+    console.table(results);
+    console.log("Location State:", this.locationState);
+    console.log("Location Resolution:", resolutionResult);
     console.log(
-      "Location State:",
-      locationResult
+      passed ? "Customer Home Location Test: PASS" : "Customer Home Location Test: FAIL"
     );
-
-
-    console.log(
-      passed
-        ? "Customer Home Test: PASS"
-        : "Customer Home Test: FAIL"
-    );
-
 
     return {
-      success:
-        passed,
-
-      status:
-        passed
-          ? "PASS"
-          : "FAIL",
-
-      location:
-        locationResult,
-
-      backgroundLocation:
-        backgroundResult,
-
-      selectedFoodType:
-        this.selectedFoodType,
-
-      bottomNavigationItems:
-        this.elements
-          .bottomNavigation
-          .length,
-
-      results:
-        results
+      success: passed,
+      status: passed ? "PASS" : "FAIL",
+      location: this.locationState,
+      resolution: resolutionResult,
+      backgroundLocation: backgroundResult,
+      selectedFoodType: this.selectedFoodType,
+      bottomNavigationItems: this.elements.bottomNavigation.length,
+      results: results
     };
   }
-
 };
 
 
-/*
- * ------------------------------------------------------------
- * INITIALIZE
- * ------------------------------------------------------------
- */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    CustomerHome.init();
-  }
-);
+document.addEventListener("DOMContentLoaded", () => {
+  CustomerHome.init();
+});
