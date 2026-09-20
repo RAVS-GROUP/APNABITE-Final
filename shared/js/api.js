@@ -3,23 +3,13 @@
  * APNABITE FRONTEND
  * FILE: shared/js/api.js
  * PURPOSE: Central API communication layer
- * VERSION: 1.1.0
+ * VERSION: 1.2.0
  * ============================================================
- *
- * RESPONSIBILITIES:
- * 1. Central API URL
- * 2. Standard API request structure
- * 3. Request ID generation
- * 4. Duplicate request protection
- * 5. Action-specific request timeout
- * 6. Response validation
- * 7. Standard error handling
- * 8. API health and configuration testing
  *
  * IMPORTANT:
  * - No secrets are stored here.
- * - Sensitive calculations remain on backend.
- * - OTP requests are not automatically retried.
+ * - OTP/auth write requests are never automatically retried.
+ * - Longer auth timeouts support Apps Script cold starts.
  * ============================================================
  */
 
@@ -39,32 +29,27 @@ const API = {
    * ----------------------------------------------------------
    * REQUEST TIMEOUT SETTINGS
    * ----------------------------------------------------------
-   *
-   * Health:
-   * Lightweight connectivity check.
-   *
-   * Default:
-   * Normal application requests.
-   *
-   * Auth:
-   * Google Apps Script cold starts and mobile networks can
-   * require additional time for OTP/session operations.
-   * ----------------------------------------------------------
    */
 
   HEALTH_REQUEST_TIMEOUT_MS:
-    15000,
-
-  DEFAULT_REQUEST_TIMEOUT_MS:
     20000,
 
+  DEFAULT_REQUEST_TIMEOUT_MS:
+    45000,
+
+  OTP_REQUEST_TIMEOUT_MS:
+    90000,
+
+  OTP_VERIFY_TIMEOUT_MS:
+    90000,
+
   AUTH_REQUEST_TIMEOUT_MS:
-    30000,
+    60000,
 
 
   /*
    * ----------------------------------------------------------
-   * LONG-RUNNING AUTHENTICATION ACTIONS
+   * AUTHENTICATION ACTIONS
    * ----------------------------------------------------------
    */
 
@@ -162,7 +147,6 @@ const API = {
       requestId:
         options.requestId ||
         this.createRequestId()
-
     };
 
 
@@ -172,11 +156,6 @@ const API = {
         payload
       );
 
-
-    /*
-     * If an identical request is already running,
-     * return its existing Promise.
-     */
 
     if (
       this.pendingRequests.has(
@@ -188,6 +167,7 @@ const API = {
         "Duplicate API request prevented:",
         normalizedAction
       );
+
 
       return this.pendingRequests.get(
         requestKey
@@ -266,6 +246,24 @@ const API = {
 
 
     if (
+      action === "request_otp"
+    ) {
+
+      return this
+        .OTP_REQUEST_TIMEOUT_MS;
+    }
+
+
+    if (
+      action === "verify_otp"
+    ) {
+
+      return this
+        .OTP_VERIFY_TIMEOUT_MS;
+    }
+
+
+    if (
       this.AUTH_ACTIONS.includes(
         action
       )
@@ -322,15 +320,8 @@ const API = {
 
             headers: {
 
-              /*
-               * text/plain is intentional.
-               * Apps Script accepts the JSON request body
-               * without unnecessary CORS preflight.
-               */
-
               "Content-Type":
                 "text/plain;charset=utf-8"
-
             },
 
             body:
@@ -346,7 +337,6 @@ const API = {
 
             redirect:
               "follow"
-
           }
         );
 
@@ -461,8 +451,7 @@ const API = {
 
       if (
         error &&
-        error.name ===
-          "AbortError"
+        error.name === "AbortError"
       ) {
 
         const timeoutError =
@@ -490,11 +479,6 @@ const API = {
       }
 
 
-      /*
-       * Preserve errors already created by API layer
-       * or returned by backend.
-       */
-
       if (
         error &&
         error.code
@@ -506,7 +490,7 @@ const API = {
 
       const networkError =
         new Error(
-          "Unable to connect to ApnaBite. Please check your internet connection and try again."
+          "Unable to connect to ApnaBite. Please check your connection and try again."
         );
 
 
@@ -574,8 +558,7 @@ const API = {
 
 
     if (
-      typeof result.success !==
-        "boolean"
+      typeof result.success !== "boolean"
     ) {
 
       const error =
@@ -612,8 +595,8 @@ const API = {
     ) {
 
       return (
-        "OTP request is taking longer than expected. " +
-        "Please check your internet connection before trying again."
+        "OTP server response could not be confirmed. " +
+        "Please wait one minute before requesting another OTP."
       );
     }
 
@@ -623,8 +606,8 @@ const API = {
     ) {
 
       return (
-        "OTP verification is taking longer than expected. " +
-        "Please check your connection and try again."
+        "OTP verification response could not be confirmed. " +
+        "Please wait a moment and verify the same OTP again."
       );
     }
 
@@ -636,14 +619,14 @@ const API = {
     ) {
 
       return (
-        "Secure login request is taking longer than expected. " +
-        "Please try again."
+        "The secure request could not be confirmed. " +
+        "Please wait before trying again."
       );
     }
 
 
     return (
-      "Request is taking longer than expected. " +
+      "The server response is taking longer than expected. " +
       "Please try again."
     );
   },
@@ -751,9 +734,7 @@ const API = {
   /*
    * ----------------------------------------------------------
    * TEST 1 — API HEALTH
-   *
-   * Browser console:
-   * API.testHealth()
+   * Browser console: API.testHealth()
    * ----------------------------------------------------------
    */
 
@@ -783,7 +764,6 @@ const API = {
         this.BASE_URL
       );
 
-
       console.log(
         "Response:",
         result
@@ -794,8 +774,7 @@ const API = {
         result &&
         result.success === true &&
         result.data &&
-        result.data.status ===
-          "API_RUNNING";
+        result.data.status === "API_RUNNING";
 
 
       console.log(
@@ -846,9 +825,7 @@ const API = {
   /*
    * ----------------------------------------------------------
    * TEST 2 — TIMEOUT CONFIGURATION
-   *
-   * Browser console:
-   * API.testTimeoutConfiguration()
+   * Browser console: API.testTimeoutConfiguration()
    * ----------------------------------------------------------
    */
 
@@ -872,51 +849,51 @@ const API = {
       {
         action:
           "health",
-
-        expected:
-          15000
-      },
-
-      {
-        action:
-          "search_service_locations",
-
         expected:
           20000
       },
 
       {
         action:
-          "request_otp",
-
+          "search_service_locations",
         expected:
-          30000
+          45000
+      },
+
+      {
+        action:
+          "request_otp",
+        expected:
+          90000
       },
 
       {
         action:
           "verify_otp",
-
         expected:
-          30000
+          90000
+      },
+
+      {
+        action:
+          "register",
+        expected:
+          60000
       },
 
       {
         action:
           "login",
-
         expected:
-          30000
+          60000
       },
 
       {
         action:
           "validate_session",
-
         expected:
-          30000
+          60000
       }
-
     ];
 
 
@@ -933,16 +910,12 @@ const API = {
           return {
             action:
               test.action,
-
             expected:
               test.expected,
-
             actual:
               actual,
-
             passed:
-              actual ===
-              test.expected
+              actual === test.expected
           };
         }
       );
@@ -959,7 +932,6 @@ const API = {
       results
     );
 
-
     console.log(
       passed
         ? "API Timeout Configuration Test: PASS"
@@ -970,15 +942,12 @@ const API = {
     return {
       success:
         passed,
-
       status:
         passed
           ? "PASS"
           : "FAIL",
-
       results:
         results
     };
   }
-
 };
