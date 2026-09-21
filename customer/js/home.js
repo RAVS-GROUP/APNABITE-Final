@@ -3,7 +3,7 @@
  * APNABITE CUSTOMER
  * FILE: customer/js/home.js
  * PURPOSE: Customer Home page controller
- * VERSION: 2.1.0
+ * VERSION: 2.2.0
  * ============================================================
  */
 
@@ -180,11 +180,21 @@ const CustomerHome = {
     if (cachedResolved) {
       this.setLocationLabel(cachedResolved.label);
 
+      const restoredLocation =
+        cachedResolved.manualSelection === true ||
+        cachedResolved.source === "MANUAL_SAVED_ADDRESS"
+          ? {
+              latitude: Number(cachedResolved.latitude),
+              longitude: Number(cachedResolved.longitude),
+              accuracy: null
+            }
+          : deviceLocation;
+
       return {
         success: true,
         source: cachedResolved.source || "SAVED_ADDRESS",
         label: cachedResolved.label,
-        location: deviceLocation,
+        location: restoredLocation,
         district: cachedResolved.district || null,
         address: cachedResolved.address || null,
         distanceMeters: cachedResolved.distanceMeters ?? null,
@@ -237,6 +247,17 @@ const CustomerHome = {
 
 
   async resolveSavedDeviceLocation() {
+
+    const manualSelection = this.getManualSavedAddressSelection();
+
+    if (manualSelection) {
+      return {
+        success: true,
+        matched: true,
+        manualSelection: true,
+        locationState: this.locationState
+      };
+    }
 
     const location = LocationManager.getSaved();
 
@@ -302,6 +323,26 @@ const CustomerHome = {
       return {
         success: false,
         reason: "LOCATION_NOT_FOUND"
+      };
+    }
+
+    /*
+     * Background GPS may refresh silently, but it must not replace a
+     * saved address that the customer selected manually for delivery.
+     */
+    const manualSelection = this.getManualSavedAddressSelection();
+
+    if (manualSelection) {
+      console.log(
+        "Customer background location refreshed; manual delivery address preserved.",
+        this.locationState
+      );
+
+      return {
+        success: true,
+        matched: true,
+        manualSelection: true,
+        locationState: this.locationState
       };
     }
 
@@ -533,10 +574,6 @@ const CustomerHome = {
 
   getResolvedLocationCache(deviceLocation) {
 
-    if (!deviceLocation) {
-      return null;
-    }
-
     const cached = AppStorage.get(
       this.RESOLVED_LOCATION_STORAGE_KEY,
       null
@@ -550,6 +587,17 @@ const CustomerHome = {
         cached.longitude
       )
     ) {
+      return null;
+    }
+
+    if (
+      cached.manualSelection === true ||
+      cached.source === "MANUAL_SAVED_ADDRESS"
+    ) {
+      return cached;
+    }
+
+    if (!deviceLocation) {
       return null;
     }
 
@@ -580,6 +628,32 @@ const CustomerHome = {
   clearResolvedLocationCache() {
     AppStorage.remove(this.RESOLVED_LOCATION_STORAGE_KEY);
     return true;
+  },
+
+
+  getManualSavedAddressSelection() {
+
+    const cached = AppStorage.get(
+      this.RESOLVED_LOCATION_STORAGE_KEY,
+      null
+    );
+
+    if (
+      !cached ||
+      !cached.address ||
+      (
+        cached.manualSelection !== true &&
+        cached.source !== "MANUAL_SAVED_ADDRESS"
+      ) ||
+      !LocationManager.isValidCoordinates(
+        cached.latitude,
+        cached.longitude
+      )
+    ) {
+      return null;
+    }
+
+    return cached;
   },
 
 
