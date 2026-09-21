@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Submit Food Partner KYC documents securely">
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+  <title>Partner KYC | ApnaBite</title>
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../../shared/css/responsive.css">
+  <link rel="stylesheet" href="../css/partner-common.css">
+  <link rel="stylesheet" href="../css/kyc.css">
+</head>
+
+<body data-required-role="Food Partner">
+  <main class="partner-app">
+    <div class="partner-loader" id="roleHomeLoader">
+      <div class="loader-spinner" aria-hidden="true"></div>
+      <p>Opening secure KYC...</p>
+    </div>
+
+    <div class="partner-content hidden" id="roleHomeContent">
+      <header class="kyc-header">
+        <a href="dashboard.html" aria-label="Back to dashboard">←</a>
+        <div><h1>Partner KYC</h1><p>Secure document verification</p></div>
+        <button id="roleLogoutButton" type="button">Logout</button>
+      </header>
+
+      <div class="hidden" aria-hidden="true">
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+      </div>
+      <div class="partner-message hidden" id="roleHomeMessage" role="alert" aria-live="polite"></div>
+
+      <section class="kyc-main">
+        <div class="kyc-hero">
+          <span>🔐</span>
+          <div><small>PRIVATE & SECURE</small><h2>Verify your food business</h2><p>Complete all three requirements before admin review.</p></div>
+        </div>
+
+        <div class="requirement-grid" id="requirementGrid">
+          <article data-requirement="FSSAI"><span>1</span><div><strong>FSSAI</strong><small>Food licence</small></div><b>Required</b></article>
+          <article data-requirement="PAN"><span>2</span><div><strong>PAN</strong><small>Tax identity</small></div><b>Required</b></article>
+          <article data-requirement="IDENTITY_PROOF"><span>3</span><div><strong>Identity proof</strong><small>Aadhaar, Voter ID or Driving Licence</small></div><b>Required</b></article>
+        </div>
+
+        <section class="kyc-card">
+          <div class="section-heading"><div><h2>Upload document</h2><p>PDF, JPG, PNG or WebP • Maximum 2 MB</p></div><span id="overallKycStatus">NOT SUBMITTED</span></div>
+
+          <form id="kycForm" novalidate>
+            <label for="documentTypeInput">Document type</label>
+            <select id="documentTypeInput" required>
+              <option value="">Select document</option>
+              <option value="FSSAI">FSSAI licence</option>
+              <option value="PAN">PAN card</option>
+              <option value="AADHAAR">Aadhaar card</option>
+              <option value="VOTER_ID">Voter ID</option>
+              <option value="DRIVING_LICENCE">Driving licence</option>
+              <option value="BANK_PROOF">Bank proof (optional)</option>
+            </select>
+
+            <label for="documentNumberInput">Document number</label>
+            <input id="documentNumberInput" type="text" maxlength="80" autocomplete="off" placeholder="Enter document number" required>
+
+            <label class="file-picker" for="documentFileInput">
+              <input id="documentFileInput" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+              <span aria-hidden="true">📄</span>
+              <div><strong id="filePickerTitle">Choose document file</strong><small id="filePickerSubtitle">Tap to select PDF or image</small></div>
+            </label>
+
+            <p class="privacy-note">Your file is stored privately and is never exposed through the customer app.</p>
+            <div class="kyc-error hidden" id="kycError" role="alert"></div>
+            <button id="uploadKycButton" type="submit">Upload Securely</button>
+          </form>
+        </section>
+
+        <section class="kyc-card">
+          <div class="section-heading"><div><h2>Submitted documents</h2><p>Re-uploading the same type replaces its verification submission.</p></div><span id="documentCount">0</span></div>
+          <div class="document-list" id="documentList"></div>
+          <div class="empty-documents" id="emptyDocuments"><span>📂</span><strong>No documents submitted</strong><p>Upload your FSSAI licence first.</p></div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
+  <script src="../js/kyc.js"></script>
+</body>
+</html>
