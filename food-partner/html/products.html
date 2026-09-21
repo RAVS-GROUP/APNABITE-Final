@@ -1,60 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="Manage your ApnaBite Food Partner menu">
-  <link rel="manifest" href="../../manifest.json">
-  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
-  <title>Manage Products | ApnaBite</title>
-  <link rel="stylesheet" href="../../shared/css/reset.css">
-  <link rel="stylesheet" href="../../shared/css/variables.css">
-  <link rel="stylesheet" href="../../shared/css/common.css">
-  <link rel="stylesheet" href="../../shared/css/components.css">
-  <link rel="stylesheet" href="../../shared/css/responsive.css">
-  <link rel="stylesheet" href="../css/partner-common.css">
-  <link rel="stylesheet" href="../css/products.css">
-</head>
-<body data-required-role="Food Partner">
-  <main class="partner-app">
-    <div class="partner-loader" id="roleHomeLoader"><div class="loader-spinner"></div><p>Opening your menu...</p></div>
-    <div class="partner-content hidden" id="roleHomeContent">
-      <header class="products-header"><a href="dashboard.html" aria-label="Back">←</a><div><h1>My Products</h1><p>Build your customer menu</p></div><button id="roleLogoutButton" type="button">Logout</button></header>
-      <div class="hidden"><span id="roleHomeUserRole"></span><span id="roleHomeUserMobile"></span></div>
-      <div class="partner-message hidden" id="roleHomeMessage" role="alert"></div>
-
-      <section class="products-main">
-        <div class="products-hero"><div><small>YOUR MENU</small><h2 id="kitchenName">Food products</h2><p>Add clear photos, accurate prices and serving details.</p></div><span>🍲</span></div>
-        <div class="products-toolbar"><div><h2>Menu items</h2><p><strong id="productCount">0</strong> products</p></div><button id="addProductButton" type="button">＋ Add Product</button></div>
-        <div class="products-loading" id="productsLoading">Loading products...</div>
-        <div class="products-error hidden" id="productsError" role="alert"></div>
-        <div class="product-list" id="productList"></div>
-        <div class="products-empty hidden" id="productsEmpty"><span>🍽️</span><strong>No products added</strong><p>Add your first dish to create the customer menu.</p><button id="emptyAddProductButton" type="button">Add First Product</button></div>
-      </section>
-
-      <div class="product-dialog hidden" id="productDialog" aria-hidden="true">
-        <button class="dialog-backdrop" data-close-product="true" aria-label="Close"></button>
-        <section class="product-panel" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
-          <header><div><small>MENU ITEM</small><h2 id="productFormTitle">Add Product</h2></div><button id="closeProductButton" type="button">×</button></header>
-          <form id="productForm" novalidate>
-            <input id="productIdInput" type="hidden">
-            <label for="productNameInput">Product name</label><input id="productNameInput" maxlength="120" placeholder="Example: Paneer Thali" required>
-            <label for="productDescriptionInput">Description</label><textarea id="productDescriptionInput" maxlength="500" rows="3" placeholder="What is included and what makes it special?" required></textarea>
-            <div class="two-columns"><div><label for="productCategoryInput">Category</label><select id="productCategoryInput" required><option value="">Select category</option><option value="HOME_FOOD">Home Food</option><option value="MEALS">Meals</option><option value="TIFFIN">Tiffin</option><option value="SNACKS">Snacks</option><option value="BAKERY">Bakery</option><option value="SWEETS">Sweets</option><option value="BEVERAGES">Beverages</option><option value="OTHER">Other</option></select></div><div><label for="productFoodTypeInput">Food type</label><select id="productFoodTypeInput" required><option value="">Select type</option><option value="VEG">Veg</option><option value="NON_VEG">Non-Veg</option></select></div></div>
-            <div class="two-columns"><div><label for="productPriceInput">Price (₹)</label><input id="productPriceInput" type="number" inputmode="decimal" min="1" max="100000" step="0.01" placeholder="199" required></div><div><label for="productPrepTimeInput">Preparation (minutes)</label><input id="productPrepTimeInput" type="number" inputmode="numeric" min="1" max="1440" placeholder="30" required></div></div>
-            <label for="productPortionInput">Portion / serving size</label><input id="productPortionInput" maxlength="80" placeholder="Example: Serves 1 / 500 ml / 6 pieces" required>
-            <label for="productKeywordsInput">Search keywords <small>(comma separated)</small></label><input id="productKeywordsInput" maxlength="300" placeholder="paneer, thali, lunch, home food">
-            <label class="offer-check"><input id="productOfferInput" type="checkbox"><span>Allow this product in eligible offers</span></label>
-            <label>Product photo <small id="imageRequirementText">(required)</small></label>
-            <label class="image-picker" for="productImageInput"><input id="productImageInput" type="file" accept="image/jpeg,image/png,image/webp"><img class="hidden" id="productImagePreview" alt="Product preview"><span id="imagePickerIcon">📷</span><div><strong id="imagePickerTitle">Choose product photo</strong><small>JPG, PNG or WebP • Maximum 2 MB</small></div></label>
-            <div class="form-error hidden" id="productFormError" role="alert"></div>
-            <div class="sticky-save"><button id="saveProductButton" type="submit">Save Product</button></div>
-          </form>
-        </section>
-      </div>
-    </div>
-  </main>
-  <script src="../../shared/js/storage.js"></script><script src="../../shared/js/cache.js"></script><script src="../../shared/js/api.js"></script><script src="../../shared/js/session.js"></script><script src="../../shared/js/auth.js"></script><script src="../../shared/js/app-router.js"></script><script src="../../shared/js/role-home.js"></script><script src="../js/products.js"></script>
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff"><title>Smart Menu | ApnaBite</title><link rel="stylesheet" href="../../shared/css/reset.css"><link rel="stylesheet" href="../../shared/css/variables.css"><link rel="stylesheet" href="../../shared/css/common.css"><link rel="stylesheet" href="../../shared/css/components.css"><link rel="stylesheet" href="../css/partner-common.css"><link rel="stylesheet" href="../css/products.css"></head>
+<body data-required-role="Food Partner"><main class="partner-app"><div class="partner-loader" id="roleHomeLoader"><div class="loader-spinner"></div><p>Opening your menu...</p></div><div class="partner-content hidden" id="roleHomeContent">
+<header class="products-header"><a href="dashboard.html" aria-label="Back">←</a><div><h1>Smart Menu</h1><p>Sizes, prices and display order</p></div><button id="roleLogoutButton" type="button">Logout</button></header><div class="hidden"><span id="roleHomeUserRole"></span><span id="roleHomeUserMobile"></span></div><div class="partner-message hidden" id="roleHomeMessage"></div>
+<section class="products-main"><div class="products-hero"><div><small>YOUR KITCHEN</small><h2 id="kitchenName">Food products</h2><p>Pin best items and arrange every category.</p></div><span>🍲</span></div><div class="products-toolbar"><div><h2>Menu items</h2><p><strong id="productCount">0</strong> products • up to 10 featured</p></div><button id="addProductButton" type="button">＋ Add Product</button></div><div class="products-loading" id="productsLoading">Loading products...</div><div class="products-error hidden" id="productsError" role="alert"></div><div class="product-list" id="productList"></div><div class="products-empty hidden" id="productsEmpty"><span>🍽️</span><strong>No products added</strong><p>Add your first dish to create the menu.</p><button id="emptyAddProductButton" type="button">Add First Product</button></div></section>
+<div class="product-dialog hidden" id="productDialog" aria-hidden="true"><button class="dialog-backdrop" data-close-product="true" aria-label="Close"></button><section class="product-panel" role="dialog" aria-modal="true" aria-labelledby="productFormTitle"><header><div><small>SMART MENU ITEM</small><h2 id="productFormTitle">Add Product</h2></div><button id="closeProductButton" type="button">×</button></header><form id="productForm" novalidate><input id="productIdInput" type="hidden">
+<label for="productTypeInput">1. Select product type</label><select id="productTypeInput" required><option value="">Choose product type</option><optgroup label="Indian meals"><option value="CURRY_SABZI">Curry / Sabzi</option><option value="DAL">Dal</option><option value="RICE_BIRYANI">Rice / Biryani</option><option value="THALI_COMBO">Thali / Meal Combo</option><option value="ROTI_BREAD">Roti / Bread</option><option value="SOUTH_INDIAN">South Indian</option><option value="BREAKFAST">Breakfast</option></optgroup><optgroup label="Fast food"><option value="NOODLES_PASTA">Noodles / Pasta</option><option value="SNACK_STARTER">Snack / Starter</option><option value="PIZZA">Pizza</option><option value="BURGER_SANDWICH_ROLL">Burger / Sandwich / Roll</option></optgroup><optgroup label="Drinks & desserts"><option value="TEA_COFFEE">Tea / Coffee</option><option value="COLD_DRINK">Cold Drink</option><option value="JUICE_SHAKE">Juice / Shake</option><option value="SWEETS">Sweets</option><option value="CAKE_BAKERY">Cake / Bakery</option><option value="ICE_CREAM">Ice Cream</option></optgroup><option value="CUSTOM">Other / Custom</option></select>
+<label for="productNameInput">Product name</label><input id="productNameInput" maxlength="120" placeholder="Example: Shahi Paneer" required><label for="productDescriptionInput">Description</label><textarea id="productDescriptionInput" maxlength="500" rows="3" placeholder="Ingredients and what is included" required></textarea>
+<div class="two-columns"><div><label for="productCategoryInput">Category</label><select id="productCategoryInput" required><option value="">Select</option><option value="HOME_FOOD">Home Food</option><option value="MEALS">Meals</option><option value="TIFFIN">Tiffin</option><option value="SNACKS">Snacks</option><option value="BAKERY">Bakery</option><option value="SWEETS">Sweets</option><option value="BEVERAGES">Beverages</option><option value="OTHER">Other</option></select></div><div><label for="productFoodTypeInput">Food type</label><select id="productFoodTypeInput" required><option value="">Select</option><option value="VEG">Veg</option><option value="NON_VEG">Non-Veg</option></select></div></div><label for="productPrepTimeInput">Preparation time (minutes)</label><input id="productPrepTimeInput" type="number" inputmode="numeric" min="1" max="1440" placeholder="30" required>
+<section class="variant-box"><div class="variant-heading"><div><strong id="variantPresetTitle">Sizes & prices</strong><small>Set one default option</small></div><button id="addVariantButton" type="button">＋ Add size</button></div><div id="variantRows"></div></section>
+<label for="productKeywordsInput">Search keywords <small>(comma separated)</small></label><input id="productKeywordsInput" maxlength="300" placeholder="paneer, dinner, north indian"><label class="offer-check"><input id="productOfferInput" type="checkbox"><span>Allow this product in eligible offers</span></label><label>Product photo <small id="imageRequirementText">(required)</small></label><label class="image-picker" for="productImageInput"><input id="productImageInput" type="file" accept="image/jpeg,image/png,image/webp"><img class="hidden" id="productImagePreview" alt="Preview"><span id="imagePickerIcon">📷</span><div><strong id="imagePickerTitle">Choose product photo</strong><small>JPG, PNG or WebP • Maximum 2 MB</small></div></label><div class="form-error hidden" id="productFormError" role="alert"></div><div class="sticky-save"><button id="saveProductButton" type="submit">Save Product</button></div></form></section></div></div></main>
+<script src="../../shared/js/storage.js"></script><script src="../../shared/js/cache.js"></script><script src="../../shared/js/api.js"></script><script src="../../shared/js/session.js"></script><script src="../../shared/js/auth.js"></script><script src="../../shared/js/app-router.js"></script><script src="../../shared/js/role-home.js"></script><script src="../js/products.js"></script></body></html>
