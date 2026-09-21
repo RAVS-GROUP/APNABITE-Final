@@ -120,7 +120,8 @@
           <article><small>Approval</small><strong id="approvalStatus">PENDING</strong></article>
           <article><small>Kitchen</small><strong id="operatingStatus">CLOSED</strong></article>
         </div>
-        <a class="next-step-card" href="kyc.html"><span>🔐</span><div><h2>Next: complete KYC</h2><p>Upload FSSAI, PAN and identity proof for verification.</p></div><b aria-hidden="true">›</b></a>
+        <a class="next-step-card" id="kycStepCard" href="kyc.html"><span>🔐</span><div><h2 id="kycStepTitle">Next: complete KYC</h2><p id="kycStepCopy">Upload all mandatory documents for verification.</p></div><b aria-hidden="true">›</b></a>
+        <a class="menu-step-card locked" id="menuStepCard" href="products.html" aria-disabled="true"><span>🍽️</span><div><h2>Manage Products</h2><p id="menuStepCopy">Available after KYC verification and Admin approval.</p></div><b aria-hidden="true">›</b></a>
         <button id="editProfileButton" class="secondary-button" type="button">Edit Kitchen Details</button>
       </section>
     </div>
