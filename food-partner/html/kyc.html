@@ -40,13 +40,16 @@
       <section class="kyc-main">
         <div class="kyc-hero">
           <span>🔐</span>
-          <div><small>PRIVATE & SECURE</small><h2>Verify your food business</h2><p>Complete all three requirements before admin review.</p></div>
+          <div><small>PRIVATE & SECURE</small><h2>Verify your food business</h2><p>Complete all mandatory requirements before admin review.</p></div>
         </div>
 
         <div class="requirement-grid" id="requirementGrid">
           <article data-requirement="FSSAI"><span>1</span><div><strong>FSSAI</strong><small>Food licence</small></div><b>Required</b></article>
           <article data-requirement="PAN"><span>2</span><div><strong>PAN</strong><small>Tax identity</small></div><b>Required</b></article>
           <article data-requirement="IDENTITY_PROOF"><span>3</span><div><strong>Identity proof</strong><small>Aadhaar, Voter ID or Driving Licence</small></div><b>Required</b></article>
+          <article data-requirement="ADDRESS_PROOF"><span>4</span><div><strong>Address proof</strong><small>Utility bill, rent agreement or valid address document</small></div><b>Required</b></article>
+          <article data-requirement="BANK_PROOF"><span>5</span><div><strong>Bank passbook</strong><small>First page or cancelled cheque</small></div><b>Required</b></article>
+          <article data-requirement="KITCHEN_PHOTO"><span>6</span><div><strong>Kitchen photo</strong><small>Minimum 1 and maximum 3 clear photos</small></div><b>Required</b></article>
         </div>
 
         <section class="kyc-card">
@@ -61,10 +64,14 @@
               <option value="AADHAAR">Aadhaar card</option>
               <option value="VOTER_ID">Voter ID</option>
               <option value="DRIVING_LICENCE">Driving licence</option>
-              <option value="BANK_PROOF">Bank proof (optional)</option>
+              <option value="ADDRESS_PROOF">Address proof</option>
+              <option value="BANK_PROOF">Bank passbook / cancelled cheque</option>
+              <option value="KITCHEN_PHOTO_1">Kitchen photo 1</option>
+              <option value="KITCHEN_PHOTO_2">Kitchen photo 2</option>
+              <option value="KITCHEN_PHOTO_3">Kitchen photo 3</option>
             </select>
 
-            <label for="documentNumberInput">Document number</label>
+            <label for="documentNumberInput">Document number <small id="documentNumberHint"></small></label>
             <input id="documentNumberInput" type="text" maxlength="80" autocomplete="off" placeholder="Enter document number" required>
 
             <label class="file-picker" for="documentFileInput">
@@ -75,7 +82,7 @@
 
             <p class="privacy-note">Your file is stored privately and is never exposed through the customer app.</p>
             <div class="kyc-error hidden" id="kycError" role="alert"></div>
-            <button id="uploadKycButton" type="submit">Upload Securely</button>
+            <div class="sticky-upload-action"><button id="uploadKycButton" type="submit">Upload Securely</button></div>
           </form>
         </section>
 
