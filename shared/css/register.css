@@ -1,0 +1,23 @@
+/** APNABITE registration-only styles — VERSION 1.0.0 */
+.registration-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px;
+  color: #333333;
+  background: #fff8f3;
+  border: 1px solid #f2cbb4;
+  border-radius: 13px;
+  cursor: pointer;
+}
+.registration-consent input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #ef5b00;
+}
+.registration-consent span { display: flex; flex-direction: column; gap: 5px; }
+.registration-consent strong { font-size: 11px; line-height: 1.45; }
+.registration-consent small { color: #666666; font-size: 11px; line-height: 1.55; }
+.registration-consent:focus-within { border-color: #ef5b00; box-shadow: 0 0 0 3px rgba(239,91,0,.1); }
