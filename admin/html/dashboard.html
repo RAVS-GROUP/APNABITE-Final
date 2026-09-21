@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Admin | ApnaBite</title>
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../css/admin-common.css">
+</head>
+<body data-required-role="Admin">
+  <main class="admin-app">
+    <div class="admin-loader" id="roleHomeLoader"><div class="loader-spinner"></div><p>Opening Admin...</p></div>
+    <div class="hidden" id="roleHomeContent">
+      <header class="admin-header"><div><small>APNABITE ADMIN</small><h1>Control centre</h1></div><button id="roleLogoutButton" type="button">Logout</button></header>
+      <div class="hidden"><span id="roleHomeUserRole"></span><span id="roleHomeUserMobile"></span></div>
+      <div class="admin-message hidden" id="roleHomeMessage" role="alert"></div>
+      <section class="admin-main">
+        <div class="admin-hero"><span>🛡️</span><div><small>SECURE OPERATIONS</small><h2>Review partner applications</h2><p>Verify submitted documents before kitchens can operate.</p></div></div>
+        <a class="admin-action-card" href="kyc-review.html"><span>📋</span><div><strong>Food Partner KYC</strong><small>Review, approve or reject applications</small></div><b>Open →</b></a>
+      </section>
+    </div>
+  </main>
+  <script src="../../shared/js/storage.js"></script><script src="../../shared/js/api.js"></script><script src="../../shared/js/session.js"></script><script src="../../shared/js/auth.js"></script><script src="../../shared/js/app-router.js"></script><script src="../../shared/js/role-home.js"></script>
+</body>
+</html>
