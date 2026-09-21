@@ -3,7 +3,7 @@
  * APNABITE FRONTEND
  * FILE: customer/js/addresses.js
  * PURPOSE: Customer delivery address and map-pin management
- * VERSION: 2.2.0
+ * VERSION: 2.3.0
  * ============================================================
  */
 
@@ -172,6 +172,10 @@ const CustomerAddresses = {
 
       const action = button.dataset.addressAction;
       const addressId = button.dataset.addressId;
+
+      if (action === "select") {
+        this.selectSavedAddress(addressId);
+      }
 
       if (action === "edit") {
         this.openEditForm(addressId);
@@ -381,6 +385,15 @@ const CustomerAddresses = {
     title.textContent = this.getAddressTypeLabel(address.addressType);
     titleRow.appendChild(title);
 
+    if (this.isSelectedDeliveryAddress(address.addressId)) {
+      card.classList.add("is-selected");
+
+      const selectedBadge = document.createElement("span");
+      selectedBadge.className = "saved-address-default-badge";
+      selectedBadge.textContent = "Delivering here";
+      titleRow.appendChild(selectedBadge);
+    }
+
     const addressText = document.createElement("p");
     addressText.className = "saved-address-text";
     addressText.textContent = this.formatAddressText(address);
@@ -425,6 +438,19 @@ const CustomerAddresses = {
 
     const actions = document.createElement("div");
     actions.className = "saved-address-actions";
+
+    const selectButton = this.createCardButton(
+      this.isSelectedDeliveryAddress(address.addressId)
+        ? "Selected for Delivery"
+        : "Deliver Here",
+      "select",
+      address.addressId
+    );
+
+    selectButton.classList.add("saved-address-button-primary");
+    selectButton.disabled = this.isSelectedDeliveryAddress(address.addressId);
+
+    actions.appendChild(selectButton);
     actions.appendChild(
       this.createCardButton("Edit", "edit", address.addressId)
     );
@@ -452,6 +478,102 @@ const CustomerAddresses = {
     button.dataset.addressId = addressId;
     button.textContent = text;
     return button;
+  },
+
+
+  /* SELECT SAVED DELIVERY ADDRESS */
+
+  selectSavedAddress(addressId) {
+
+    const address = this.state.addresses.find(
+      (item) => item.addressId === addressId
+    );
+
+    if (!address) {
+      this.showMessage("Saved address could not be found.", "error");
+      return { success: false, reason: "ADDRESS_NOT_FOUND" };
+    }
+
+    if (!this.isValidLocation(address)) {
+      this.showMessage(
+        "This saved address does not have valid map coordinates. Edit it before selecting.",
+        "error"
+      );
+      return { success: false, reason: "INVALID_ADDRESS_LOCATION" };
+    }
+
+    const label = this.getSavedAddressLabel(address);
+
+    AppStorage.set("apnabite_home_resolved_location", {
+      label: label,
+      source: "MANUAL_SAVED_ADDRESS",
+      manualSelection: true,
+      latitude: Number(address.latitude),
+      longitude: Number(address.longitude),
+      district: {
+        districtId: address.districtId || "",
+        districtName: address.district || "",
+        state: address.state || ""
+      },
+      address: address,
+      distanceMeters: null,
+      resolvedAt: new Date().toISOString(),
+      selectedAt: new Date().toISOString()
+    });
+
+    this.renderAddresses(this.state.addresses);
+    this.showMessage(label + " selected for delivery.", "success");
+
+    document.dispatchEvent(
+      new CustomEvent("apnabite:address-selected", {
+        detail: {
+          source: "MANUAL_SAVED_ADDRESS",
+          address: address,
+          distanceMeters: null,
+          manualSelection: true
+        }
+      })
+    );
+
+    window.setTimeout(() => {
+      window.location.href = "home.html";
+    }, 450);
+
+    return {
+      success: true,
+      address: address,
+      label: label,
+      source: "MANUAL_SAVED_ADDRESS"
+    };
+  },
+
+
+  isSelectedDeliveryAddress(addressId) {
+
+    const selected = AppStorage.get(
+      "apnabite_home_resolved_location",
+      null
+    );
+
+    return Boolean(
+      selected &&
+      selected.manualSelection === true &&
+      selected.address &&
+      selected.address.addressId === addressId
+    );
+  },
+
+
+  getSavedAddressLabel(address) {
+
+    const place =
+      address.areaLocality ||
+      address.addressLine1 ||
+      address.city ||
+      address.district ||
+      "Saved address";
+
+    return this.getAddressTypeLabel(address.addressType) + " • " + place;
   },
 
 
