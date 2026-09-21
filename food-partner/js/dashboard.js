@@ -24,7 +24,9 @@ const FoodPartnerDashboard = {
       address: "businessAddressInput", district: "districtInput", error: "formError",
       saveButton: "savePartnerButton", businessNameDisplay: "dashboardBusinessName",
       addressDisplay: "dashboardAddress", kycStatus: "kycStatus", approvalStatus: "approvalStatus",
-      operatingStatus: "operatingStatus", editButton: "editProfileButton"
+      operatingStatus: "operatingStatus", editButton: "editProfileButton",
+      kycStepCard: "kycStepCard", kycStepTitle: "kycStepTitle", kycStepCopy: "kycStepCopy",
+      menuStepCard: "menuStepCard", menuStepCopy: "menuStepCopy"
     };
     Object.keys(ids).forEach((key) => { this.elements[key] = document.getElementById(ids[key]); });
     if (!Object.values(this.elements).every(Boolean)) {
@@ -231,6 +233,17 @@ const FoodPartnerDashboard = {
     this.elements.kycStatus.textContent = String(profile.kycStatus || "NOT_SUBMITTED").replace(/_/g, " ");
     this.elements.approvalStatus.textContent = String(profile.approvalStatus || "PENDING").replace(/_/g, " ");
     this.elements.operatingStatus.textContent = String(profile.operatingStatus || "CLOSED").replace(/_/g, " ");
+    const approved = String(profile.approvalStatus || "").toUpperCase() === "APPROVED";
+    const verified = String(profile.kycStatus || "").toUpperCase() === "VERIFIED";
+    this.elements.menuStepCard.classList.toggle("locked", !(approved && verified));
+    this.elements.menuStepCard.setAttribute("aria-disabled", String(!(approved && verified)));
+    this.elements.menuStepCopy.textContent = approved && verified
+      ? "Add dishes, prices, photos and control availability."
+      : "Available after KYC verification and Admin approval.";
+    this.elements.kycStepTitle.textContent = verified ? "KYC verified" : "Next: complete KYC";
+    this.elements.kycStepCopy.textContent = verified
+      ? "Your documents have been verified successfully."
+      : "Upload all mandatory documents for verification.";
   },
 
   showError(message) {
