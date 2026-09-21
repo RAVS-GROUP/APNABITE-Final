@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>Partner KYC Review | ApnaBite</title>
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../css/admin-common.css">
+  <link rel="stylesheet" href="../css/kyc-review.css">
+</head>
+<body data-required-role="Admin">
+  <main class="admin-app">
+    <div class="admin-loader" id="roleHomeLoader"><div class="loader-spinner"></div><p>Opening KYC queue...</p></div>
+    <div class="hidden" id="roleHomeContent">
+      <header class="admin-header"><a href="dashboard.html" aria-label="Back">←</a><div><h1>Partner KYC</h1><p>Approve verified applications</p></div><button id="roleLogoutButton" type="button">Logout</button></header>
+      <div class="hidden"><span id="roleHomeUserRole"></span><span id="roleHomeUserMobile"></span></div>
+      <div class="admin-message hidden" id="roleHomeMessage" role="alert"></div>
+
+      <section class="review-main">
+        <div class="review-toolbar">
+          <div><small>ADMIN REVIEW</small><h2>Food Partner applications</h2></div>
+          <button id="refreshQueueButton" type="button">↻ Refresh</button>
+        </div>
+
+        <div class="filter-row" id="queueFilters">
+          <button class="active" data-status="PENDING" type="button">Pending</button>
+          <button data-status="APPROVED" type="button">Approved</button>
+          <button data-status="REJECTED" type="button">Rejected</button>
+          <button data-status="ALL" type="button">All</button>
+        </div>
+
+        <div class="queue-loading" id="queueLoading">Loading applications...</div>
+        <div class="queue-error hidden" id="queueError"></div>
+        <div class="queue-list" id="queueList"></div>
+        <div class="queue-empty hidden" id="queueEmpty"><span>✅</span><strong>No applications here</strong><p>There are no partners in this queue.</p></div>
+      </section>
+
+      <div class="review-drawer hidden" id="reviewDrawer" aria-hidden="true">
+        <button class="drawer-backdrop" data-close-review="true" aria-label="Close review"></button>
+        <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="reviewTitle">
+          <header><div><small>PARTNER APPLICATION</small><h2 id="reviewTitle">KYC review</h2></div><button id="closeReviewButton" type="button">×</button></header>
+          <div class="drawer-content">
+            <div class="partner-details" id="partnerDetails"></div>
+            <div class="requirement-summary" id="requirementSummary"></div>
+            <h3>Submitted documents</h3>
+            <div class="review-documents" id="reviewDocuments"></div>
+            <label for="rejectionReasonInput">Rejection reason <small>(required only when rejecting)</small></label>
+            <textarea id="rejectionReasonInput" maxlength="500" rows="3" placeholder="Explain what the partner needs to correct"></textarea>
+            <div class="decision-error hidden" id="decisionError" role="alert"></div>
+          </div>
+          <footer><button class="reject-button" id="rejectKycButton" type="button">Reject</button><button class="approve-button" id="approveKycButton" type="button">Approve KYC</button></footer>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="../../shared/js/storage.js"></script><script src="../../shared/js/api.js"></script><script src="../../shared/js/session.js"></script><script src="../../shared/js/auth.js"></script><script src="../../shared/js/app-router.js"></script><script src="../../shared/js/role-home.js"></script><script src="../js/kyc-review.js"></script>
+</body>
+</html>
