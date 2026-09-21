@@ -475,6 +475,15 @@
   box-shadow: 0 6px 18px rgba(239,91,0,0.09);
 }
 
+
+.saved-address-card.is-selected {
+  border-color: #ef5b00;
+
+  box-shadow:
+    0 7px 20px
+    rgba(239, 91, 0, 0.14);
+}
+
 .saved-address-main {
   display: flex;
   align-items: flex-start;
@@ -601,6 +610,23 @@
 .saved-address-button-danger {
   color: #b3261e;
   border-color: #efb5b1;
+}
+
+
+.saved-address-button-primary {
+  grid-column: 1 / -1;
+
+  color: #ffffff;
+  background: #ef5b00;
+  border-color: #ef5b00;
+}
+
+
+.saved-address-button-primary:disabled {
+  color: #ffffff;
+  background: #18864b;
+  border-color: #18864b;
+  opacity: 1;
 }
 
 .saved-address-button:active:not(:disabled) {
