@@ -3,7 +3,7 @@
  * APNABITE CUSTOMER
  * FILE: customer/js/home.js
  * PURPOSE: Customer Home page controller
- * VERSION: 2.2.0
+ * VERSION: 2.3.0
  * ============================================================
  */
 
@@ -19,6 +19,13 @@ const CustomerHome = {
   searchTimer: null,
   backgroundLocationStarted: false,
   locationResolutionRunning: false,
+  discoveryLoading: false,
+  discoveryRequestNumber: 0,
+  kitchens: [],
+  discoveryPage: 1,
+  discoveryTotal: 0,
+  discoveryHasMore: false,
+  pendingDiscoveryOptions: null,
 
   locationState: {
     success: false,
@@ -47,6 +54,16 @@ const CustomerHome = {
       categoryButtons: Array.from(document.querySelectorAll(".category-item")),
       kitchenList: document.getElementById("kitchenList"),
       kitchenEmptyState: document.getElementById("kitchenEmptyState"),
+      kitchenEmptyTitle: document.getElementById("kitchenEmptyTitle"),
+      kitchenEmptyDescription: document.getElementById("kitchenEmptyDescription"),
+      kitchenCount: document.getElementById("nearbyKitchenCount"),
+      kitchenSubtitle: document.getElementById("nearbyKitchenSubtitle"),
+      kitchenErrorState: document.getElementById("kitchenErrorState"),
+      kitchenErrorMessage: document.getElementById("kitchenErrorMessage"),
+      retryKitchensButton: document.getElementById("retryKitchensButton"),
+      loadMoreWrap: document.getElementById("kitchenLoadMoreWrap"),
+      loadMoreButton: document.getElementById("loadMoreKitchensButton"),
+      paginationStatus: document.getElementById("kitchenPaginationStatus"),
       refreshKitchensButton: document.getElementById("refreshKitchensButton"),
       message: document.getElementById("roleHomeMessage"),
       bottomNavigation: Array.from(
@@ -63,11 +80,23 @@ const CustomerHome = {
     this.locationState = this.restoreLocation();
     this.prepareDiscoveryState();
 
+    if (this.getDiscoveryLocation()) {
+      this.loadNearbyKitchens();
+    }
+
     /*
      * Resolve the already-saved device coordinates immediately.
      * Home rendering does not wait for this request.
      */
-    this.resolveSavedDeviceLocation();
+    this.resolveSavedDeviceLocation().then((result) => {
+      if (
+        result &&
+        result.success === true &&
+        !this.getManualSavedAddressSelection()
+      ) {
+        this.loadNearbyKitchens();
+      }
+    });
     this.startBackgroundLocation();
 
     console.log("ApnaBite Customer Home initialized.");
@@ -85,6 +114,16 @@ const CustomerHome = {
       this.elements.searchClearButton &&
       this.elements.kitchenList &&
       this.elements.kitchenEmptyState &&
+      this.elements.kitchenEmptyTitle &&
+      this.elements.kitchenEmptyDescription &&
+      this.elements.kitchenCount &&
+      this.elements.kitchenSubtitle &&
+      this.elements.kitchenErrorState &&
+      this.elements.kitchenErrorMessage &&
+      this.elements.retryKitchensButton &&
+      this.elements.loadMoreWrap &&
+      this.elements.loadMoreButton &&
+      this.elements.paginationStatus &&
       this.elements.refreshKitchensButton &&
       this.elements.message
     );
@@ -133,6 +172,14 @@ const CustomerHome = {
 
     this.elements.refreshKitchensButton.addEventListener("click", () => {
       this.loadNearbyKitchens();
+    });
+
+    this.elements.retryKitchensButton.addEventListener("click", () => {
+      this.loadNearbyKitchens();
+    });
+
+    this.elements.loadMoreButton.addEventListener("click", () => {
+      this.loadNearbyKitchens({ append: true });
     });
 
     document.addEventListener("apnabite:background-location", (event) => {
@@ -918,24 +965,11 @@ const CustomerHome = {
         : ""
     });
 
-    if (normalizedQuery) {
-      this.showMessage(
-        'Searching for "' +
-        normalizedQuery +
-        '" will be connected with the Discovery API.'
-      );
-    } else {
-      this.clearMessage();
-    }
+    this.clearMessage();
 
-    return {
-      success: true,
-      query: normalizedQuery,
-      foodType: this.selectedFoodType,
-      category: this.selectedCategory,
-      location: this.locationState,
-      integrationStatus: "DISCOVERY_API_PENDING"
-    };
+    return this.loadNearbyKitchens({
+      query: normalizedQuery
+    });
   },
 
 
@@ -945,6 +979,7 @@ const CustomerHome = {
     this.elements.searchInput.value = "";
     this.elements.searchClearButton.classList.add("hidden");
     this.selectedCategory = "";
+    this.updateCategoryButtons();
     this.clearMessage();
     this.elements.searchInput.focus();
 
@@ -991,55 +1026,460 @@ const CustomerHome = {
       };
     }
 
-    this.selectedCategory = normalizedCategory;
-    this.elements.searchInput.value = normalizedCategory;
-    this.elements.searchClearButton.classList.remove("hidden");
+    this.selectedCategory =
+      this.selectedCategory === normalizedCategory
+        ? ""
+        : normalizedCategory;
 
-    return this.search(normalizedCategory);
+    this.updateCategoryButtons();
+
+    return this.search(this.elements.searchInput.value);
   },
 
 
-  /* DISCOVERY PLACEHOLDER */
+  updateCategoryButtons() {
+
+    this.elements.categoryButtons.forEach((button) => {
+      const isSelected =
+        button.dataset.category === this.selectedCategory;
+
+      button.classList.toggle("active", isSelected);
+      button.setAttribute("aria-pressed", String(isSelected));
+    });
+  },
+
+
+  /* LIVE KITCHEN DISCOVERY */
 
   prepareDiscoveryState() {
-
     this.showKitchenSkeletons();
-
-    window.setTimeout(() => {
-      this.showKitchenEmptyState();
-    }, this.DISCOVERY_PLACEHOLDER_DELAY_MS);
   },
 
 
-  loadNearbyKitchens() {
+  async loadNearbyKitchens(options = {}) {
 
-    this.clearMessage();
-    this.showKitchenSkeletons();
+    const append = options.append === true;
+    const location = this.getDiscoveryLocation();
 
-    window.setTimeout(() => {
-      this.showKitchenEmptyState();
-      this.showMessage(
-        "Nearby Kitchen Discovery API is the next backend module."
+    if (!location) {
+      this.showKitchenEmptyState(
+        "Choose a delivery location",
+        "Select a saved address or use your current location to discover kitchens."
       );
-    }, this.DISCOVERY_PLACEHOLDER_DELAY_MS);
+      this.elements.kitchenSubtitle.textContent =
+        "A delivery location is required";
 
-    return {
-      success: true,
-      status: "DISCOVERY_API_PENDING",
-      location: this.locationState
-    };
+      return {
+        success: false,
+        reason: "DISCOVERY_LOCATION_REQUIRED"
+      };
+    }
+
+    if (this.discoveryLoading) {
+      this.pendingDiscoveryOptions = Object.assign({}, options, {
+        append: false
+      });
+
+      return {
+        success: false,
+        reason: "DISCOVERY_REQUEST_QUEUED"
+      };
+    }
+
+    const requestNumber = ++this.discoveryRequestNumber;
+    const requestedPage = append
+      ? this.discoveryPage + 1
+      : 1;
+    const query = this.normalizeQuery(
+      options.query !== undefined
+        ? options.query
+        : this.elements.searchInput.value
+    );
+
+    this.discoveryLoading = true;
+    this.setDiscoveryButtonsLoading(true, append);
+    this.hideKitchenError();
+    this.clearMessage();
+
+    if (!append) {
+      this.showKitchenSkeletons();
+    }
+
+    try {
+      const response = await API.request(
+        "discover_kitchens",
+        {
+          sessionId: this.getSessionId(),
+          latitude: Number(location.latitude),
+          longitude: Number(location.longitude),
+          districtId: this.getDiscoveryDistrictId(),
+          query: query,
+          foodType: this.selectedFoodType,
+          category: this.selectedCategory,
+          page: requestedPage,
+          limit: 10
+        }
+      );
+
+      if (requestNumber !== this.discoveryRequestNumber) {
+        return { success: false, reason: "STALE_DISCOVERY_RESPONSE" };
+      }
+
+      const result = response.data || {};
+      const kitchens = Array.isArray(result.kitchens)
+        ? result.kitchens
+        : [];
+
+      this.kitchens = append
+        ? this.kitchens.concat(kitchens)
+        : kitchens;
+      this.discoveryPage = Number(result.page || requestedPage);
+      this.discoveryTotal = Number(result.total || this.kitchens.length);
+      this.discoveryHasMore = result.hasMore === true;
+
+      this.renderKitchens(this.kitchens);
+      this.updateDiscoverySummary(result, query);
+
+      return {
+        success: true,
+        count: kitchens.length,
+        total: this.discoveryTotal,
+        page: this.discoveryPage,
+        hasMore: this.discoveryHasMore,
+        kitchens: kitchens,
+        requestId: response.requestId || ""
+      };
+    } catch (error) {
+      console.error("Customer kitchen discovery failed:", error);
+
+      if (!append || this.kitchens.length === 0) {
+        this.showKitchenError(
+          error.message || "Kitchens could not be loaded."
+        );
+      } else {
+        this.showMessage(
+          error.message || "More kitchens could not be loaded."
+        );
+      }
+
+      return {
+        success: false,
+        error: error.message,
+        code: error.code || "DISCOVERY_ERROR"
+      };
+    } finally {
+      this.discoveryLoading = false;
+      this.setDiscoveryButtonsLoading(false, append);
+
+      if (this.pendingDiscoveryOptions) {
+        const pendingOptions = this.pendingDiscoveryOptions;
+        this.pendingDiscoveryOptions = null;
+        window.setTimeout(() => {
+          this.loadNearbyKitchens(pendingOptions);
+        }, 0);
+      }
+    }
+  },
+
+
+  getDiscoveryLocation() {
+
+    const location = this.locationState && this.locationState.location;
+
+    if (
+      location &&
+      LocationManager.isValidCoordinates(
+        Number(location.latitude),
+        Number(location.longitude)
+      )
+    ) {
+      return location;
+    }
+
+    return null;
+  },
+
+
+  getDiscoveryDistrictId() {
+
+    if (this.locationState.address) {
+      return this.locationState.address.districtId || "";
+    }
+
+    if (this.locationState.district) {
+      return this.locationState.district.districtId || "";
+    }
+
+    return "";
+  },
+
+
+  renderKitchens(kitchens) {
+
+    const safeKitchens = Array.isArray(kitchens) ? kitchens : [];
+    this.elements.kitchenList.innerHTML = "";
+
+    if (safeKitchens.length === 0) {
+      this.showKitchenEmptyState(
+        "No kitchens found",
+        this.getEmptyDiscoveryMessage()
+      );
+      this.updateLoadMoreState();
+      return;
+    }
+
+    safeKitchens.forEach((kitchen) => {
+      this.elements.kitchenList.appendChild(
+        this.createKitchenCard(kitchen)
+      );
+    });
+
+    this.elements.kitchenList.classList.remove("hidden");
+    this.elements.kitchenEmptyState.classList.add("hidden");
+    this.elements.kitchenErrorState.classList.add("hidden");
+    this.updateLoadMoreState();
+  },
+
+
+  createKitchenCard(kitchen) {
+
+    const card = document.createElement("article");
+    card.className = "kitchen-card";
+    card.dataset.chefId = kitchen.chefId || "";
+
+    const media = document.createElement("div");
+    media.className = "kitchen-card-media";
+
+    const products = Array.isArray(kitchen.products)
+      ? kitchen.products
+      : [];
+    const imageProduct = products.find((product) => product.imageUrl);
+
+    if (imageProduct) {
+      const image = document.createElement("img");
+      image.src = imageProduct.imageUrl;
+      image.alt = "";
+      image.loading = "lazy";
+      image.addEventListener("error", () => {
+        image.remove();
+        media.classList.add("kitchen-card-media-fallback");
+        media.textContent = "🍲";
+      });
+      media.appendChild(image);
+    } else {
+      media.classList.add("kitchen-card-media-fallback");
+      media.textContent = "🍲";
+    }
+
+    const content = document.createElement("div");
+    content.className = "kitchen-card-content";
+
+    const heading = document.createElement("div");
+    heading.className = "kitchen-card-heading";
+
+    const name = document.createElement("h3");
+    name.textContent = kitchen.businessName || "ApnaBite Kitchen";
+
+    const status = document.createElement("span");
+    status.className = "kitchen-status-badge";
+    status.textContent = kitchen.operatingStatus || "OPEN";
+
+    heading.appendChild(name);
+    heading.appendChild(status);
+
+    const meta = document.createElement("div");
+    meta.className = "kitchen-card-meta";
+    meta.appendChild(
+      this.createKitchenMeta("★", this.formatRating(kitchen))
+    );
+    meta.appendChild(
+      this.createKitchenMeta(
+        "📍",
+        Number(kitchen.distanceKm || 0).toFixed(1) + " km"
+      )
+    );
+
+    if (kitchen.minimumPrice !== null && kitchen.minimumPrice !== undefined) {
+      meta.appendChild(
+        this.createKitchenMeta(
+          "₹",
+          "From ₹" + Number(kitchen.minimumPrice).toFixed(0)
+        )
+      );
+    }
+
+    const description = document.createElement("p");
+    description.className = "kitchen-card-description";
+    description.textContent =
+      kitchen.description ||
+      kitchen.businessType ||
+      "Fresh food prepared near you.";
+
+    content.appendChild(heading);
+    content.appendChild(meta);
+    content.appendChild(description);
+
+    if (products.length > 0) {
+      const productList = document.createElement("div");
+      productList.className = "kitchen-product-preview";
+
+      products.slice(0, 3).forEach((product) => {
+        const item = document.createElement("span");
+        item.textContent =
+          (product.productName || "Dish") +
+          " · ₹" +
+          Number(product.price || 0).toFixed(0);
+        productList.appendChild(item);
+      });
+
+      content.appendChild(productList);
+    }
+
+    card.appendChild(media);
+    card.appendChild(content);
+    return card;
+  },
+
+
+  createKitchenMeta(iconText, valueText) {
+
+    const item = document.createElement("span");
+    const icon = document.createElement("b");
+    icon.textContent = iconText;
+    const value = document.createElement("span");
+    value.textContent = valueText;
+    item.appendChild(icon);
+    item.appendChild(value);
+    return item;
+  },
+
+
+  formatRating(kitchen) {
+
+    const rating = Number(kitchen.rating || 0);
+    const count = Number(kitchen.ratingCount || 0);
+
+    return rating > 0
+      ? rating.toFixed(1) + (count > 0 ? " (" + count + ")" : "")
+      : "New";
+  },
+
+
+  getEmptyDiscoveryMessage() {
+
+    if (
+      this.normalizeQuery(this.elements.searchInput.value) ||
+      this.selectedCategory ||
+      this.selectedFoodType !== "ALL"
+    ) {
+      return "Try clearing the search or changing your food filters.";
+    }
+
+    return "No active kitchens are available within this delivery area yet.";
+  },
+
+
+  updateDiscoverySummary(result, query) {
+
+    const radius = result.discovery
+      ? Number(result.discovery.radiusKm || 0)
+      : 0;
+
+    this.elements.kitchenCount.textContent = String(this.discoveryTotal);
+    this.elements.kitchenCount.classList.toggle(
+      "hidden",
+      this.discoveryTotal === 0
+    );
+
+    this.elements.kitchenSubtitle.textContent = query
+      ? this.discoveryTotal + ' result(s) for "' + query + '"'
+      : radius > 0
+        ? "Within " + radius + " km of your delivery location"
+        : "Based on your selected delivery location";
+
+    this.updateLoadMoreState();
+  },
+
+
+  updateLoadMoreState() {
+
+    this.elements.loadMoreWrap.classList.toggle(
+      "hidden",
+      !this.discoveryHasMore
+    );
+
+    this.elements.paginationStatus.textContent =
+      this.kitchens.length > 0
+        ? "Showing " + this.kitchens.length + " of " + this.discoveryTotal
+        : "";
+  },
+
+
+  setDiscoveryButtonsLoading(isLoading, append) {
+
+    this.elements.refreshKitchensButton.disabled = isLoading;
+    this.elements.loadMoreButton.disabled = isLoading;
+    this.elements.refreshKitchensButton.textContent =
+      isLoading && !append ? "Loading..." : "Refresh";
+    this.elements.loadMoreButton.textContent =
+      isLoading && append ? "Loading..." : "Load More Kitchens";
   },
 
 
   showKitchenSkeletons() {
+    this.elements.kitchenList.innerHTML = this.getKitchenSkeletonMarkup();
     this.elements.kitchenList.classList.remove("hidden");
     this.elements.kitchenEmptyState.classList.add("hidden");
+    this.elements.kitchenErrorState.classList.add("hidden");
+    this.elements.loadMoreWrap.classList.add("hidden");
   },
 
 
-  showKitchenEmptyState() {
+  showKitchenEmptyState(title, description) {
     this.elements.kitchenList.classList.add("hidden");
+    this.elements.kitchenErrorState.classList.add("hidden");
+    this.elements.loadMoreWrap.classList.add("hidden");
+    this.elements.kitchenEmptyTitle.textContent =
+      title || "No kitchens available yet";
+    this.elements.kitchenEmptyDescription.textContent =
+      description || "Active kitchens within your service location will appear here.";
     this.elements.kitchenEmptyState.classList.remove("hidden");
+  },
+
+
+  showKitchenError(message) {
+    this.elements.kitchenList.classList.add("hidden");
+    this.elements.kitchenEmptyState.classList.add("hidden");
+    this.elements.loadMoreWrap.classList.add("hidden");
+    this.elements.kitchenErrorMessage.textContent = message;
+    this.elements.kitchenErrorState.classList.remove("hidden");
+  },
+
+
+  hideKitchenError() {
+    this.elements.kitchenErrorState.classList.add("hidden");
+  },
+
+
+  getKitchenSkeletonMarkup() {
+    return (
+      '<article class="kitchen-skeleton">' +
+        '<div class="skeleton kitchen-image-skeleton"></div>' +
+        '<div class="kitchen-skeleton-content">' +
+          '<div class="skeleton skeleton-line-wide"></div>' +
+          '<div class="skeleton skeleton-line-medium"></div>' +
+          '<div class="skeleton skeleton-line-small"></div>' +
+        '</div>' +
+      '</article>' +
+      '<article class="kitchen-skeleton">' +
+        '<div class="skeleton kitchen-image-skeleton"></div>' +
+        '<div class="kitchen-skeleton-content">' +
+          '<div class="skeleton skeleton-line-wide"></div>' +
+          '<div class="skeleton skeleton-line-medium"></div>' +
+          '<div class="skeleton skeleton-line-small"></div>' +
+        '</div>' +
+      '</article>'
+    );
   },
 
 
@@ -1081,7 +1521,7 @@ const CustomerHome = {
   async test() {
 
     console.log("========================================");
-    console.log("APNABITE CUSTOMER HOME LOCATION TEST");
+    console.log("APNABITE CUSTOMER HOME DISCOVERY TEST");
     console.log("========================================");
 
     const locationResult = this.restoreLocation();
@@ -1093,17 +1533,33 @@ const CustomerHome = {
       reason: "DEVICE_LOCATION_NOT_FOUND"
     };
 
-    if (deviceLocation) {
+    const manualSelection = this.getManualSavedAddressSelection();
+
+    if (manualSelection) {
+      resolutionResult = {
+        success: true,
+        matched: true,
+        manualSelection: true
+      };
+    } else if (deviceLocation) {
       resolutionResult = await this.resolveLocationDisplay(deviceLocation, {
         reason: "TEST"
       });
     }
 
-    const vegResult = this.selectFoodType("VEG");
-    const nonVegResult = this.selectFoodType("NON_VEG");
-    const allResult = this.selectFoodType("ALL");
-    const categoryResult = this.selectCategory("Home Food");
-    this.clearSearch();
+    while (this.discoveryLoading) {
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    }
+
+    const discoveryResult = await this.loadNearbyKitchens();
+
+    const filterSupport =
+      ["ALL", "VEG", "NON_VEG"].every((foodType) =>
+        this.elements.foodTypeButtons.some(
+          (button) => button.dataset.foodType === foodType
+        )
+      ) &&
+      this.elements.categoryButtons.length >= 1;
 
     const backgroundSupported =
       typeof LocationManager.initBackgroundRefresh === "function";
@@ -1158,21 +1614,40 @@ const CustomerHome = {
         expected: 4,
         actual: this.elements.bottomNavigation.length,
         passed: this.elements.bottomNavigation.length === 4
+      },
+      {
+        test: "Live discovery API",
+        expected: true,
+        actual: discoveryResult.success,
+        passed: discoveryResult.success === true
+      },
+      {
+        test: "Kitchen response array",
+        expected: true,
+        actual: Array.isArray(this.kitchens),
+        passed: Array.isArray(this.kitchens)
+      },
+      {
+        test: "Discovery filters",
+        expected: true,
+        actual: filterSupport,
+        passed: filterSupport === true
+      },
+      {
+        test: "Discovery page limit",
+        expected: "10 or less",
+        actual: this.kitchens.length,
+        passed: this.kitchens.length <= 10
       }
     ];
 
-    const passed =
-      results.every((result) => result.passed) &&
-      vegResult.success === true &&
-      nonVegResult.success === true &&
-      allResult.success === true &&
-      categoryResult.success === true;
+    const passed = results.every((result) => result.passed);
 
     console.table(results);
     console.log("Location State:", this.locationState);
     console.log("Location Resolution:", resolutionResult);
     console.log(
-      passed ? "Customer Home Location Test: PASS" : "Customer Home Location Test: FAIL"
+      passed ? "Customer Home Discovery Test: PASS" : "Customer Home Discovery Test: FAIL"
     );
 
     return {
@@ -1182,6 +1657,8 @@ const CustomerHome = {
       resolution: resolutionResult,
       backgroundLocation: backgroundResult,
       selectedFoodType: this.selectedFoodType,
+      discovery: discoveryResult,
+      kitchenCount: this.kitchens.length,
       bottomNavigationItems: this.elements.bottomNavigation.length,
       results: results
     };
