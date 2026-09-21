@@ -33,6 +33,9 @@
 .next-step-card > b { align-self:center; color:#db5100; font-size:24px; }
 .next-step-card h2 { margin:0; font-size:14px; }
 .next-step-card p { margin:5px 0 0; color:#666; font-size:10px; line-height:1.5; }
+.menu-step-card { display:flex; align-items:flex-start; gap:12px; margin-top:10px; padding:16px; color:inherit; text-decoration:none; background:#eefaf2; border:1px solid #bfe6cc; border-radius:17px; }
+.menu-step-card > span { font-size:24px; }.menu-step-card > div { flex:1; min-width:0; }.menu-step-card > b { align-self:center; color:#168947; font-size:24px; }.menu-step-card h2 { margin:0; font-size:14px; }.menu-step-card p { margin:5px 0 0; color:#666; font-size:10px; line-height:1.5; }
+.menu-step-card.locked { opacity:.55; filter:grayscale(.45); pointer-events:none; background:#f4f4f4; border-color:#ddd; }
 .secondary-button { width:100%; min-height:47px; margin-top:14px; color:#df5300; background:#fff; border:1px solid #ef9c69; border-radius:12px; font-weight:800; }
 @media(min-width:600px){.onboarding,.partner-dashboard{padding-right:24px;padding-left:24px}.partner-map{height:350px}}
 @media(max-width:360px){.status-grid{grid-template-columns:1fr}.section-title-row{flex-direction:column}.location-button{width:100%}}
