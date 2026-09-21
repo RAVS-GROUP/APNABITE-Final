@@ -1,0 +1,35 @@
+/** APNABITE FOOD PARTNER DASHBOARD/ONBOARDING — VERSION 1.0.0 */
+.onboarding,.partner-dashboard { padding:18px 16px 28px; }
+.onboarding-hero,.dashboard-hero { padding:22px; color:#fff; background:linear-gradient(135deg,#d74700,#ef5b00 60%,#ff7f32); border-radius:22px; box-shadow:0 12px 28px rgba(239,91,0,.18); }
+.onboarding-hero h1,.dashboard-hero h1 { margin:7px 0 5px; font-size:25px; line-height:1.15; }
+.onboarding-hero p,.dashboard-hero p { margin:0; color:rgba(255,255,255,.92); font-size:11px; line-height:1.55; }
+.partner-form { display:grid; gap:14px; margin-top:16px; }
+.form-section { display:grid; gap:9px; padding:17px; background:#fff; border:1px solid #e5e5e5; border-radius:18px; box-shadow:0 5px 18px rgba(0,0,0,.035); }
+.form-section h2 { margin:0 0 3px; font-size:16px; }
+.form-section label { margin-top:5px; font-size:11px; font-weight:800; }
+.form-section label small { color:#888; font-weight:500; }
+.form-section input,.form-section select,.form-section textarea { width:100%; min-height:47px; padding:11px 12px; color:#222; background:#fff; border:1px solid #d8d8d8; border-radius:11px; outline:0; font:inherit; font-size:12px; resize:vertical; }
+.form-section textarea { min-height:82px; }
+.form-section input:focus,.form-section select:focus,.form-section textarea:focus { border-color:#ef5b00; box-shadow:0 0 0 3px rgba(239,91,0,.1); }
+.section-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.section-title-row p { margin:4px 0 0; color:#777; font-size:10px; line-height:1.4; }
+.location-button { flex:0 0 auto; padding:9px 11px; color:#dc5200; background:#fff4ed; border:1px solid #f2ae83; border-radius:10px; font-size:10px; font-weight:800; }
+.partner-map { height:300px; margin:5px 0 2px; overflow:hidden; background:#eee; border:1px solid #ddd; border-radius:15px; }
+.field-note,.submission-note { margin:0; color:#777; font-size:9px; line-height:1.5; }
+.form-error { padding:11px 12px; color:#a1261f; background:#fff0ef; border:1px solid #ffc5c0; border-radius:10px; font-size:11px; }
+.save-partner-button { min-height:52px; color:#fff; background:#ef5b00; border:0; border-radius:13px; font-weight:850; box-shadow:0 8px 18px rgba(239,91,0,.18); }
+.save-partner-button:disabled,.location-button:disabled { opacity:.65; cursor:not-allowed; }
+.submission-note { text-align:center; }
+.dashboard-hero { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.dashboard-icon { display:grid; place-items:center; flex:0 0 auto; width:62px; height:62px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); border-radius:18px; font-size:31px; }
+.status-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:14px; }
+.status-grid article { min-width:0; padding:14px 9px; text-align:center; background:#fff; border:1px solid #e4e4e4; border-radius:15px; }
+.status-grid small { display:block; margin-bottom:6px; color:#888; font-size:8px; font-weight:800; text-transform:uppercase; }
+.status-grid strong { display:block; overflow:hidden; color:#d94f00; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.next-step-card { display:flex; align-items:flex-start; gap:12px; margin-top:14px; padding:16px; background:#fff8f3; border:1px solid #f3d0ba; border-radius:17px; }
+.next-step-card > span { font-size:24px; }
+.next-step-card h2 { margin:0; font-size:14px; }
+.next-step-card p { margin:5px 0 0; color:#666; font-size:10px; line-height:1.5; }
+.secondary-button { width:100%; min-height:47px; margin-top:14px; color:#df5300; background:#fff; border:1px solid #ef9c69; border-radius:12px; font-weight:800; }
+@media(min-width:600px){.onboarding,.partner-dashboard{padding-right:24px;padding-left:24px}.partner-map{height:350px}}
+@media(max-width:360px){.status-grid{grid-template-columns:1fr}.section-title-row{flex-direction:column}.location-button{width:100%}}
