@@ -2,121 +2,140 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  >
-
-  <meta name="theme-color" content="#ffffff">
-
-  <title>Food Partner Dashboard | ApnaBite</title>
-
-  <link rel="manifest" href="../manifest.json">
-  <link rel="stylesheet" href="../shared/css/reset.css">
-  <link rel="stylesheet" href="../shared/css/variables.css">
-  <link rel="stylesheet" href="../shared/css/common.css">
-  <link rel="stylesheet" href="../shared/css/components.css">
-  <link rel="stylesheet" href="../shared/css/role-home.css">
-  <link rel="stylesheet" href="../shared/css/responsive.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ef5b00">
+  <meta name="description" content="Manage your ApnaBite Food Partner kitchen">
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+  <title>Food Partner | ApnaBite</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../../shared/css/responsive.css">
+  <link rel="stylesheet" href="../css/partner-common.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
 </head>
 
 <body data-required-role="Food Partner">
-
-  <main class="role-home">
-
-    <div class="role-home-loader" id="roleHomeLoader">
-      <div class="loader-spinner"></div>
-      <p>Opening Food Partner Dashboard...</p>
+  <main class="partner-app">
+    <div class="partner-loader" id="roleHomeLoader">
+      <div class="loader-spinner" aria-hidden="true"></div>
+      <p>Opening your Food Partner account...</p>
     </div>
 
-
-    <div class="hidden" id="roleHomeContent">
-
-      <header class="role-home-header">
-
-        <div class="role-home-brand">
-          <div class="role-home-logo">A</div>
-
-          <div class="role-home-brand-copy">
-            <strong>ApnaBite</strong>
-            <span>Food Partner</span>
-          </div>
-        </div>
-
-        <button
-          class="role-logout-button"
-          id="roleLogoutButton"
-          type="button"
-        >
-          Logout
-        </button>
-
+    <div class="partner-content hidden" id="roleHomeContent">
+      <header class="partner-header">
+        <div class="partner-brand"><span>A</span><strong>ApnaBite Partner</strong></div>
+        <button class="partner-logout" id="roleLogoutButton" type="button">Logout</button>
       </header>
 
+      <div class="hidden" aria-hidden="true">
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+      </div>
 
-      <section class="role-home-content">
+      <div class="partner-message hidden" id="roleHomeMessage" role="alert" aria-live="polite"></div>
 
-        <div class="role-welcome-card">
-          <p>Welcome</p>
-
-          <h1 id="roleHomeUserRole">
-            Food Partner
-          </h1>
-
-          <small id="roleHomeUserMobile">
-            Verified partner
-          </small>
-        </div>
-
-
-        <div class="role-module-grid">
-
-          <div class="role-module-card">
-            <span class="role-module-icon">📋</span>
-            <strong>Orders</strong>
-            <span>Coming next</span>
-          </div>
-
-          <div class="role-module-card">
-            <span class="role-module-icon">🍛</span>
-            <strong>Menu</strong>
-            <span>Coming next</span>
-          </div>
-
-          <div class="role-module-card">
-            <span class="role-module-icon">🟢</span>
-            <strong>Availability</strong>
-            <span>Coming next</span>
-          </div>
-
-          <div class="role-module-card">
-            <span class="role-module-icon">₹</span>
-            <strong>Earnings</strong>
-            <span>Coming next</span>
-          </div>
-
-        </div>
-
-
-        <div
-          class="role-home-message hidden"
-          id="roleHomeMessage"
-        ></div>
-
+      <section class="partner-state hidden" id="profileLoadingState">
+        <div class="loader-spinner" aria-hidden="true"></div>
+        <p>Checking your kitchen profile...</p>
       </section>
 
-    </div>
+      <section class="onboarding hidden" id="onboardingSection">
+        <div class="onboarding-hero">
+          <span class="eyebrow">FOOD PARTNER ONBOARDING</span>
+          <h1>Let's set up your kitchen</h1>
+          <p>Add accurate business and location details. Your kitchen stays closed until verification and approval.</p>
+        </div>
 
+        <form id="partnerOnboardingForm" class="partner-form" novalidate>
+          <div class="form-section">
+            <h2>Business details</h2>
+            <label for="businessNameInput">Kitchen or business name</label>
+            <input id="businessNameInput" type="text" maxlength="120" placeholder="Example: Shubham Home Kitchen" required>
+
+            <label for="businessTypeInput">Business type</label>
+            <select id="businessTypeInput" required>
+              <option value="">Select business type</option>
+              <option value="HOME_KITCHEN">Home Kitchen</option>
+              <option value="CLOUD_KITCHEN">Cloud Kitchen</option>
+              <option value="RESTAURANT">Restaurant</option>
+              <option value="BAKERY">Bakery</option>
+              <option value="SWEET_SHOP">Sweet Shop</option>
+              <option value="OTHER">Other</option>
+            </select>
+
+            <label for="ownerNameInput">Owner name</label>
+            <input id="ownerNameInput" type="text" maxlength="100" autocomplete="name" placeholder="Enter owner name" required>
+
+            <label for="partnerEmailInput">Business email <small>(optional)</small></label>
+            <input id="partnerEmailInput" type="email" maxlength="160" autocomplete="email" placeholder="kitchen@example.com">
+
+            <label for="foodTypeInput">Food served</label>
+            <select id="foodTypeInput" required>
+              <option value="">Select food type</option>
+              <option value="VEG">Veg only</option>
+              <option value="NON_VEG">Non-Veg only</option>
+              <option value="BOTH">Veg and Non-Veg</option>
+            </select>
+
+            <label for="descriptionInput">About your food <small>(optional)</small></label>
+            <textarea id="descriptionInput" maxlength="500" rows="4" placeholder="Tell customers what makes your food special"></textarea>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title-row">
+              <div><h2>Exact kitchen location</h2><p>Use current location, then drag the pin to the kitchen entrance.</p></div>
+              <button id="useCurrentLocationButton" class="location-button" type="button">⌖ Current</button>
+            </div>
+
+            <div id="partnerMap" class="partner-map" aria-label="Kitchen location map"></div>
+            <p id="mapStatus" class="field-note">Tap Current or drag the pin to set your kitchen location.</p>
+            <input id="latitudeInput" type="hidden">
+            <input id="longitudeInput" type="hidden">
+
+            <label for="businessAddressInput">Complete business address</label>
+            <textarea id="businessAddressInput" maxlength="300" rows="3" placeholder="House/building, street, area, city and pincode" required></textarea>
+
+            <label for="districtInput">ApnaBite service district</label>
+            <select id="districtInput" required><option value="">Loading service districts...</option></select>
+            <p class="field-note">Choose the district where the kitchen is physically located.</p>
+          </div>
+
+          <div id="formError" class="form-error hidden" role="alert"></div>
+          <button id="savePartnerButton" class="save-partner-button" type="submit">Submit Kitchen Details</button>
+          <p class="submission-note">Submission does not open the kitchen immediately. KYC and admin approval are required.</p>
+        </form>
+      </section>
+
+      <section class="partner-dashboard hidden" id="dashboardSection">
+        <div class="dashboard-hero">
+          <div><span class="eyebrow">FOOD PARTNER</span><h1 id="dashboardBusinessName">Your Kitchen</h1><p id="dashboardAddress"></p></div>
+          <span class="dashboard-icon" aria-hidden="true">👨‍🍳</span>
+        </div>
+        <div class="status-grid">
+          <article><small>KYC</small><strong id="kycStatus">NOT SUBMITTED</strong></article>
+          <article><small>Approval</small><strong id="approvalStatus">PENDING</strong></article>
+          <article><small>Kitchen</small><strong id="operatingStatus">CLOSED</strong></article>
+        </div>
+        <div class="next-step-card"><span>🔐</span><div><h2>Next: complete KYC</h2><p>Your menu and Open Kitchen control will unlock after verification and approval.</p></div></div>
+        <button id="editProfileButton" class="secondary-button" type="button">Edit Kitchen Details</button>
+      </section>
+    </div>
   </main>
 
-
-  <script src="../shared/js/storage.js"></script>
-  <script src="../shared/js/api.js"></script>
-  <script src="../shared/js/session.js"></script>
-  <script src="../shared/js/auth.js"></script>
-  <script src="../shared/js/app-router.js"></script>
-  <script src="../shared/js/role-home.js"></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/location.js"></script>
+  <script src="../../shared/js/service-location.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../../shared/js/role-home.js"></script>
+  <script src="../js/dashboard.js"></script>
 </body>
 </html>
