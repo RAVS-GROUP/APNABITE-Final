@@ -39,7 +39,9 @@
 .privacy-note { margin:0; color:#666; font-size:9px; line-height:1.5; }
 .kyc-error { padding:10px; color:#9c241e; background:#fff0ef; border:1px solid #ffc3be; border-radius:10px; font-size:10px; }
 #uploadKycButton { min-height:49px; margin-top:3px; color:#fff; background:#ef5b00; border:0; border-radius:12px; font-weight:850; }
+#uploadKycButton { width:100%; }
 #uploadKycButton:disabled { opacity:.65; }
+.sticky-upload-action { position:sticky; bottom:10px; z-index:12; margin:4px -5px -5px; padding:7px; background:rgba(255,255,255,.94); border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.13); backdrop-filter:blur(10px); }
 .document-list { display:grid; gap:8px; }
 .document-item { display:flex; align-items:center; gap:10px; padding:11px; background:#fafafa; border:1px solid #e5e5e5; border-radius:12px; }
 .document-item > span { font-size:21px; }
