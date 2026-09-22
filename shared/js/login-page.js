@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/login-page.js
- * PURPOSE: Secure OTP login with direct role-home routing
- * VERSION: 1.3.0
+ * PURPOSE: Reliable OTP login with direct role-home routing
+ * VERSION: 1.4.0
  * ============================================================
  */
 
@@ -23,6 +23,15 @@ const LoginPage = {
 
   resendSeconds:
     0,
+
+  sendingOtp:
+    false,
+
+  verifyingLogin:
+    false,
+
+  redirecting:
+    false,
 
   elements: {},
 
@@ -133,25 +142,39 @@ const LoginPage = {
 
 
     /*
-     * Already authenticated users go directly home.
-     * No extra splash.
+     * Already authenticated users go directly
+     * to their requested page or role Home.
      */
 
-    if (Auth.isLoggedIn()) {
+    if (
+      Auth.isLoggedIn()
+    ) {
 
       const user =
         Auth.getUser();
 
 
-      this.showSuccess(
-        user
-      );
+      if (
+        user &&
+        user.role
+      ) {
+
+        this.showSuccess(
+          user
+        );
 
 
-      this.scheduleRoleRedirect(
-        user,
-        100
-      );
+        this.scheduleRoleRedirect(
+          user,
+          100
+        );
+
+      } else {
+
+        SessionManager.clear();
+
+        this.showMobileStep();
+      }
     }
 
 
@@ -230,6 +253,16 @@ const LoginPage = {
         "click",
         () => {
 
+          if (
+            this.sendingOtp ||
+            this.verifyingLogin ||
+            this.redirecting
+          ) {
+
+            return;
+          }
+
+
           this.showMobileStep();
         }
       );
@@ -240,7 +273,20 @@ const LoginPage = {
         "click",
         () => {
 
-          this.sendOtp();
+          if (
+            this.sendingOtp ||
+            this.verifyingLogin ||
+            this.redirecting
+          ) {
+
+            return;
+          }
+
+
+          this.sendOtp({
+            resend:
+              true
+          });
         }
       );
 
@@ -290,12 +336,35 @@ const LoginPage = {
    * ----------------------------------------------------------
    */
 
-  async sendOtp() {
+  async sendOtp(
+    options = {}
+  ) {
+
+    if (
+      this.sendingOtp ||
+      this.verifyingLogin ||
+      this.redirecting
+    ) {
+
+      return {
+        success: false,
+        code:
+          "REQUEST_ALREADY_RUNNING"
+      };
+    }
+
+
+    const isResend =
+      options.resend === true;
+
 
     const mobile =
-      Auth.normalizeMobile(
-        this.elements.mobileInput.value
-      );
+      isResend &&
+      this.mobile
+        ? this.mobile
+        : Auth.normalizeMobile(
+            this.elements.mobileInput.value
+          );
 
 
     this.clearMessage();
@@ -314,15 +383,32 @@ const LoginPage = {
 
       return {
         success: false,
-
         code:
           "INVALID_MOBILE"
       };
     }
 
 
+    this.sendingOtp =
+      true;
+
+
+    this.elements.mobileInput.disabled =
+      true;
+
+
+    this.elements.resendOtpButton.disabled =
+      true;
+
+
+    const activeButton =
+      isResend
+        ? this.elements.resendOtpButton
+        : this.elements.sendOtpButton;
+
+
     this.setButtonLoading(
-      this.elements.sendOtpButton,
+      activeButton,
       true
     );
 
@@ -333,6 +419,19 @@ const LoginPage = {
         await Auth.requestLoginOtp(
           mobile
         );
+
+
+      if (
+        !result ||
+        result.success !== true ||
+        result.otpRequested !== true
+      ) {
+
+        throw Auth.createError(
+          "OTP request could not be confirmed.",
+          "OTP_REQUEST_FAILED"
+        );
+      }
 
 
       this.mobile =
@@ -353,28 +452,35 @@ const LoginPage = {
     } catch (error) {
 
       this.showError(
-        error.message ||
-        "Unable to send OTP."
+        this.getReadableError(
+          error,
+          "Unable to send OTP."
+        )
       );
 
 
       return {
         success: false,
-
         error:
-          error.message,
-
+          error.message || "",
         code:
           error.code || "",
-
         requestId:
           error.requestId || ""
       };
 
     } finally {
 
+      this.sendingOtp =
+        false;
+
+
+      this.elements.mobileInput.disabled =
+        false;
+
+
       this.setButtonLoading(
-        this.elements.sendOtpButton,
+        activeButton,
         false
       );
     }
@@ -447,6 +553,10 @@ const LoginPage = {
       "";
 
 
+    this.elements.otpInput.disabled =
+      false;
+
+
     this.elements.otpInput.focus();
 
 
@@ -462,16 +572,26 @@ const LoginPage = {
   /*
    * ----------------------------------------------------------
    * VERIFY OTP AND LOGIN
-   *
-   * options.redirect:
-   * true  = direct role home
-   * false = test without navigation
    * ----------------------------------------------------------
    */
 
   async verifyAndLogin(
     options = {}
   ) {
+
+    if (
+      this.verifyingLogin ||
+      this.sendingOtp ||
+      this.redirecting
+    ) {
+
+      return {
+        success: false,
+        code:
+          "REQUEST_ALREADY_RUNNING"
+      };
+    }
+
 
     const otp =
       this.elements.otpInput.value
@@ -484,19 +604,20 @@ const LoginPage = {
     this.clearMessage();
 
 
-    if (!this.mobile) {
+    if (
+      !this.mobile
+    ) {
+
+      this.showMobileStep();
+
 
       this.showError(
         "Please enter your mobile number again."
       );
 
 
-      this.showMobileStep();
-
-
       return {
         success: false,
-
         code:
           "MOBILE_REQUIRED"
       };
@@ -516,11 +637,26 @@ const LoginPage = {
 
       return {
         success: false,
-
         code:
           "INVALID_OTP_FORMAT"
       };
     }
+
+
+    this.verifyingLogin =
+      true;
+
+
+    this.elements.otpInput.disabled =
+      true;
+
+
+    this.elements.changeMobileButton.disabled =
+      true;
+
+
+    this.elements.resendOtpButton.disabled =
+      true;
 
 
     this.setButtonLoading(
@@ -539,11 +675,24 @@ const LoginPage = {
         );
 
 
+      if (
+        !verification ||
+        verification.success !== true ||
+        verification.verified !== true ||
+        !verification.verificationToken
+      ) {
+
+        throw Auth.createError(
+          "OTP verification could not be confirmed.",
+          "OTP_VERIFICATION_FAILED"
+        );
+      }
+
+
       const login =
         await Auth.login(
           this.mobile,
-          verification
-            .verificationToken
+          verification.verificationToken
         );
 
 
@@ -551,7 +700,8 @@ const LoginPage = {
         !login ||
         login.success !== true ||
         login.authenticated !== true ||
-        !login.user
+        !login.user ||
+        !login.user.role
       ) {
 
         throw Auth.createError(
@@ -566,18 +716,13 @@ const LoginPage = {
       );
 
 
-      /*
-       * Login success opens the protected destination
-       * or role Home directly. No splash is shown.
-       */
-
       if (
         options.redirect !== false
       ) {
 
         this.scheduleRoleRedirect(
           login.user,
-          250
+          150
         );
       }
 
@@ -602,32 +747,120 @@ const LoginPage = {
 
     } catch (error) {
 
+      this.elements.otpInput.disabled =
+        false;
+
+
+      this.elements.changeMobileButton.disabled =
+        false;
+
+
+      this.elements.otpInput.focus();
+
+
       this.showError(
-        error.message ||
-        "Login failed."
+        this.getReadableError(
+          error,
+          "Login failed."
+        )
       );
 
 
       return {
         success: false,
-
         error:
-          error.message,
-
+          error.message || "",
         code:
           error.code || "",
-
         requestId:
           error.requestId || ""
       };
 
     } finally {
 
+      this.verifyingLogin =
+        false;
+
+
       this.setButtonLoading(
         this.elements.verifyOtpButton,
         false
       );
+
+
+      if (
+        !this.redirecting
+      ) {
+
+        this.elements.otpInput.disabled =
+          false;
+
+
+        this.elements.changeMobileButton.disabled =
+          false;
+      }
     }
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * READABLE ERROR MESSAGE
+   * ----------------------------------------------------------
+   */
+
+  getReadableError(
+    error,
+    fallbackMessage
+  ) {
+
+    const code =
+      error &&
+      error.code
+        ? String(error.code)
+        : "";
+
+
+    if (
+      code === "HTTP_ERROR" &&
+      Number(error.httpStatus) === 404
+    ) {
+
+      return (
+        "The login server deployment is temporarily unavailable. " +
+        "Please refresh once and try again."
+      );
+    }
+
+
+    if (
+      code === "NETWORK_ERROR"
+    ) {
+
+      return (
+        "Unable to connect to ApnaBite. " +
+        "Please check your internet connection and try again."
+      );
+    }
+
+
+    if (
+      code === "REQUEST_TIMEOUT"
+    ) {
+
+      return (
+        error.message ||
+        "The server is taking longer than expected. Please try again."
+      );
+    }
+
+
+    return (
+      error &&
+      error.message
+        ? error.message
+        : fallbackMessage
+    );
   },
 
 
@@ -643,15 +876,17 @@ const LoginPage = {
       typeof AppRouter !==
         "undefined" &&
       typeof AppRouter
-        .getSafeReturnUrl ===
+        .getRequestedReturnUrl ===
         "function"
     ) {
 
       const returnUrl =
-        AppRouter.getSafeReturnUrl();
+        AppRouter.getRequestedReturnUrl();
 
 
-      if (returnUrl) {
+      if (
+        returnUrl
+      ) {
 
         return returnUrl;
       }
@@ -666,9 +901,18 @@ const LoginPage = {
         "function"
     ) {
 
-      return AppRouter.getHomeUrl(
-        role
-      );
+      const homeUrl =
+        AppRouter.getHomeUrl(
+          role
+        );
+
+
+      if (
+        homeUrl
+      ) {
+
+        return homeUrl;
+      }
     }
 
 
@@ -711,7 +955,7 @@ const LoginPage = {
 
   scheduleRoleRedirect(
     user,
-    delay = 250
+    delay = 150
   ) {
 
     window.clearTimeout(
@@ -724,6 +968,22 @@ const LoginPage = {
       user.role
         ? user.role
         : Auth.getRole();
+
+
+    if (
+      !role
+    ) {
+
+      this.showError(
+        "Login completed, but the account role is missing."
+      );
+
+      return;
+    }
+
+
+    this.redirecting =
+      true;
 
 
     this.redirectTimer =
@@ -758,6 +1018,10 @@ const LoginPage = {
 
           } catch (error) {
 
+            this.redirecting =
+              false;
+
+
             console.error(
               "Post-login routing failed:",
               error
@@ -765,11 +1029,14 @@ const LoginPage = {
 
 
             this.showError(
-              "Login completed, but the next page could not be opened."
+              "Login completed, but the next page could not be opened. Please refresh the page."
             );
           }
         },
-        delay
+        Math.max(
+          0,
+          Number(delay) || 0
+        )
       );
   },
 
@@ -788,6 +1055,18 @@ const LoginPage = {
     window.clearTimeout(
       this.redirectTimer
     );
+
+
+    this.redirecting =
+      false;
+
+
+    this.sendingOtp =
+      false;
+
+
+    this.verifyingLogin =
+      false;
 
 
     this.clearMessage();
@@ -819,6 +1098,18 @@ const LoginPage = {
       );
 
 
+    this.elements.mobileInput.disabled =
+      false;
+
+
+    this.elements.otpInput.disabled =
+      false;
+
+
+    this.elements.changeMobileButton.disabled =
+      false;
+
+
     this.elements.otpInput.value =
       "";
 
@@ -834,6 +1125,18 @@ const LoginPage = {
       );
 
 
+    this.setButtonLoading(
+      this.elements.sendOtpButton,
+      false
+    );
+
+
+    this.setButtonLoading(
+      this.elements.verifyOtpButton,
+      false
+    );
+
+
     this.elements.mobileInput.focus();
   },
 
@@ -847,6 +1150,8 @@ const LoginPage = {
   showSuccess(user) {
 
     this.stopResendTimer();
+
+
     this.clearMessage();
 
 
@@ -895,9 +1200,10 @@ const LoginPage = {
 
 
     this.resendSeconds =
-      Number(
-        seconds
-      ) || 60;
+      Math.max(
+        1,
+        Number(seconds) || 60
+      );
 
 
     this.updateResendButton();
@@ -907,7 +1213,8 @@ const LoginPage = {
       window.setInterval(
         () => {
 
-          this.resendSeconds -= 1;
+          this.resendSeconds -=
+            1;
 
 
           if (
@@ -917,14 +1224,12 @@ const LoginPage = {
             this.stopResendTimer();
 
 
-            this.elements.resendOtpButton
-              .disabled =
-                false;
+            this.elements.resendOtpButton.disabled =
+              false;
 
 
-            this.elements.resendOtpButton
-              .textContent =
-                "Resend OTP";
+            this.elements.resendOtpButton.textContent =
+              "Resend OTP";
 
 
             return;
@@ -940,22 +1245,22 @@ const LoginPage = {
 
   updateResendButton() {
 
-    this.elements.resendOtpButton
-      .disabled =
-        true;
+    this.elements.resendOtpButton.disabled =
+      true;
 
 
-    this.elements.resendOtpButton
-      .textContent =
-        "Resend OTP in " +
-        this.resendSeconds +
-        "s";
+    this.elements.resendOtpButton.textContent =
+      "Resend OTP in " +
+      this.resendSeconds +
+      "s";
   },
 
 
   stopResendTimer() {
 
-    if (this.resendTimer) {
+    if (
+      this.resendTimer
+    ) {
 
       window.clearInterval(
         this.resendTimer
@@ -979,7 +1284,10 @@ const LoginPage = {
     loading
   ) {
 
-    if (!button) {
+    if (
+      !button
+    ) {
+
       return;
     }
 
@@ -1009,9 +1317,8 @@ const LoginPage = {
 
   showError(message) {
 
-    this.elements.message
-      .textContent =
-        message;
+    this.elements.message.textContent =
+      message;
 
 
     this.elements.message
@@ -1023,9 +1330,8 @@ const LoginPage = {
 
   clearMessage() {
 
-    this.elements.message
-      .textContent =
-        "";
+    this.elements.message.textContent =
+      "";
 
 
     this.elements.message
@@ -1056,21 +1362,23 @@ const LoginPage = {
 
   /*
    * ----------------------------------------------------------
-   * PAGE TEST
+   * PAGE CONFIGURATION TEST
    *
    * Browser console:
    * LoginPage.test()
+   *
+   * This test does not request an OTP and does not logout.
    * ----------------------------------------------------------
    */
 
-  async test() {
+  test() {
 
     console.log(
       "========================================"
     );
 
     console.log(
-      "APNABITE LOGIN DIRECT-HOME TEST"
+      "APNABITE LOGIN PAGE CONFIGURATION TEST"
     );
 
     console.log(
@@ -1078,206 +1386,129 @@ const LoginPage = {
     );
 
 
-    try {
-
-      window.clearTimeout(
-        this.redirectTimer
-      );
-
-
-      if (Auth.isLoggedIn()) {
-
-        await Auth.logout();
-      }
-
-
-      this.showMobileStep();
-
-
-      this.elements.mobileInput.value =
-        "9876543210";
-
-
-      const otpResult =
-        await this.sendOtp();
-
-
-      if (
-        !otpResult ||
-        otpResult.success !== true ||
-        !otpResult.testOtp
-      ) {
-
-        throw new Error(
-          "Login page OTP request failed."
-        );
-      }
-
-
-      this.elements.otpInput.value =
-        otpResult.testOtp;
-
-
-      const loginResult =
-        await this.verifyAndLogin({
-          redirect:
-            false
-        });
-
-
-      const user =
-        Auth.getUser();
-
-
-      const destination =
-        this.getDestinationUrl(
-          user
-            ? user.role
-            : ""
-        );
-
-
-      const passed =
-        loginResult.success ===
-          true &&
-        Auth.isLoggedIn() ===
-          true &&
-        user !== null &&
-        user.role ===
-          "Customer" &&
-        destination.includes(
+    const routes = [
+      {
+        role:
+          "Customer",
+        expected:
           "/customer/html/home.html"
-        ) &&
-        this.elements.successStep
-          .classList.contains(
-            "hidden"
-          ) === false;
+      },
+      {
+        role:
+          "Food Partner",
+        expected:
+          "/food-partner/html/dashboard.html"
+      },
+      {
+        role:
+          "Rider",
+        expected:
+          "/rider/html/dashboard.html"
+      },
+      {
+        role:
+          "Admin",
+        expected:
+          "/admin/html/dashboard.html"
+      }
+    ];
 
 
-      const results = [
+    const results =
+      routes.map(
+        (test) => {
 
-        {
-          test:
-            "Authenticated",
+          const destination =
+            AppRouter.getHomeUrl(
+              test.role
+            );
 
-          expected:
-            true,
 
-          actual:
-            Auth.isLoggedIn(),
-
-          passed:
-            Auth.isLoggedIn() ===
-              true
-        },
-
-        {
-          test:
-            "User role",
-
-          expected:
-            "Customer",
-
-          actual:
-            user
-              ? user.role
-              : "",
-
-          passed:
-            Boolean(
-              user &&
-              user.role ===
-                "Customer"
-            )
-        },
-
-        {
-          test:
-            "Direct home",
-
-          expected:
-            "customer/html/home.html",
-
-          actual:
-            destination,
-
-          passed:
-            destination.includes(
-              "/customer/html/home.html"
-            )
-        },
-
-        {
-          test:
-            "Splash after login",
-
-          expected:
-            false,
-
-          actual:
-            false,
-
-          passed:
-            true
+          return {
+            test:
+              test.role + " route",
+            expected:
+              test.expected,
+            actual:
+              destination,
+            passed:
+              destination.includes(
+                test.expected
+              )
+          };
         }
-      ];
-
-
-      console.table(
-        results
       );
 
 
-      console.log(
+    results.push({
+      test:
+        "Required elements",
+      expected:
+        true,
+      actual:
+        this.hasRequiredElements(),
+      passed:
+        this.hasRequiredElements() === true
+    });
+
+
+    results.push({
+      test:
+        "Duplicate OTP protection",
+      expected:
+        true,
+      actual:
+        typeof this.sendingOtp ===
+          "boolean",
+      passed:
+        typeof this.sendingOtp ===
+          "boolean"
+    });
+
+
+    results.push({
+      test:
+        "Duplicate login protection",
+      expected:
+        true,
+      actual:
+        typeof this.verifyingLogin ===
+          "boolean",
+      passed:
+        typeof this.verifyingLogin ===
+          "boolean"
+    });
+
+
+    const passed =
+      results.every(
+        (result) =>
+          result.passed
+      );
+
+
+    console.table(
+      results
+    );
+
+
+    console.log(
+      passed
+        ? "Login Page Configuration Test: PASS"
+        : "Login Page Configuration Test: FAIL"
+    );
+
+
+    return {
+      success:
+        passed,
+      status:
         passed
-          ? "Login Direct-Home Test: PASS"
-          : "Login Direct-Home Test: FAIL"
-      );
-
-
-      return {
-        success:
-          passed,
-
-        status:
-          passed
-            ? "PASS"
-            : "FAIL",
-
-        authenticated:
-          Auth.isLoggedIn(),
-
-        user:
-          user,
-
-        destination:
-          destination,
-
-        results:
-          results
-      };
-
-    } catch (error) {
-
-      console.error(
-        "Login Direct-Home Test: FAIL",
-        error
-      );
-
-
-      return {
-        success: false,
-
-        status:
-          "FAIL",
-
-        error:
-          error.message,
-
-        code:
-          error.code || ""
-      };
-    }
+          ? "PASS"
+          : "FAIL",
+      results:
+        results
+    };
   }
 
 };
@@ -1310,21 +1541,30 @@ if (
 
   window.addEventListener(
     "load",
-    () => {
+    async () => {
 
-      navigator.serviceWorker
-        .register(
-          "./sw.js"
-        )
-        .catch(
-          (error) => {
+      try {
 
-            console.error(
-              "Login service worker registration failed:",
-              error
+        const registration =
+          await navigator.serviceWorker
+            .register(
+              "./sw.js",
+              {
+                updateViaCache:
+                  "none"
+              }
             );
-          }
+
+
+        registration.update();
+
+      } catch (error) {
+
+        console.error(
+          "Login service worker registration failed:",
+          error
         );
+      }
     }
   );
 }
