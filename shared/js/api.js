@@ -22,9 +22,8 @@ const API = {
    */
 
   BASE_URL:
-    "https://script.google.com/macros/s/AKfycbzM-Y1Lc5G24lEmB4wVbK7dK0kD8ZjuEr_rCXM8Wt_qYrROdj2LTlvnZcDSbZY000AVsQ/exec",
-
-
+  "https://script.google.com/macros/s/AKfycbzM-Y1Lc5G24lEmB4wVbK7dK0kD8ZjuEr_rCXM8Wt_qYrROdj2LTlvnZcDSbZY000AVsQ/exec",
+  
   /*
    * ----------------------------------------------------------
    * REQUEST TIMEOUT SETTINGS
