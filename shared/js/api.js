@@ -2,18 +2,20 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/api.js
- * PURPOSE: Central API communication layer
- * VERSION: 1.2.0
+ * PURPOSE: Reliable central API communication layer
+ * VERSION: 1.3.0
  * ============================================================
  *
  * IMPORTANT:
  * - No secrets are stored here.
- * - OTP/auth write requests are never automatically retried.
- * - Longer auth timeouts support Apps Script cold starts.
+ * - Same requestId is retained during a transport retry.
+ * - Backend idempotency prevents duplicate OTP/session/writes.
+ * - API errors are not automatically retried.
  * ============================================================
  */
 
 const API = {
+
 
   /*
    * ----------------------------------------------------------
@@ -22,11 +24,12 @@ const API = {
    */
 
   BASE_URL:
-  "https://script.google.com/macros/s/AKfycbzM-Y1Lc5G24lEmB4wVbK7dK0kD8ZjuEr_rCXM8Wt_qYrROdj2LTlvnZcDSbZY000AVsQ/exec",
-  
+    "https://script.google.com/macros/s/AKfycbzM-Y1Lc5G24lEmB4wVbK7dK0kD8ZjuEr_rCXM8Wt_qYrROdj2LTlvnZcDSbZY000AVsQ/exec",
+
+
   /*
    * ----------------------------------------------------------
-   * REQUEST TIMEOUT SETTINGS
+   * TIMEOUT SETTINGS
    * ----------------------------------------------------------
    */
 
@@ -48,17 +51,89 @@ const API = {
 
   /*
    * ----------------------------------------------------------
+   * TRANSPORT RETRY
+   *
+   * Maximum 2 total attempts:
+   * - First normal request
+   * - One safe recovery attempt using the same requestId
+   * ----------------------------------------------------------
+   */
+
+  MAX_TRANSPORT_ATTEMPTS:
+    2,
+
+  RETRY_DELAY_MS:
+    750,
+
+
+  /*
+   * ----------------------------------------------------------
    * AUTHENTICATION ACTIONS
    * ----------------------------------------------------------
    */
 
   AUTH_ACTIONS: [
+
     "request_otp",
     "verify_otp",
     "register",
     "login",
     "validate_session",
     "logout"
+
+  ],
+
+
+  /*
+   * ----------------------------------------------------------
+   * ACTIONS SAFE FOR ONE TRANSPORT RETRY
+   *
+   * Read operations are naturally safe.
+   * Write operations are protected by backend idempotency.
+   * ----------------------------------------------------------
+   */
+
+  RETRYABLE_ACTIONS: [
+
+    "health",
+
+    "request_otp",
+    "verify_otp",
+    "register",
+    "login",
+    "validate_session",
+    "logout",
+
+    "search_service_locations",
+    "get_district_service",
+    "reverse_geocode_location",
+    "discover_kitchens",
+
+    "get_food_partner_profile",
+    "save_food_partner_onboarding",
+    "get_food_partner_operating_status",
+    "set_food_partner_operating_status",
+
+    "get_food_partner_kyc",
+    "submit_food_partner_kyc",
+
+    "admin_list_food_partner_kyc",
+    "admin_get_food_partner_kyc",
+    "admin_decide_food_partner_kyc",
+
+    "get_food_partner_products",
+    "save_food_partner_product",
+    "set_food_partner_product_availability",
+    "update_food_partner_product_order",
+
+    "get_customer_addresses",
+    "get_customer_address",
+    "create_customer_address",
+    "update_customer_address",
+    "set_default_customer_address",
+    "remove_customer_address",
+    "find_nearest_customer_address"
+
   ],
 
 
@@ -86,7 +161,8 @@ const API = {
 
     if (
       !action ||
-      typeof action !== "string"
+      typeof action !==
+        "string"
     ) {
 
       throw this.createClientError(
@@ -98,8 +174,11 @@ const API = {
 
     if (
       payload === null ||
-      typeof payload !== "object" ||
-      Array.isArray(payload)
+      typeof payload !==
+        "object" ||
+      Array.isArray(
+        payload
+      )
     ) {
 
       throw this.createClientError(
@@ -111,8 +190,11 @@ const API = {
 
     if (
       options === null ||
-      typeof options !== "object" ||
-      Array.isArray(options)
+      typeof options !==
+        "object" ||
+      Array.isArray(
+        options
+      )
     ) {
 
       throw this.createClientError(
@@ -126,7 +208,9 @@ const API = {
       action.trim();
 
 
-    if (!normalizedAction) {
+    if (
+      !normalizedAction
+    ) {
 
       throw this.createClientError(
         "API action is required.",
@@ -146,6 +230,7 @@ const API = {
       requestId:
         options.requestId ||
         this.createRequestId()
+
     };
 
 
@@ -184,7 +269,8 @@ const API = {
     const requestPromise =
       this.executeRequest(
         requestBody,
-        timeoutMs
+        timeoutMs,
+        options
       );
 
 
@@ -209,7 +295,7 @@ const API = {
 
   /*
    * ----------------------------------------------------------
-   * RESOLVE REQUEST TIMEOUT
+   * RESOLVE TIMEOUT
    * ----------------------------------------------------------
    */
 
@@ -228,7 +314,8 @@ const API = {
       Number.isFinite(
         parsedCustomTimeout
       ) &&
-      parsedCustomTimeout >= 1000
+      parsedCustomTimeout >=
+        1000
     ) {
 
       return parsedCustomTimeout;
@@ -236,7 +323,8 @@ const API = {
 
 
     if (
-      action === "health"
+      action ===
+        "health"
     ) {
 
       return this
@@ -245,7 +333,8 @@ const API = {
 
 
     if (
-      action === "request_otp"
+      action ===
+        "request_otp"
     ) {
 
       return this
@@ -254,7 +343,8 @@ const API = {
 
 
     if (
-      action === "verify_otp"
+      action ===
+        "verify_otp"
     ) {
 
       return this
@@ -280,13 +370,148 @@ const API = {
 
   /*
    * ----------------------------------------------------------
-   * EXECUTE HTTP REQUEST
+   * EXECUTE REQUEST WITH SAFE RECOVERY
    * ----------------------------------------------------------
    */
 
   async executeRequest(
     requestBody,
-    timeoutMs
+    timeoutMs,
+    options = {}
+  ) {
+
+    const startedAt =
+      Date.now();
+
+
+    const allowRetry =
+      options.retry !== false &&
+      this.RETRYABLE_ACTIONS.includes(
+        requestBody.action
+      );
+
+
+    const maximumAttempts =
+      allowRetry
+        ? this.MAX_TRANSPORT_ATTEMPTS
+        : 1;
+
+
+    let lastError =
+      null;
+
+
+    for (
+      let attempt = 1;
+      attempt <= maximumAttempts;
+      attempt += 1
+    ) {
+
+      try {
+
+        const result =
+          await this.executeSingleAttempt(
+            requestBody,
+            timeoutMs,
+            attempt
+          );
+
+
+        result.durationMs =
+          Date.now() -
+          startedAt;
+
+
+        result.transportAttempts =
+          attempt;
+
+
+        result.recovered =
+          attempt > 1;
+
+
+        if (
+          attempt > 1
+        ) {
+
+          console.info(
+            "API request recovered safely:",
+            requestBody.action,
+            requestBody.requestId
+          );
+        }
+
+
+        return result;
+
+      } catch (error) {
+
+        lastError =
+          error;
+
+
+        const shouldRetry =
+          attempt <
+            maximumAttempts &&
+          this.shouldRetryTransportError(
+            error
+          );
+
+
+        if (
+          !shouldRetry
+        ) {
+
+          throw error;
+        }
+
+
+        console.warn(
+          "Temporary API transport failure. Retrying safely:",
+          {
+            action:
+              requestBody.action,
+
+            requestId:
+              requestBody.requestId,
+
+            attempt:
+              attempt,
+
+            code:
+              error.code || "",
+
+            httpStatus:
+              error.httpStatus || 0
+          }
+        );
+
+
+        await this.wait(
+          this.RETRY_DELAY_MS
+        );
+      }
+    }
+
+
+    throw lastError ||
+      this.createClientError(
+        "API request failed.",
+        "API_REQUEST_FAILED"
+      );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * EXECUTE ONE HTTP ATTEMPT
+   * ----------------------------------------------------------
+   */
+
+  async executeSingleAttempt(
+    requestBody,
+    timeoutMs,
+    attempt
   ) {
 
     const controller =
@@ -303,10 +528,6 @@ const API = {
       );
 
 
-    const startedAt =
-      Date.now();
-
-
     try {
 
       const response =
@@ -321,6 +542,7 @@ const API = {
 
               "Content-Type":
                 "text/plain;charset=utf-8"
+
             },
 
             body:
@@ -336,11 +558,14 @@ const API = {
 
             redirect:
               "follow"
+
           }
         );
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
         const httpError =
           new Error(
@@ -352,14 +577,25 @@ const API = {
         httpError.code =
           "HTTP_ERROR";
 
+
         httpError.httpStatus =
           response.status;
+
 
         httpError.requestId =
           requestBody.requestId;
 
+
         httpError.action =
           requestBody.action;
+
+
+        httpError.attempt =
+          attempt;
+
+
+        httpError.responseUrl =
+          response.url || "";
 
 
         throw httpError;
@@ -385,11 +621,17 @@ const API = {
         responseError.code =
           "INVALID_JSON_RESPONSE";
 
+
         responseError.requestId =
           requestBody.requestId;
 
+
         responseError.action =
           requestBody.action;
+
+
+        responseError.attempt =
+          attempt;
 
 
         throw responseError;
@@ -402,7 +644,9 @@ const API = {
       );
 
 
-      if (!result.success) {
+      if (
+        !result.success
+      ) {
 
         const errorCode =
           result.error &&
@@ -427,21 +671,31 @@ const API = {
         apiError.code =
           errorCode;
 
+
         apiError.requestId =
           result.requestId ||
           requestBody.requestId;
+
 
         apiError.action =
           requestBody.action;
 
 
+        apiError.attempt =
+          attempt;
+
+
+        /*
+         * Standard backend API errors are deliberate business
+         * decisions and must never be transport-retried.
+         */
+
+        apiError.isApiResponseError =
+          true;
+
+
         throw apiError;
       }
-
-
-      result.durationMs =
-        Date.now() -
-        startedAt;
 
 
       return result;
@@ -450,7 +704,8 @@ const API = {
 
       if (
         error &&
-        error.name === "AbortError"
+        error.name ===
+          "AbortError"
       ) {
 
         const timeoutError =
@@ -464,14 +719,21 @@ const API = {
         timeoutError.code =
           "REQUEST_TIMEOUT";
 
+
         timeoutError.requestId =
           requestBody.requestId;
+
 
         timeoutError.action =
           requestBody.action;
 
+
         timeoutError.timeoutMs =
           timeoutMs;
+
+
+        timeoutError.attempt =
+          attempt;
 
 
         throw timeoutError;
@@ -496,14 +758,22 @@ const API = {
       networkError.code =
         "NETWORK_ERROR";
 
+
       networkError.requestId =
         requestBody.requestId;
+
 
       networkError.action =
         requestBody.action;
 
+
+      networkError.attempt =
+        attempt;
+
+
       networkError.originalMessage =
-        error && error.message
+        error &&
+        error.message
           ? error.message
           : "";
 
@@ -521,6 +791,101 @@ const API = {
 
   /*
    * ----------------------------------------------------------
+   * CHECK RETRYABLE TRANSPORT FAILURE
+   * ----------------------------------------------------------
+   */
+
+  shouldRetryTransportError(error) {
+
+    if (
+      !error ||
+      error.isApiResponseError ===
+        true
+    ) {
+
+      return false;
+    }
+
+
+    const code =
+      String(
+        error.code || ""
+      ).toUpperCase();
+
+
+    if (
+      code ===
+        "NETWORK_ERROR" ||
+      code ===
+        "REQUEST_TIMEOUT" ||
+      code ===
+        "INVALID_JSON_RESPONSE" ||
+      code ===
+        "INVALID_API_RESPONSE" ||
+      code ===
+        "INVALID_RESPONSE_FORMAT"
+    ) {
+
+      return true;
+    }
+
+
+    if (
+      code ===
+        "HTTP_ERROR"
+    ) {
+
+      const retryableStatuses = [
+
+        404,
+        408,
+        425,
+        429,
+        500,
+        502,
+        503,
+        504
+
+      ];
+
+
+      return retryableStatuses.includes(
+        Number(
+          error.httpStatus
+        )
+      );
+    }
+
+
+    return false;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * WAIT
+   * ----------------------------------------------------------
+   */
+
+  wait(milliseconds) {
+
+    return new Promise(
+      (resolve) => {
+
+        window.setTimeout(
+          resolve,
+          Math.max(
+            0,
+            Number(milliseconds) || 0
+          )
+        );
+      }
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
    * RESPONSE VALIDATION
    * ----------------------------------------------------------
    */
@@ -532,8 +897,11 @@ const API = {
 
     if (
       !result ||
-      typeof result !== "object" ||
-      Array.isArray(result)
+      typeof result !==
+        "object" ||
+      Array.isArray(
+        result
+      )
     ) {
 
       const error =
@@ -545,8 +913,10 @@ const API = {
       error.code =
         "INVALID_API_RESPONSE";
 
+
       error.requestId =
         requestBody.requestId;
+
 
       error.action =
         requestBody.action;
@@ -557,7 +927,8 @@ const API = {
 
 
     if (
-      typeof result.success !== "boolean"
+      typeof result.success !==
+        "boolean"
     ) {
 
       const error =
@@ -569,8 +940,10 @@ const API = {
       error.code =
         "INVALID_RESPONSE_FORMAT";
 
+
       error.requestId =
         requestBody.requestId;
+
 
       error.action =
         requestBody.action;
@@ -583,30 +956,32 @@ const API = {
 
   /*
    * ----------------------------------------------------------
-   * ACTION-SPECIFIC TIMEOUT MESSAGE
+   * TIMEOUT MESSAGE
    * ----------------------------------------------------------
    */
 
   getTimeoutMessage(action) {
 
     if (
-      action === "request_otp"
+      action ===
+        "request_otp"
     ) {
 
       return (
         "OTP server response could not be confirmed. " +
-        "Please wait one minute before requesting another OTP."
+        "ApnaBite is safely recovering the same request."
       );
     }
 
 
     if (
-      action === "verify_otp"
+      action ===
+        "verify_otp"
     ) {
 
       return (
         "OTP verification response could not be confirmed. " +
-        "Please wait a moment and verify the same OTP again."
+        "ApnaBite is safely recovering the same request."
       );
     }
 
@@ -681,7 +1056,9 @@ const API = {
     } catch (error) {
 
       payloadString =
-        String(payload);
+        String(
+          payload
+        );
     }
 
 
@@ -709,7 +1086,10 @@ const API = {
       "_" +
       Math.random()
         .toString(36)
-        .substring(2, 10)
+        .substring(
+          2,
+          10
+        )
         .toUpperCase()
     );
   },
@@ -733,7 +1113,9 @@ const API = {
   /*
    * ----------------------------------------------------------
    * TEST 1 — API HEALTH
-   * Browser console: API.testHealth()
+   *
+   * Browser console:
+   * API.testHealth()
    * ----------------------------------------------------------
    */
 
@@ -763,6 +1145,7 @@ const API = {
         this.BASE_URL
       );
 
+
       console.log(
         "Response:",
         result
@@ -771,9 +1154,11 @@ const API = {
 
       const passed =
         result &&
-        result.success === true &&
+        result.success ===
+          true &&
         result.data &&
-        result.data.status === "API_RUNNING";
+        result.data.status ===
+          "API_RUNNING";
 
 
       console.log(
@@ -795,6 +1180,12 @@ const API = {
         durationMs:
           result.durationMs,
 
+        transportAttempts:
+          result.transportAttempts,
+
+        recovered:
+          result.recovered,
+
         result:
           result
       };
@@ -809,11 +1200,14 @@ const API = {
 
       return {
         success: false,
-        status: "FAIL",
+        status:
+          "FAIL",
         error:
           error.message,
         code:
           error.code || "",
+        httpStatus:
+          error.httpStatus || 0,
         requestId:
           error.requestId || ""
       };
@@ -823,19 +1217,21 @@ const API = {
 
   /*
    * ----------------------------------------------------------
-   * TEST 2 — TIMEOUT CONFIGURATION
-   * Browser console: API.testTimeoutConfiguration()
+   * TEST 2 — RETRY CONFIGURATION
+   *
+   * Browser console:
+   * API.testRetryConfiguration()
    * ----------------------------------------------------------
    */
 
-  testTimeoutConfiguration() {
+  testRetryConfiguration() {
 
     console.log(
       "========================================"
     );
 
     console.log(
-      "APNABITE API TIMEOUT CONFIGURATION TEST"
+      "APNABITE API RETRY CONFIGURATION TEST"
     );
 
     console.log(
@@ -846,77 +1242,99 @@ const API = {
     const tests = [
 
       {
-        action:
-          "health",
+        test:
+          "Maximum attempts",
         expected:
-          20000
+          2,
+        actual:
+          this.MAX_TRANSPORT_ATTEMPTS
       },
 
       {
-        action:
-          "search_service_locations",
+        test:
+          "HTTP 404 retryable",
         expected:
-          45000
+          true,
+        actual:
+          this.shouldRetryTransportError({
+            code:
+              "HTTP_ERROR",
+            httpStatus:
+              404
+          })
       },
 
       {
-        action:
-          "request_otp",
+        test:
+          "Network error retryable",
         expected:
-          90000
+          true,
+        actual:
+          this.shouldRetryTransportError({
+            code:
+              "NETWORK_ERROR"
+          })
       },
 
       {
-        action:
-          "verify_otp",
+        test:
+          "Timeout retryable",
         expected:
-          90000
+          true,
+        actual:
+          this.shouldRetryTransportError({
+            code:
+              "REQUEST_TIMEOUT"
+          })
       },
 
       {
-        action:
-          "register",
+        test:
+          "Business error retryable",
         expected:
-          60000
+          false,
+        actual:
+          this.shouldRetryTransportError({
+            code:
+              "OTP_INCORRECT",
+            isApiResponseError:
+              true
+          })
       },
 
       {
-        action:
-          "login",
+        test:
+          "Login action protected",
         expected:
-          60000
-      },
-
-      {
-        action:
-          "validate_session",
-        expected:
-          60000
+          true,
+        actual:
+          this.RETRYABLE_ACTIONS
+            .includes(
+              "login"
+            )
       }
+
     ];
 
 
     const results =
       tests.map(
-        (test) => {
+        (test) => ({
 
-          const actual =
-            this.resolveTimeout(
-              test.action
-            );
+          test:
+            test.test,
 
+          expected:
+            test.expected,
 
-          return {
-            action:
-              test.action,
-            expected:
-              test.expected,
-            actual:
-              actual,
-            passed:
-              actual === test.expected
-          };
-        }
+          actual:
+            test.actual,
+
+          passed:
+            test.actual ===
+            test.expected
+
+        })
       );
 
 
@@ -931,10 +1349,11 @@ const API = {
       results
     );
 
+
     console.log(
       passed
-        ? "API Timeout Configuration Test: PASS"
-        : "API Timeout Configuration Test: FAIL"
+        ? "API Retry Configuration Test: PASS"
+        : "API Retry Configuration Test: FAIL"
     );
 
 
@@ -948,5 +1367,193 @@ const API = {
       results:
         results
     };
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * TEST 3 — LIVE BACKEND IDEMPOTENCY
+   *
+   * Uses health only. No data is changed.
+   *
+   * Browser console:
+   * API.testBackendIdempotency()
+   * ----------------------------------------------------------
+   */
+
+  async testBackendIdempotency() {
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE LIVE IDEMPOTENCY TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    const requestId =
+      "LIVE_IDEMPOTENCY_" +
+      Date.now();
+
+
+    try {
+
+      const first =
+        await this.request(
+          "health",
+          {},
+          {
+            requestId:
+              requestId,
+            timeoutMs:
+              60000
+          }
+        );
+
+
+      const second =
+        await this.request(
+          "health",
+          {},
+          {
+            requestId:
+              requestId,
+            timeoutMs:
+              60000
+          }
+        );
+
+
+      const sameRequestId =
+        first.requestId ===
+          requestId &&
+        second.requestId ===
+          requestId;
+
+
+      const sameTimestamp =
+        first.data &&
+        second.data &&
+        first.data.timestamp ===
+          second.data.timestamp;
+
+
+      const passed =
+        first.success ===
+          true &&
+        second.success ===
+          true &&
+        sameRequestId &&
+        sameTimestamp;
+
+
+      const results = [
+
+        {
+          test:
+            "First response",
+          expected:
+            true,
+          actual:
+            first.success,
+          passed:
+            first.success ===
+              true
+        },
+
+        {
+          test:
+            "Second response",
+          expected:
+            true,
+          actual:
+            second.success,
+          passed:
+            second.success ===
+              true
+        },
+
+        {
+          test:
+            "Same request ID",
+          expected:
+            true,
+          actual:
+            sameRequestId,
+          passed:
+            sameRequestId
+        },
+
+        {
+          test:
+            "Same cached response",
+          expected:
+            true,
+          actual:
+            sameTimestamp,
+          passed:
+            sameTimestamp
+        }
+
+      ];
+
+
+      console.table(
+        results
+      );
+
+
+      console.log(
+        passed
+          ? "Live Idempotency Test: PASS"
+          : "Live Idempotency Test: FAIL"
+      );
+
+
+      return {
+        success:
+          passed,
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+        requestId:
+          requestId,
+        first:
+          first,
+        second:
+          second,
+        results:
+          results
+      };
+
+    } catch (error) {
+
+      console.error(
+        "Live Idempotency Test: FAIL",
+        error
+      );
+
+
+      return {
+        success: false,
+        status:
+          "FAIL",
+        error:
+          error.message,
+        code:
+          error.code || "",
+        httpStatus:
+          error.httpStatus || 0,
+        requestId:
+          error.requestId || ""
+      };
+    }
   }
+
 };
