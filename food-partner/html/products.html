@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
 
@@ -9,17 +8,14 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   >
 
-  <meta name="theme-color" content="#ef5b00">
+  <meta name="theme-color" content="#ffffff">
 
   <meta
     name="description"
-    content="Manage your ApnaBite Food Partner products and menu"
+    content="Manage your ApnaBite Food Partner menu"
   >
 
-  <link
-    rel="manifest"
-    href="../../manifest.json"
-  >
+  <link rel="manifest" href="../../manifest.json">
 
   <link
     rel="icon"
@@ -27,7 +23,7 @@
     href="../../shared/assets/images/apnabite-logo.webp"
   >
 
-  <title>Products | ApnaBite Partner</title>
+  <title>Menu | ApnaBite Partner</title>
 
   <link rel="stylesheet" href="../../shared/css/reset.css">
   <link rel="stylesheet" href="../../shared/css/variables.css">
@@ -38,27 +34,25 @@
   <link rel="stylesheet" href="../css/products.css">
 </head>
 
-
 <body data-required-role="Food Partner">
 
   <main class="partner-app">
 
     <!-- ROLE ACCESS LOADER -->
 
-    <div
-      class="partner-loader"
-      id="roleHomeLoader"
-    >
+    <div class="partner-loader" id="roleHomeLoader">
+
       <div
         class="loader-spinner"
         aria-hidden="true"
       ></div>
 
-      <p>Opening your products...</p>
+      <p>Opening your menu...</p>
+
     </div>
 
 
-    <!-- PROTECTED CONTENT -->
+    <!-- PAGE CONTENT -->
 
     <div
       class="partner-content hidden"
@@ -67,49 +61,42 @@
 
       <!-- HEADER -->
 
-      <header class="products-header">
+      <header class="menu-header">
 
         <a
-          class="products-back-button"
+          class="menu-back-button"
           href="dashboard.html"
           aria-label="Back to dashboard"
         >
           ←
         </a>
 
+        <div class="menu-header-copy">
 
-        <div class="products-header-title">
+          <h1>Menu</h1>
 
-          <h1>Smart Menu</h1>
-
-          <p>
-            Products, sizes, prices and availability
-          </p>
+          <p>Items, prices and availability</p>
 
         </div>
 
-
-        <div class="products-header-actions">
+        <div class="menu-header-actions">
 
           <button
+            class="menu-refresh-button"
             id="refreshProductsButton"
-            class="products-refresh-button"
             type="button"
-            aria-label="Refresh products"
-            title="Refresh products"
+            aria-label="Refresh menu"
+            title="Refresh menu"
           >
             ↻
           </button>
 
-
           <button
+            class="menu-logout-button"
             id="roleLogoutButton"
-            class="products-logout-button"
             type="button"
           >
-            <span id="logoutButtonText">
-              Logout
-            </span>
+            <span id="logoutButtonText">Logout</span>
           </button>
 
         </div>
@@ -117,18 +104,18 @@
       </header>
 
 
-      <!-- HIDDEN ROLE DETAILS -->
+      <!-- REQUIRED ROLE DATA -->
 
-      <div
-        class="hidden"
-        aria-hidden="true"
-      >
+      <div class="hidden" aria-hidden="true">
+
         <span id="roleHomeUserRole"></span>
+
         <span id="roleHomeUserMobile"></span>
+
       </div>
 
 
-      <!-- PAGE MESSAGE -->
+      <!-- ROLE / LOGOUT MESSAGE -->
 
       <div
         class="partner-message hidden"
@@ -138,251 +125,304 @@
       ></div>
 
 
-      <!-- PRODUCT PAGE -->
+      <!-- MAIN MENU PAGE -->
 
-      <section class="products-main">
+      <section class="menu-main">
 
-        <!-- HERO -->
+        <!-- KITCHEN MENU OVERVIEW -->
 
-        <div class="products-hero">
+        <section class="menu-overview-card">
+
+          <div class="menu-overview-heading">
+
+            <div class="menu-kitchen-icon" aria-hidden="true">
+              🍲
+            </div>
+
+            <div class="menu-kitchen-copy">
+
+              <span class="menu-eyebrow">
+                YOUR KITCHEN MENU
+              </span>
+
+              <h2 id="kitchenName">
+                Food products
+              </h2>
+
+              <div class="menu-live-status">
+
+                <span
+                  class="menu-live-dot"
+                  id="menuLiveDot"
+                  aria-hidden="true"
+                ></span>
+
+                <span id="menuKitchenStatus">
+                  Checking kitchen status
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- COMPACT COUNTS -->
+
+          <div class="menu-count-grid">
+
+            <article>
+
+              <strong id="summaryTotalProducts">
+                0
+              </strong>
+
+              <span>Total items</span>
+
+            </article>
+
+            <article class="available">
+
+              <strong id="summaryAvailableProducts">
+                0
+              </strong>
+
+              <span>Available</span>
+
+            </article>
+
+            <article class="unavailable">
+
+              <strong id="summaryOutOfStockProducts">
+                0
+              </strong>
+
+              <span>Unavailable</span>
+
+            </article>
+
+            <article class="featured">
+
+              <strong id="summaryFeaturedProducts">
+                0
+              </strong>
+
+              <span>Featured</span>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- MENU HEADING AND ADD BUTTON -->
+
+        <div class="menu-section-heading">
 
           <div>
 
-            <small>
-              YOUR KITCHEN
-            </small>
+            <span class="menu-eyebrow">
+              MENU ITEMS
+            </span>
 
-            <h2 id="kitchenName">
-              Food products
+            <h2>
+              Your dishes
             </h2>
 
             <p>
-              Add dishes, set sizes and control customer availability.
-            </p>
-
-          </div>
-
-
-          <span aria-hidden="true">
-            🍲
-          </span>
-
-        </div>
-
-
-        <!-- PRODUCT SUMMARY -->
-
-        <div class="product-summary-grid">
-
-          <article>
-
-            <span
-              class="product-summary-icon total"
-              aria-hidden="true"
-            >
-              🍽
-            </span>
-
-            <div>
-              <small>Total</small>
-              <strong id="summaryTotalProducts">—</strong>
-            </div>
-
-          </article>
-
-
-          <article>
-
-            <span
-              class="product-summary-icon active"
-              aria-hidden="true"
-            >
-              ✓
-            </span>
-
-            <div>
-              <small>Available</small>
-              <strong id="summaryAvailableProducts">—</strong>
-            </div>
-
-          </article>
-
-
-          <article>
-
-            <span
-              class="product-summary-icon stock"
-              aria-hidden="true"
-            >
-              !
-            </span>
-
-            <div>
-              <small>Out of stock</small>
-              <strong id="summaryOutOfStockProducts">—</strong>
-            </div>
-
-          </article>
-
-
-          <article>
-
-            <span
-              class="product-summary-icon featured"
-              aria-hidden="true"
-            >
-              ★
-            </span>
-
-            <div>
-              <small>Featured</small>
-              <strong id="summaryFeaturedProducts">—</strong>
-            </div>
-
-          </article>
-
-        </div>
-
-
-        <!-- TOOLBAR -->
-
-        <div class="products-toolbar">
-
-          <div>
-
-            <span class="products-section-kicker">
-              SMART MENU
-            </span>
-
-            <h2>Menu items</h2>
-
-            <p>
               <strong id="productCount">0</strong>
-              products • maximum 10 featured
+              items in your menu
             </p>
 
           </div>
-
 
           <button
+            class="add-menu-item-button"
             id="addProductButton"
             type="button"
           >
             <span aria-hidden="true">＋</span>
-            Add Product
+            Add item
           </button>
 
         </div>
 
 
-        <!-- FILTERS -->
+        <!-- SEARCH -->
 
-        <div class="product-filter-bar">
+        <div class="menu-search-box">
 
-          <label
-            class="product-search-box"
-            for="productSearchInput"
+          <span aria-hidden="true">⌕</span>
+
+          <input
+            id="productSearchInput"
+            type="search"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="Search menu items"
+            aria-label="Search menu items"
           >
-            <span aria-hidden="true">⌕</span>
-
-            <input
-              id="productSearchInput"
-              type="search"
-              maxlength="100"
-              autocomplete="off"
-              placeholder="Search your menu"
-            >
-          </label>
-
-
-          <select
-            id="productAvailabilityFilter"
-            aria-label="Filter product availability"
-          >
-            <option value="ALL">
-              All products
-            </option>
-
-            <option value="AVAILABLE">
-              Available
-            </option>
-
-            <option value="OUT_OF_STOCK">
-              Out of stock
-            </option>
-
-            <option value="FEATURED">
-              Featured
-            </option>
-          </select>
 
         </div>
 
 
-        <!-- CACHE / UPDATE STATUS -->
+        <!-- FILTER TABS -->
 
         <div
-          class="products-update-status hidden"
+          class="menu-filter-tabs"
+          id="productFilterTabs"
+          role="tablist"
+          aria-label="Filter menu items"
+        >
+
+          <button
+            class="active"
+            type="button"
+            data-product-filter="ALL"
+            role="tab"
+            aria-selected="true"
+          >
+            All
+          </button>
+
+          <button
+            type="button"
+            data-product-filter="AVAILABLE"
+            role="tab"
+            aria-selected="false"
+          >
+            Available
+          </button>
+
+          <button
+            type="button"
+            data-product-filter="OUT_OF_STOCK"
+            role="tab"
+            aria-selected="false"
+          >
+            Unavailable
+          </button>
+
+          <button
+            type="button"
+            data-product-filter="FEATURED"
+            role="tab"
+            aria-selected="false"
+          >
+            Featured
+          </button>
+
+        </div>
+
+
+        <!-- KEPT FOR CURRENT/FALLBACK JS COMPATIBILITY -->
+
+        <select
+          class="hidden"
+          id="productAvailabilityFilter"
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <option value="ALL">All products</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="OUT_OF_STOCK">Unavailable</option>
+          <option value="FEATURED">Featured</option>
+        </select>
+
+
+        <!-- LIVE UPDATE STATUS -->
+
+        <p
+          class="menu-update-status"
           id="productsUpdateStatus"
-          role="status"
           aria-live="polite"
-        >
-          Updating products in the background...
-        </div>
+        ></p>
 
 
-        <!-- LOADING SKELETON -->
+        <!-- LOADING SKELETONS -->
 
         <div
-          class="products-loading"
+          class="menu-loading"
           id="productsLoading"
-          aria-label="Loading products"
+          aria-label="Loading menu items"
         >
 
-          <article class="product-skeleton">
+          <section class="menu-skeleton-category">
 
-            <div class="skeleton product-image-skeleton"></div>
+            <div class="menu-skeleton-category-heading">
 
-            <div class="product-skeleton-content">
-              <div class="skeleton skeleton-line wide"></div>
-              <div class="skeleton skeleton-line medium"></div>
-              <div class="skeleton skeleton-line small"></div>
-              <div class="skeleton skeleton-action-line"></div>
+              <span class="menu-skeleton line-medium"></span>
+
+              <span class="menu-skeleton line-small"></span>
+
             </div>
 
-          </article>
+            <article class="menu-skeleton-item">
+
+              <span class="menu-skeleton image"></span>
+
+              <div>
+
+                <span class="menu-skeleton line-wide"></span>
+
+                <span class="menu-skeleton line-medium"></span>
+
+                <span class="menu-skeleton line-small"></span>
+
+              </div>
+
+            </article>
+
+          </section>
 
 
-          <article class="product-skeleton">
+          <section class="menu-skeleton-category">
 
-            <div class="skeleton product-image-skeleton"></div>
+            <div class="menu-skeleton-category-heading">
 
-            <div class="product-skeleton-content">
-              <div class="skeleton skeleton-line wide"></div>
-              <div class="skeleton skeleton-line medium"></div>
-              <div class="skeleton skeleton-line small"></div>
-              <div class="skeleton skeleton-action-line"></div>
+              <span class="menu-skeleton line-medium"></span>
+
+              <span class="menu-skeleton line-small"></span>
+
             </div>
 
-          </article>
+            <article class="menu-skeleton-item">
+
+              <span class="menu-skeleton image"></span>
+
+              <div>
+
+                <span class="menu-skeleton line-wide"></span>
+
+                <span class="menu-skeleton line-medium"></span>
+
+                <span class="menu-skeleton line-small"></span>
+
+              </div>
+
+            </article>
+
+          </section>
 
         </div>
 
 
-        <!-- PAGE ERROR -->
+        <!-- ERROR STATE -->
 
         <div
-          class="products-error hidden"
+          class="menu-error-state hidden"
           id="productsError"
           role="alert"
         >
 
-          <strong>
-            Products could not be loaded
-          </strong>
+          <span aria-hidden="true">⚠️</span>
+
+          <strong>Menu could not be loaded</strong>
 
           <p id="productsErrorMessage">
-            Please check your connection and try again.
+            Check your connection and try again.
           </p>
 
           <button
@@ -395,10 +435,20 @@
         </div>
 
 
-        <!-- PRODUCT LIST -->
+        <!--
+          JavaScript will create category sections inside this element.
+
+          Example:
+          Home Food
+            - Shahi Paneer
+            - Dal Tadka
+
+          Snacks
+            - Chilli Paneer
+        -->
 
         <div
-          class="product-list"
+          class="menu-category-list"
           id="productList"
         ></div>
 
@@ -406,27 +456,25 @@
         <!-- EMPTY STATE -->
 
         <div
-          class="products-empty hidden"
+          class="menu-empty-state hidden"
           id="productsEmpty"
         >
 
-          <span aria-hidden="true">
-            🍽️
-          </span>
+          <span aria-hidden="true">🍽️</span>
 
           <strong id="productsEmptyTitle">
-            No products added
+            No menu items
           </strong>
 
           <p id="productsEmptyMessage">
-            Add your first dish to create the menu.
+            Add your first dish to start accepting orders.
           </p>
 
           <button
             id="emptyAddProductButton"
             type="button"
           >
-            Add First Product
+            Add First Item
           </button>
 
         </div>
@@ -435,19 +483,14 @@
         <!-- LAST UPDATED -->
 
         <p
-          class="products-last-updated"
+          class="menu-last-updated"
           id="productsLastUpdated"
-          aria-live="polite"
-        >
-          Products have not been refreshed yet.
-        </p>
+        ></p>
 
       </section>
 
 
-      <!-- =====================================================
-           PRODUCT FORM DIALOG
-           ===================================================== -->
+      <!-- PRODUCT ADD / EDIT DIALOG -->
 
       <div
         class="product-dialog hidden"
@@ -458,6 +501,7 @@
         <button
           class="dialog-backdrop"
           data-close-product="true"
+          type="button"
           aria-label="Close product form"
         ></button>
 
@@ -472,14 +516,19 @@
           <header>
 
             <div>
-              <small>SMART MENU ITEM</small>
-              <h2 id="productFormTitle">Add Product</h2>
+
+              <small>MENU ITEM</small>
+
+              <h2 id="productFormTitle">
+                Add Item
+              </h2>
+
             </div>
 
             <button
               id="closeProductButton"
               type="button"
-              aria-label="Close"
+              aria-label="Close product form"
             >
               ×
             </button>
@@ -487,10 +536,7 @@
           </header>
 
 
-          <form
-            id="productForm"
-            novalidate
-          >
+          <form id="productForm" novalidate>
 
             <input
               id="productIdInput"
@@ -498,249 +544,412 @@
             >
 
 
-            <label for="productTypeInput">
-              1. Select product type
-            </label>
+            <!-- BASIC DETAILS -->
 
-            <select
-              id="productTypeInput"
-              required
-            >
+            <section class="product-form-section">
 
-              <option value="">
-                Choose product type
-              </option>
+              <div class="product-form-section-heading">
 
-              <optgroup label="Indian meals">
-                <option value="CURRY_SABZI">Curry / Sabzi</option>
-                <option value="DAL">Dal</option>
-                <option value="RICE_BIRYANI">Rice / Biryani</option>
-                <option value="THALI_COMBO">Thali / Meal Combo</option>
-                <option value="ROTI_BREAD">Roti / Bread</option>
-                <option value="SOUTH_INDIAN">South Indian</option>
-                <option value="BREAKFAST">Breakfast</option>
-              </optgroup>
-
-              <optgroup label="Fast food">
-                <option value="NOODLES_PASTA">Noodles / Pasta</option>
-                <option value="SNACK_STARTER">Snack / Starter</option>
-                <option value="PIZZA">Pizza</option>
-                <option value="BURGER_SANDWICH_ROLL">
-                  Burger / Sandwich / Roll
-                </option>
-              </optgroup>
-
-              <optgroup label="Drinks & desserts">
-                <option value="TEA_COFFEE">Tea / Coffee</option>
-                <option value="COLD_DRINK">Cold Drink</option>
-                <option value="JUICE_SHAKE">Juice / Shake</option>
-                <option value="SWEETS">Sweets</option>
-                <option value="CAKE_BAKERY">Cake / Bakery</option>
-                <option value="ICE_CREAM">Ice Cream</option>
-              </optgroup>
-
-              <option value="CUSTOM">
-                Other / Custom
-              </option>
-
-            </select>
-
-
-            <label for="productNameInput">
-              Product name
-            </label>
-
-            <input
-              id="productNameInput"
-              maxlength="120"
-              placeholder="Example: Shahi Paneer"
-              required
-            >
-
-
-            <label for="productDescriptionInput">
-              Description
-            </label>
-
-            <textarea
-              id="productDescriptionInput"
-              maxlength="500"
-              rows="3"
-              placeholder="Ingredients and what is included"
-              required
-            ></textarea>
-
-
-            <div class="two-columns">
-
-              <div>
-
-                <label for="productCategoryInput">
-                  Category
-                </label>
-
-                <select
-                  id="productCategoryInput"
-                  required
-                >
-                  <option value="">Select</option>
-                  <option value="HOME_FOOD">Home Food</option>
-                  <option value="MEALS">Meals</option>
-                  <option value="TIFFIN">Tiffin</option>
-                  <option value="SNACKS">Snacks</option>
-                  <option value="BAKERY">Bakery</option>
-                  <option value="SWEETS">Sweets</option>
-                  <option value="BEVERAGES">Beverages</option>
-                  <option value="OTHER">Other</option>
-                </select>
-
-              </div>
-
-
-              <div>
-
-                <label for="productFoodTypeInput">
-                  Food type
-                </label>
-
-                <select
-                  id="productFoodTypeInput"
-                  required
-                >
-                  <option value="">Select</option>
-                  <option value="VEG">Veg</option>
-                  <option value="NON_VEG">Non-Veg</option>
-                </select>
-
-              </div>
-
-            </div>
-
-
-            <label for="productPrepTimeInput">
-              Preparation time (minutes)
-            </label>
-
-            <input
-              id="productPrepTimeInput"
-              type="number"
-              inputmode="numeric"
-              min="1"
-              max="1440"
-              placeholder="30"
-              required
-            >
-
-
-            <!-- VARIANTS -->
-
-            <section class="variant-box">
-
-              <div class="variant-heading">
+                <span>1</span>
 
                 <div>
-                  <strong id="variantPresetTitle">
-                    Sizes & prices
-                  </strong>
 
-                  <small>
-                    Set exactly one default option
-                  </small>
+                  <h3>Item details</h3>
+
+                  <p>
+                    Name, description and food type
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <label for="productTypeInput">
+                Product type
+              </label>
+
+              <select
+                id="productTypeInput"
+                required
+              >
+
+                <option value="">
+                  Choose product type
+                </option>
+
+                <optgroup label="Indian meals">
+
+                  <option value="CURRY_SABZI">
+                    Curry / Sabzi
+                  </option>
+
+                  <option value="DAL">
+                    Dal
+                  </option>
+
+                  <option value="RICE_BIRYANI">
+                    Rice / Biryani
+                  </option>
+
+                  <option value="THALI_COMBO">
+                    Thali / Meal Combo
+                  </option>
+
+                  <option value="ROTI_BREAD">
+                    Roti / Bread
+                  </option>
+
+                  <option value="SOUTH_INDIAN">
+                    South Indian
+                  </option>
+
+                  <option value="BREAKFAST">
+                    Breakfast
+                  </option>
+
+                </optgroup>
+
+
+                <optgroup label="Fast food">
+
+                  <option value="NOODLES_PASTA">
+                    Noodles / Pasta
+                  </option>
+
+                  <option value="SNACK_STARTER">
+                    Snack / Starter
+                  </option>
+
+                  <option value="PIZZA">
+                    Pizza
+                  </option>
+
+                  <option value="BURGER_SANDWICH_ROLL">
+                    Burger / Sandwich / Roll
+                  </option>
+
+                </optgroup>
+
+
+                <optgroup label="Drinks and desserts">
+
+                  <option value="TEA_COFFEE">
+                    Tea / Coffee
+                  </option>
+
+                  <option value="COLD_DRINK">
+                    Cold Drink
+                  </option>
+
+                  <option value="JUICE_SHAKE">
+                    Juice / Shake
+                  </option>
+
+                  <option value="SWEETS">
+                    Sweets
+                  </option>
+
+                  <option value="CAKE_BAKERY">
+                    Cake / Bakery
+                  </option>
+
+                  <option value="ICE_CREAM">
+                    Ice Cream
+                  </option>
+
+                </optgroup>
+
+                <option value="CUSTOM">
+                  Other / Custom
+                </option>
+
+              </select>
+
+
+              <label for="productNameInput">
+                Item name
+              </label>
+
+              <input
+                id="productNameInput"
+                type="text"
+                maxlength="120"
+                placeholder="Example: Shahi Paneer"
+                required
+              >
+
+
+              <label for="productDescriptionInput">
+                Description
+              </label>
+
+              <textarea
+                id="productDescriptionInput"
+                maxlength="500"
+                rows="3"
+                placeholder="Ingredients and what is included"
+                required
+              ></textarea>
+
+
+              <div class="two-columns">
+
+                <div>
+
+                  <label for="productCategoryInput">
+                    Menu category
+                  </label>
+
+                  <select
+                    id="productCategoryInput"
+                    required
+                  >
+
+                    <option value="">
+                      Select category
+                    </option>
+
+                    <option value="HOME_FOOD">
+                      Home Food
+                    </option>
+
+                    <option value="MEALS">
+                      Main Course / Meals
+                    </option>
+
+                    <option value="TIFFIN">
+                      Thali & Combos
+                    </option>
+
+                    <option value="SNACKS">
+                      Snacks & Starters
+                    </option>
+
+                    <option value="BAKERY">
+                      Bakery
+                    </option>
+
+                    <option value="SWEETS">
+                      Desserts & Sweets
+                    </option>
+
+                    <option value="BEVERAGES">
+                      Beverages
+                    </option>
+
+                    <option value="OTHER">
+                      Other
+                    </option>
+
+                  </select>
+
                 </div>
 
 
-                <button
-                  id="addVariantButton"
-                  type="button"
-                >
-                  ＋ Add size
-                </button>
+                <div>
+
+                  <label for="productFoodTypeInput">
+                    Food type
+                  </label>
+
+                  <select
+                    id="productFoodTypeInput"
+                    required
+                  >
+
+                    <option value="">
+                      Select type
+                    </option>
+
+                    <option value="VEG">
+                      Vegetarian
+                    </option>
+
+                    <option value="NON_VEG">
+                      Non-Vegetarian
+                    </option>
+
+                  </select>
+
+                </div>
 
               </div>
 
 
-              <div id="variantRows"></div>
+              <label for="productPrepTimeInput">
+                Preparation time
+              </label>
+
+              <div class="prep-time-field">
+
+                <input
+                  id="productPrepTimeInput"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="1440"
+                  placeholder="30"
+                  required
+                >
+
+                <span>minutes</span>
+
+              </div>
 
             </section>
 
 
-            <label for="productKeywordsInput">
-              Search keywords
-              <small>(comma separated)</small>
-            </label>
+            <!-- PORTIONS AND PRICES -->
 
-            <input
-              id="productKeywordsInput"
-              maxlength="300"
-              placeholder="paneer, dinner, north indian"
-            >
+            <section class="product-form-section">
 
+              <div class="product-form-section-heading">
 
-            <label class="offer-check">
+                <span>2</span>
 
-              <input
-                id="productOfferInput"
-                type="checkbox"
-              >
+                <div>
 
-              <span>
-                Allow this product in eligible offers
-              </span>
+                  <h3>Portions and prices</h3>
 
-            </label>
+                  <p>
+                    Add sizes such as Half, Full or Regular
+                  </p>
 
-
-            <!-- IMAGE -->
-
-            <label>
-              Product photo
-              <small id="imageRequirementText">
-                (required)
-              </small>
-            </label>
-
-
-            <label
-              class="image-picker"
-              for="productImageInput"
-            >
-
-              <input
-                id="productImageInput"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-              >
-
-
-              <img
-                class="hidden"
-                id="productImagePreview"
-                alt="Product preview"
-              >
-
-
-              <span
-                id="imagePickerIcon"
-                aria-hidden="true"
-              >
-                📷
-              </span>
-
-
-              <div>
-
-                <strong id="imagePickerTitle">
-                  Choose product photo
-                </strong>
-
-                <small>
-                  JPG, PNG or WebP • Maximum 2 MB
-                </small>
+                </div>
 
               </div>
 
-            </label>
 
+              <section class="variant-box">
+
+                <div class="variant-heading">
+
+                  <div>
+
+                    <strong id="variantPresetTitle">
+                      Sizes & prices
+                    </strong>
+
+                    <small>
+                      Select one default option
+                    </small>
+
+                  </div>
+
+                  <button
+                    id="addVariantButton"
+                    type="button"
+                  >
+                    ＋ Add option
+                  </button>
+
+                </div>
+
+                <div id="variantRows"></div>
+
+              </section>
+
+            </section>
+
+
+            <!-- DISCOVERY AND PHOTO -->
+
+            <section class="product-form-section">
+
+              <div class="product-form-section-heading">
+
+                <span>3</span>
+
+                <div>
+
+                  <h3>Photo and discovery</h3>
+
+                  <p>
+                    Help customers find and identify this item
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <label for="productKeywordsInput">
+                Search keywords
+                <small>(comma separated)</small>
+              </label>
+
+              <input
+                id="productKeywordsInput"
+                type="text"
+                maxlength="300"
+                placeholder="paneer, dinner, north indian"
+              >
+
+
+              <label class="offer-check">
+
+                <input
+                  id="productOfferInput"
+                  type="checkbox"
+                >
+
+                <span>
+                  Allow this item in eligible offers
+                </span>
+
+              </label>
+
+
+              <label>
+                Item photo
+                <small id="imageRequirementText">
+                  (required)
+                </small>
+              </label>
+
+              <label
+                class="image-picker"
+                for="productImageInput"
+              >
+
+                <input
+                  id="productImageInput"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                >
+
+                <img
+                  class="hidden"
+                  id="productImagePreview"
+                  alt="Product preview"
+                >
+
+                <span
+                  id="imagePickerIcon"
+                  aria-hidden="true"
+                >
+                  📷
+                </span>
+
+                <div>
+
+                  <strong id="imagePickerTitle">
+                    Choose item photo
+                  </strong>
+
+                  <small>
+                    JPG, PNG or WebP • Maximum 2 MB
+                  </small>
+
+                </div>
+
+              </label>
+
+            </section>
+
+
+            <!-- FORM ERROR -->
 
             <div
               class="form-error hidden"
@@ -749,13 +958,15 @@
             ></div>
 
 
+            <!-- SAVE -->
+
             <div class="sticky-save">
 
               <button
                 id="saveProductButton"
                 type="submit"
               >
-                Save Product
+                Save Item
               </button>
 
             </div>
@@ -767,9 +978,7 @@
       </div>
 
 
-      <!-- =====================================================
-           MOBILE BOTTOM NAVIGATION
-           ===================================================== -->
+      <!-- MOBILE BOTTOM NAVIGATION -->
 
       <nav
         class="partner-bottom-navigation"
@@ -777,44 +986,40 @@
         aria-label="Food Partner navigation"
       >
 
-        <a
-          class="partner-nav-item"
-          href="dashboard.html"
-          aria-label="Dashboard"
-        >
+        <a href="dashboard.html">
+
           <span aria-hidden="true">⌂</span>
+
           <small>Home</small>
+
         </a>
 
+        <a href="dashboard.html?tab=orders">
 
-        <a
-          class="partner-nav-item"
-          href="dashboard.html?tab=orders"
-          aria-label="Orders"
-        >
           <span aria-hidden="true">▣</span>
+
           <small>Orders</small>
+
         </a>
 
-
         <a
-          class="partner-nav-item active"
+          class="active"
           href="products.html"
           aria-current="page"
-          aria-label="Products"
         >
+
           <span aria-hidden="true">🍽</span>
+
           <small>Products</small>
+
         </a>
 
+        <a href="dashboard.html?tab=profile">
 
-        <a
-          class="partner-nav-item"
-          href="dashboard.html?tab=profile"
-          aria-label="Profile and KYC"
-        >
           <span aria-hidden="true">♙</span>
+
           <small>Profile</small>
+
         </a>
 
       </nav>
@@ -824,7 +1029,7 @@
   </main>
 
 
-  <!-- SHARED SERVICES -->
+  <!-- SHARED SCRIPTS -->
 
   <script src="../../shared/js/storage.js"></script>
   <script src="../../shared/js/cache.js"></script>
@@ -835,10 +1040,9 @@
   <script src="../../shared/js/role-home.js"></script>
 
 
-  <!-- PRODUCT CONTROLLER -->
+  <!-- PAGE SCRIPT -->
 
   <script src="../js/products.js"></script>
 
 </body>
-
 </html>
