@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#111827"
+  >
+
+  <title>
+    State & District Control | ApnaBite Admin
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/admin-common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/dashboard.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/district-control.css"
+  >
+
+</head>
+
+
+<body data-required-role="Admin">
+
+
+  <!-- ========================================================
+       ADMIN APPLICATION
+       ======================================================== -->
+
+  <main class="admin-app">
+
+
+    <!-- ======================================================
+         ACCESS LOADER
+         ====================================================== -->
+
+    <section
+      id="roleHomeLoader"
+      class="role-home-loader"
+      aria-live="polite"
+    >
+
+      <div class="role-home-loader-card">
+
+        <span class="role-home-loader-spinner"></span>
+
+        <strong>
+          Securing admin access
+        </strong>
+
+        <p>
+          Validating your session and permissions.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================================
+         PROTECTED ADMIN CONTENT
+         ====================================================== -->
+
+    <div
+      id="roleHomeContent"
+      class="admin-shell hidden"
+    >
+
+
+      <!-- ====================================================
+           DESKTOP SIDEBAR
+           ==================================================== -->
+
+      <aside class="admin-sidebar">
+
+
+        <a
+          class="admin-sidebar-brand"
+          href="dashboard.html"
+          aria-label="Open Admin dashboard"
+        >
+
+          <span class="admin-brand-mark">
+            A
+          </span>
+
+          <span>
+
+            <strong>
+              ApnaBite
+            </strong>
+
+            <small>
+              Control Centre
+            </small>
+
+          </span>
+
+        </a>
+
+
+        <section class="admin-sidebar-identity">
+
+          <span class="admin-sidebar-avatar">
+            👤
+          </span>
+
+          <div>
+
+            <small>
+              Signed in as
+            </small>
+
+            <strong id="roleHomeUserRole">
+              Admin
+            </strong>
+
+            <span id="roleHomeUserMobile">
+              —
+            </span>
+
+          </div>
+
+        </section>
+
+
+        <nav
+          class="admin-sidebar-navigation"
+          aria-label="Admin navigation"
+        >
+
+          <span class="admin-sidebar-section-title">
+            Command Centre
+          </span>
+
+
+          <a href="dashboard.html">
+
+            <span>
+              ▣
+            </span>
+
+            <strong>
+              Founder Overview
+            </strong>
+
+          </a>
+
+
+          <a href="finance-expenses.html">
+
+            <span>
+              ₹
+            </span>
+
+            <strong>
+              Finance & Audit
+            </strong>
+
+          </a>
+
+
+          <a href="dashboard.html?view=operations">
+
+            <span>
+              ⚙
+            </span>
+
+            <strong>
+              Operations
+            </strong>
+
+          </a>
+
+
+          <a href="dashboard.html?view=growth">
+
+            <span>
+              ↗
+            </span>
+
+            <strong>
+              Growth & Offers
+            </strong>
+
+          </a>
+
+
+          <span class="admin-sidebar-section-title">
+            Management
+          </span>
+
+
+          <a href="kyc-review.html">
+
+            <span>
+              ✓
+            </span>
+
+            <strong>
+              Partner KYC
+            </strong>
+
+          </a>
+
+
+          <a href="dashboard.html?view=support">
+
+            <span>
+              ◉
+            </span>
+
+            <strong>
+              Support
+            </strong>
+
+          </a>
+
+
+          <a
+            class="active"
+            href="district-control.html"
+            aria-current="page"
+          >
+
+            <span>
+              ◈
+            </span>
+
+            <strong>
+              District Control
+            </strong>
+
+          </a>
+
+        </nav>
+
+
+        <button
+          id="roleLogoutButton"
+          class="admin-sidebar-logout"
+          type="button"
+        >
+
+          <span>
+            ↪
+          </span>
+
+          Logout
+
+        </button>
+
+      </aside>
+
+
+      <!-- ====================================================
+           PAGE WORKSPACE
+           ==================================================== -->
+
+      <section class="admin-workspace geography-workspace">
+
+
+        <!-- ==================================================
+             TOP BAR
+             ================================================== -->
+
+        <header class="admin-topbar geography-topbar">
+
+
+          <div class="geography-topbar-main">
+
+            <a
+              class="geography-back-button"
+              href="dashboard.html"
+              aria-label="Back to Admin dashboard"
+            >
+              ←
+            </a>
+
+
+            <div class="admin-topbar-title">
+
+              <small>
+                PAN-INDIA OPERATIONS
+              </small>
+
+              <h1>
+                State & District Control
+              </h1>
+
+              <p>
+                Activate and manage service coverage across India.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="admin-topbar-actions">
+
+            <span class="geography-secure-badge">
+
+              <span></span>
+
+              Official LGD data
+
+            </span>
+
+
+            <button
+              id="refreshGeographyButton"
+              class="admin-refresh-button"
+              type="button"
+            >
+
+              <span>
+                ↻
+              </span>
+
+              Refresh
+
+            </button>
+
+
+            <button
+              id="geographyMobileLogoutButton"
+              class="admin-mobile-logout"
+              type="button"
+              aria-label="Logout"
+            >
+              ↪
+            </button>
+
+          </div>
+
+        </header>
+
+
+        <!-- ==================================================
+             GLOBAL MESSAGE
+             ================================================== -->
+
+        <div
+          id="geographyPageMessage"
+          class="admin-global-message hidden"
+          role="alert"
+        ></div>
+
+
+        <!-- ==================================================
+             LOADING SKELETON
+             ================================================== -->
+
+        <section
+          id="geographyPageSkeleton"
+          class="geography-skeleton"
+          aria-label="Loading service geography"
+        >
+
+          <div class="geography-skeleton-heading"></div>
+
+          <div class="geography-skeleton-cards">
+
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+
+          </div>
+
+          <div class="geography-skeleton-toolbar"></div>
+
+          <div class="geography-skeleton-list">
+
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             PAGE CONTENT
+             ================================================== -->
+
+        <section
+          id="geographyPageContent"
+          class="geography-page hidden"
+        >
+
+
+          <!-- ================================================
+               PAGE HEADING
+               ================================================ -->
+
+          <div class="geography-page-heading">
+
+            <div>
+
+              <small class="admin-eyebrow">
+                SERVICE GEOGRAPHY
+              </small>
+
+              <h2>
+                Pan-India service control
+              </h2>
+
+              <p>
+                States load first. Districts load only when a state is opened.
+              </p>
+
+            </div>
+
+
+            <div class="geography-last-updated">
+
+              <span>
+                Last updated
+              </span>
+
+              <strong id="geographyLastUpdated">
+                —
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <!-- ================================================
+               SUMMARY CARDS
+               ================================================ -->
+
+          <section
+            class="geography-summary-grid"
+            aria-label="Service geography summary"
+          >
+
+
+            <article class="geography-summary-card total">
+
+              <div>
+
+                <span>
+                  TOTAL STATES & UTS
+                </span>
+
+                <strong id="totalStatesValue">
+                  0
+                </strong>
+
+              </div>
+
+              <b>
+                🇮🇳
+              </b>
+
+              <p>
+                Official LGD coverage
+              </p>
+
+            </article>
+
+
+            <article class="geography-summary-card active">
+
+              <div>
+
+                <span>
+                  ACTIVE STATES
+                </span>
+
+                <strong id="activeStatesValue">
+                  0
+                </strong>
+
+              </div>
+
+              <b>
+                ✓
+              </b>
+
+              <p>
+                States accepting service
+              </p>
+
+            </article>
+
+
+            <article class="geography-summary-card districts">
+
+              <div>
+
+                <span>
+                  TOTAL DISTRICTS
+                </span>
+
+                <strong id="totalDistrictsValue">
+                  0
+                </strong>
+
+              </div>
+
+              <b>
+                ◈
+              </b>
+
+              <p>
+                Official districts available
+              </p>
+
+            </article>
+
+
+            <article class="geography-summary-card live">
+
+              <div>
+
+                <span>
+                  LIVE DISTRICTS
+                </span>
+
+                <strong id="effectiveActiveDistrictsValue">
+                  0
+                </strong>
+
+              </div>
+
+              <b>
+                ●
+              </b>
+
+              <p>
+                Effectively active for customers
+              </p>
+
+            </article>
+
+          </section>
+
+
+          <!-- ================================================
+               SECONDARY SUMMARY STRIP
+               ================================================ -->
+
+          <section class="geography-status-strip">
+
+            <div>
+
+              <span>
+                Inactive states
+              </span>
+
+              <strong id="inactiveStatesValue">
+                0
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Active districts
+              </span>
+
+              <strong id="activeDistrictsValue">
+                0
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Inactive districts
+              </span>
+
+              <strong id="inactiveDistrictsValue">
+                0
+              </strong>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Coming soon
+              </span>
+
+              <strong id="comingSoonDistrictsValue">
+                0
+              </strong>
+
+            </div>
+
+          </section>
+
+
+          <!-- ================================================
+               STATE FILTERS
+               ================================================ -->
+
+          <section class="geography-filter-panel">
+
+            <div class="geography-search-box">
+
+              <span>
+               ⌕
+              </span>
+
+              <input
+                id="stateSearchInput"
+                type="search"
+                placeholder="Search state or union territory"
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <select
+              id="stateStatusFilter"
+              aria-label="Filter states by service status"
+            >
+
+              <option value="ALL">
+                All service statuses
+              </option>
+
+              <option value="ACTIVE">
+                Active states
+              </option>
+
+              <option value="INACTIVE">
+                Inactive states
+              </option>
+
+            </select>
+
+
+            <button
+              id="clearStateFiltersButton"
+              class="geography-clear-filter"
+              type="button"
+            >
+              Clear filters
+            </button>
+
+          </section>
+
+
+          <!-- ================================================
+               STATES DIRECTORY
+               ================================================ -->
+
+          <section class="geography-directory-card">
+
+
+            <header class="geography-directory-heading">
+
+              <div>
+
+                <small class="admin-eyebrow">
+                  NATIONAL COVERAGE
+                </small>
+
+                <h3>
+                  States and union territories
+                </h3>
+
+                <p>
+
+                  Showing
+
+                  <strong id="visibleStatesCount">
+                    0
+                  </strong>
+
+                  records
+
+                </p>
+
+              </div>
+
+            </header>
+
+
+            <div
+              id="stateList"
+              class="geography-state-list"
+              aria-live="polite"
+            ></div>
+
+
+            <div
+              id="stateEmptyState"
+              class="geography-empty-state hidden"
+            >
+
+              <span>
+                ◈
+              </span>
+
+              <strong>
+                No states found
+              </strong>
+
+              <p>
+                Change the search or service-status filter.
+              </p>
+
+            </div>
+
+          </section>
+
+
+          <!-- ================================================
+               SERVICE SAFETY NOTE
+               ================================================ -->
+
+          <aside class="geography-safety-note">
+
+            <span>
+              !
+            </span>
+
+            <div>
+
+              <strong>
+                State status controls effective service
+              </strong>
+
+              <p>
+                Deactivating a state immediately makes all its districts
+                unavailable to customers. Individual district settings remain
+                preserved and return when the state is activated again.
+              </p>
+
+            </div>
+
+          </aside>
+
+        </section>
+
+      </section>
+
+
+      <!-- ====================================================
+           MOBILE NAVIGATION
+           ==================================================== -->
+
+      <nav
+        class="admin-mobile-navigation"
+        aria-label="Mobile Admin navigation"
+      >
+
+        <a href="dashboard.html">
+
+          <span>
+            ▣
+          </span>
+
+          <strong>
+            Overview
+          </strong>
+
+        </a>
+
+
+        <a href="finance-expenses.html">
+
+          <span>
+            ₹
+          </span>
+
+          <strong>
+            Finance
+          </strong>
+
+        </a>
+
+
+        <a href="dashboard.html?view=operations">
+
+          <span>
+            ⚙
+          </span>
+
+          <strong>
+            Operations
+          </strong>
+
+        </a>
+
+
+        <a
+          class="active"
+          href="district-control.html"
+          aria-current="page"
+        >
+
+          <span>
+            ◈
+          </span>
+
+          <strong>
+            Districts
+          </strong>
+
+        </a>
+
+      </nav>
+
+    </div>
+
+  </main>
+
+
+  <!-- ========================================================
+       STATE DISTRICT DRAWER
+       ======================================================== -->
+
+  <div
+    id="districtPanel"
+    class="geography-drawer-dialog hidden"
+    aria-hidden="true"
+  >
+
+    <button
+      id="districtPanelBackdrop"
+      class="geography-dialog-backdrop"
+      type="button"
+      aria-label="Close district panel"
+    ></button>
+
+
+    <section
+      class="geography-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="selectedStateName"
+    >
+
+
+      <header class="geography-drawer-header">
+
+        <div>
+
+          <small>
+            STATE OPERATIONS
+          </small>
+
+          <h2 id="selectedStateName">
+            State districts
+          </h2>
+
+          <p id="selectedStateMeta">
+            Select a state to manage its districts.
+          </p>
+
+        </div>
+
+
+        <button
+          id="closeDistrictPanelButton"
+          type="button"
+          aria-label="Close district panel"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="geography-drawer-content">
+
+
+        <!-- ================================================
+             SELECTED STATE CONTROL
+             ================================================ -->
+
+        <section class="selected-state-card">
+
+          <div>
+
+            <span
+              id="selectedStateStatusBadge"
+              class="geography-status-badge inactive"
+            >
+              INACTIVE
+            </span>
+
+            <strong id="selectedStateControlName">
+              —
+            </strong>
+
+            <small id="selectedStateControlCode">
+              State code —
+            </small>
+
+          </div>
+
+
+          <button
+            id="stateStatusButton"
+            class="geography-state-status-button"
+            type="button"
+          >
+            Activate state
+          </button>
+
+        </section>
+
+
+        <!-- ================================================
+             STATE DISTRICT COUNTERS
+             ================================================ -->
+
+        <section class="district-summary-grid">
+
+          <article>
+
+            <span>
+              Total districts
+            </span>
+
+            <strong id="selectedStateDistrictCount">
+              0
+            </strong>
+
+          </article>
+
+
+          <article>
+
+            <span>
+              Stored active
+            </span>
+
+            <strong id="selectedStateActiveCount">
+              0
+            </strong>
+
+          </article>
+
+
+          <article>
+
+            <span>
+              Effectively live
+            </span>
+
+            <strong id="selectedStateEffectiveCount">
+              0
+            </strong>
+
+          </article>
+
+        </section>
+
+
+        <!-- ================================================
+             DISTRICT FILTERS
+             ================================================ -->
+
+        <section class="district-filter-panel">
+
+          <div class="geography-search-box">
+
+            <span>
+              ⌕
+            </span>
+
+            <input
+              id="districtSearchInput"
+              type="search"
+              placeholder="Search district"
+              autocomplete="off"
+            >
+
+          </div>
+
+
+          <select
+            id="districtStatusFilter"
+            aria-label="Filter districts by status"
+          >
+
+            <option value="ALL">
+              All district statuses
+            </option>
+
+            <option value="ACTIVE">
+              Active
+            </option>
+
+            <option value="INACTIVE">
+              Inactive
+            </option>
+
+          </select>
+
+        </section>
+
+
+        <!-- ================================================
+             BULK DISTRICT ACTIONS
+             ================================================ -->
+
+        <section class="district-bulk-toolbar">
+
+          <label>
+
+            <input
+              id="selectAllDistrictsCheckbox"
+              type="checkbox"
+            >
+
+            <span>
+              Select visible districts
+            </span>
+
+          </label>
+
+
+          <div>
+
+            <button
+              id="bulkActivateDistrictsButton"
+              class="geography-bulk-activate"
+              type="button"
+              disabled
+            >
+              Activate
+            </button>
+
+
+            <button
+              id="bulkDeactivateDistrictsButton"
+              class="geography-bulk-deactivate"
+              type="button"
+              disabled
+            >
+              Deactivate
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- ================================================
+             DISTRICT LOADING
+             ================================================ -->
+
+        <div
+          id="districtLoading"
+          class="district-loading hidden"
+        >
+
+          <span></span>
+
+          <strong>
+            Loading districts
+          </strong>
+
+          <p>
+            Fetching only this state's district records.
+          </p>
+
+        </div>
+
+
+        <!-- ================================================
+             DISTRICT ERROR
+             ================================================ -->
+
+        <div
+          id="districtError"
+          class="admin-global-message admin-error-message hidden"
+          role="alert"
+        ></div>
+
+
+        <!-- ================================================
+             DISTRICT LIST
+             ================================================ -->
+
+        <div
+          id="districtList"
+          class="district-list"
+          aria-live="polite"
+        ></div>
+
+
+        <div
+          id="districtEmptyState"
+          class="geography-empty-state hidden"
+        >
+
+          <span>
+            ◈
+          </span>
+
+          <strong>
+            No districts found
+          </strong>
+
+          <p>
+            Change the district search or status filter.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- ========================================================
+       STATUS CONFIRMATION DIALOG
+       ======================================================== -->
+
+  <div
+    id="serviceStatusDialog"
+    class="geography-confirm-dialog hidden"
+    aria-hidden="true"
+  >
+
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="serviceStatusDialogTitle"
+    >
+
+      <span class="geography-confirm-icon">
+        !
+      </span>
+
+
+      <h2 id="serviceStatusDialogTitle">
+        Confirm service-status change
+      </h2>
+
+
+      <p id="serviceStatusDialogDescription">
+        Confirm the selected service-status action.
+      </p>
+
+
+      <label for="serviceStatusReasonInput">
+        Change reason
+      </label>
+
+
+      <textarea
+        id="serviceStatusReasonInput"
+        maxlength="500"
+        placeholder="Enter a clear operational reason"
+      ></textarea>
+
+
+      <div
+        id="serviceStatusDialogError"
+        class="geography-form-error hidden"
+        role="alert"
+      ></div>
+
+
+      <div class="geography-confirm-actions">
+
+        <button
+          id="cancelServiceStatusButton"
+          class="geography-secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          id="confirmServiceStatusButton"
+          class="geography-primary-button"
+          type="button"
+        >
+          Confirm change
+        </button>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- ========================================================
+       DISTRICT RULES DIALOG
+       ======================================================== -->
+
+  <div
+    id="districtRulesDialog"
+    class="geography-confirm-dialog hidden"
+    aria-hidden="true"
+  >
+
+    <section
+      class="district-rules-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="districtRulesTitle"
+    >
+
+
+      <header>
+
+        <div>
+
+          <small>
+            DELIVERY CONFIGURATION
+          </small>
+
+          <h2 id="districtRulesTitle">
+            District service rules
+          </h2>
+
+          <p id="districtRulesId">
+            —
+          </p>
+
+        </div>
+
+      </header>
+
+
+      <div class="district-rules-grid">
+
+
+        <label>
+
+          <span>
+            Service radius (KM)
+          </span>
+
+          <input
+            id="districtServiceRadiusInput"
+            type="number"
+            min="1"
+            max="100"
+            step="0.5"
+            inputmode="decimal"
+          >
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Delivery fee per KM
+          </span>
+
+          <input
+            id="districtDeliveryFeeInput"
+            type="number"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+          >
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Minimum delivery fee
+          </span>
+
+          <input
+            id="districtMinimumDeliveryFeeInput"
+            type="number"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+          >
+
+        </label>
+
+
+        <label>
+
+          <span>
+            Long-distance delivery
+          </span>
+
+          <select id="districtLongDistanceInput">
+
+            <option value="TRUE">
+              Enabled
+            </option>
+
+            <option value="FALSE">
+              Disabled
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label class="district-rules-full-field">
+
+          <span>
+            Update reason
+          </span>
+
+          <textarea
+            id="districtRulesReasonInput"
+            maxlength="500"
+            placeholder="Enter the reason for changing district rules"
+          ></textarea>
+
+        </label>
+
+      </div>
+
+
+      <div
+        id="districtRulesError"
+        class="geography-form-error hidden"
+        role="alert"
+      ></div>
+
+
+      <div class="geography-confirm-actions">
+
+        <button
+          id="cancelDistrictRulesButton"
+          class="geography-secondary-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          id="saveDistrictRulesButton"
+          class="geography-primary-button"
+          type="button"
+        >
+          Save service rules
+        </button>
+
+      </div>
+
+    </section>
+
+  </div>
+
+
+  <!-- ========================================================
+       APPLICATION SCRIPTS
+       ======================================================== -->
+
+  <script src="../../shared/js/storage.js"></script>
+
+  <script src="../../shared/js/api.js"></script>
+
+  <script src="../../shared/js/session.js"></script>
+
+  <script src="../../shared/js/auth.js"></script>
+
+  <script src="../../shared/js/app-router.js"></script>
+
+  <script src="../js/role-home.js"></script>
+
+  <script src="../js/district-control.js"></script>
+
+
+</body>
+
+</html>
