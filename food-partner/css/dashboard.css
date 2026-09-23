@@ -1603,3 +1603,126 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   PERMANENT PARTNER BOTTOM NAVIGATION
+   Mobile + Tablet + Laptop
+   VERSION: 2.1.1
+   ============================================================ */
+
+@media (min-width: 860px) {
+
+  /*
+   * Earlier desktop CSS hides the bottom navigation.
+   * Keep it permanently visible on laptop as well.
+   */
+
+  .partner-bottom-navigation {
+    position: fixed;
+    right: 50%;
+    bottom: 0;
+    left: auto;
+    z-index: 900;
+
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    width: min(720px, 100%);
+    min-height: 70px;
+
+    padding:
+      7px
+      max(10px, env(safe-area-inset-right))
+      max(7px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid #e0e0e2;
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+
+    box-shadow:
+      0 -8px 26px
+      rgba(0, 0, 0, 0.08);
+
+    transform: translateX(50%);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+
+  /*
+   * Prevent the fixed navigation from covering
+   * the bottom dashboard content.
+   */
+
+  .partner-content {
+    padding-bottom:
+      calc(
+        100px +
+        env(safe-area-inset-bottom)
+      );
+  }
+
+
+  .partner-dashboard {
+    padding-bottom:
+      calc(
+        105px +
+        env(safe-area-inset-bottom)
+      );
+  }
+
+
+  /*
+   * Comfortable laptop navigation sizing.
+   */
+
+  .partner-nav-item {
+    min-height: 54px;
+    transition:
+      color 0.18s ease,
+      background 0.18s ease;
+  }
+
+
+  .partner-nav-item > span {
+    font-size: 20px;
+  }
+
+
+  .partner-nav-item small {
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+
+  .partner-nav-item:hover {
+    color: var(--partner-orange-dark);
+    background: #fff7f2;
+  }
+
+
+  .partner-nav-item.active {
+    color: var(--partner-orange-dark);
+    background: var(--partner-orange-soft);
+  }
+
+
+  .partner-nav-item.active::before {
+    position: absolute;
+    top: -8px;
+
+    width: 30px;
+    height: 3px;
+
+    content: "";
+
+    background:
+      var(--partner-orange);
+
+    border-radius:
+      0 0 5px 5px;
+  }
+}
