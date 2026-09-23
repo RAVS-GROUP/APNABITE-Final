@@ -2205,19 +2205,18 @@ const AdminDashboard = {
       },
 
       {
-        test:
-          "Desktop main navigation",
+  test:
+    "Desktop navigation",
 
-        expected:
-          4,
+  expected:
+    6,
 
-        actual:
-          sidebarButtons.length,
+  actual:
+    sidebarButtons.length,
 
-        passed:
-          sidebarButtons.length === 4
-      },
-
+  passed:
+    sidebarButtons.length === 6
+},
       {
         test:
           "Financial safety",
