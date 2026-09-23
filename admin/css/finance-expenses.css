@@ -1855,3 +1855,299 @@
   }
 
 }
+
+/*
+ * ============================================================
+ * FINANCE PAGE RESPONSIVE FIT FIX
+ * VERSION: 1.1.0
+ * ============================================================
+ */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-shell,
+.admin-main,
+.admin-content,
+.finance-page,
+#financePageContent {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.finance-page,
+#financePageContent {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/*
+ * Prevent cards and controls from forcing page width.
+ */
+
+#financePageContent *,
+#financePageContent *::before,
+#financePageContent *::after {
+  box-sizing: border-box;
+}
+
+#financePageContent section,
+#financePageContent article,
+#financePageContent div,
+#financePageContent form {
+  min-width: 0;
+}
+
+/*
+ * Summary cards
+ */
+
+.finance-summary-grid,
+.finance-overview-grid,
+.finance-metric-grid,
+.finance-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  gap: 18px;
+}
+
+.finance-summary-card,
+.finance-metric-card,
+.finance-overview-card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*
+ * Status counter row
+ */
+
+.finance-status-tabs,
+.finance-status-grid,
+.finance-quick-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+  overflow: hidden;
+}
+
+.finance-status-tabs > *,
+.finance-status-grid > *,
+.finance-quick-filters > * {
+  min-width: 0;
+}
+
+/*
+ * Main filter panel
+ */
+
+.finance-filters,
+.finance-filter-grid,
+.finance-filters-grid,
+.finance-filter-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  width: 100%;
+  gap: 14px;
+}
+
+.finance-filters > *,
+.finance-filter-grid > *,
+.finance-filters-grid > *,
+.finance-filter-form > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#expenseSearchInput,
+#expenseApprovalFilter,
+#expensePaymentFilter,
+#expenseCategoryFilter,
+#expenseFromDate,
+#expenseToDate,
+#clearExpenseFiltersButton {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*
+ * Search control gets additional width on large displays.
+ */
+
+.finance-filter-grid > :has(#expenseSearchInput),
+.finance-filters-grid > :has(#expenseSearchInput),
+.finance-filter-form > :has(#expenseSearchInput),
+.finance-filters > :has(#expenseSearchInput) {
+  grid-column: span 2;
+}
+
+/*
+ * Expense table remains inside its own card.
+ */
+
+#financeTableWrapper,
+.finance-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.finance-table-wrapper table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+/*
+ * Medium desktop and laptop.
+ */
+
+@media (max-width: 1250px) {
+
+  .finance-summary-grid,
+  .finance-overview-grid,
+  .finance-metric-grid,
+  .finance-summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-filters,
+  .finance-filter-grid,
+  .finance-filters-grid,
+  .finance-filter-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .finance-filter-grid > :has(#expenseSearchInput),
+  .finance-filters-grid > :has(#expenseSearchInput),
+  .finance-filter-form > :has(#expenseSearchInput),
+  .finance-filters > :has(#expenseSearchInput) {
+    grid-column: span 2;
+  }
+}
+
+/*
+ * Narrow laptop / tablet.
+ */
+
+@media (max-width: 960px) {
+
+  .finance-filters,
+  .finance-filter-grid,
+  .finance-filters-grid,
+  .finance-filter-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-status-tabs,
+  .finance-status-grid,
+  .finance-quick-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .finance-filter-grid > :has(#expenseSearchInput),
+  .finance-filters-grid > :has(#expenseSearchInput),
+  .finance-filter-form > :has(#expenseSearchInput),
+  .finance-filters > :has(#expenseSearchInput) {
+    grid-column: 1 / -1;
+  }
+}
+
+/*
+ * Mobile.
+ */
+
+@media (max-width: 640px) {
+
+  .finance-page,
+  #financePageContent {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .finance-summary-grid,
+  .finance-overview-grid,
+  .finance-metric-grid,
+  .finance-summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .finance-summary-card,
+  .finance-metric-card,
+  .finance-overview-card {
+    min-height: 140px;
+    padding: 16px;
+  }
+
+  .finance-status-tabs,
+  .finance-status-grid,
+  .finance-quick-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-filters,
+  .finance-filter-grid,
+  .finance-filters-grid,
+  .finance-filter-form {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+
+  .finance-filter-grid > :has(#expenseSearchInput),
+  .finance-filters-grid > :has(#expenseSearchInput),
+  .finance-filter-form > :has(#expenseSearchInput),
+  .finance-filters > :has(#expenseSearchInput) {
+    grid-column: auto;
+  }
+
+  #expenseSearchInput,
+  #expenseApprovalFilter,
+  #expensePaymentFilter,
+  #expenseCategoryFilter,
+  #expenseFromDate,
+  #expenseToDate,
+  #clearExpenseFiltersButton {
+    min-height: 48px;
+  }
+
+  .finance-table-wrapper {
+    display: none;
+  }
+
+  #expenseMobileList,
+  .finance-mobile-list {
+    display: grid;
+  }
+}
+
+/*
+ * Very small mobile.
+ */
+
+@media (max-width: 390px) {
+
+  .finance-summary-grid,
+  .finance-overview-grid,
+  .finance-metric-grid,
+  .finance-summary-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-status-tabs,
+  .finance-status-grid,
+  .finance-quick-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
