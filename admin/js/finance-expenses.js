@@ -1613,6 +1613,28 @@ const AdminFinanceExpenses = {
  * ------------------------------------------------------------
  */
 
-document.addEventListener("DOMContentLoaded", () => {
+/*
+ * ------------------------------------------------------------
+ * SAFE INITIALIZE
+ * Wait for RoleHome background validation before Finance load.
+ * This prevents simultaneous Apps Script requests from hanging.
+ * ------------------------------------------------------------
+ */
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const startedAt = Date.now();
+  const maximumWaitMs = 12000;
+
+  while (
+    typeof RoleHome !== "undefined" &&
+    RoleHome.validationRunning === true &&
+    Date.now() - startedAt < maximumWaitMs
+  ) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 150);
+    });
+  }
+
   AdminFinanceExpenses.init();
 });
