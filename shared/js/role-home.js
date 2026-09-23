@@ -2,8 +2,8 @@
  * ============================================================
  * APNABITE FRONTEND
  * FILE: shared/js/role-home.js
- * PURPOSE: Fast secure role-page access guard
- * VERSION: 1.1.0
+ * PURPOSE: Fast secure role access and visible logout flow
+ * VERSION: 1.2.0
  * ============================================================
  *
  * PERFORMANCE FLOW:
@@ -13,6 +13,7 @@
  * 3. Show page immediately
  * 4. Validate session in background
  * 5. Repeat backend validation only after five minutes
+ * 6. Show clear logout progress and completion feedback
  * ============================================================
  */
 
@@ -30,6 +31,9 @@ const RoleHome = {
   VALIDATION_INTERVAL_MS:
     5 * 60 * 1000,
 
+  LOGOUT_FEEDBACK_DELAY_MS:
+    650,
+
 
   /*
    * ----------------------------------------------------------
@@ -41,6 +45,9 @@ const RoleHome = {
     "",
 
   validationRunning:
+    false,
+
+  logoutRunning:
     false,
 
   elements: {},
@@ -55,12 +62,9 @@ const RoleHome = {
   async init() {
 
     this.requiredRole =
-      document.body.dataset
-        .requiredRole || "";
-
+      document.body.dataset.requiredRole || "";
 
     this.elements = {
-
       loader:
         document.getElementById(
           "roleHomeLoader"
@@ -86,12 +90,16 @@ const RoleHome = {
           "roleLogoutButton"
         ),
 
+      logoutButtonText:
+        document.getElementById(
+          "logoutButtonText"
+        ),
+
       message:
         document.getElementById(
           "roleHomeMessage"
         )
     };
-
 
     if (!this.hasRequiredElements()) {
 
@@ -101,11 +109,9 @@ const RoleHome = {
 
       return {
         success: false,
-        reason:
-          "ROLE_PAGE_ELEMENTS_MISSING"
+        reason: "ROLE_PAGE_ELEMENTS_MISSING"
       };
     }
-
 
     if (!this.requiredRole) {
 
@@ -113,29 +119,22 @@ const RoleHome = {
         "This page does not have a required role configuration."
       );
 
-
       console.error(
         "Required role is missing from the body element."
       );
 
-
       return {
         success: false,
-        reason:
-          "REQUIRED_ROLE_MISSING"
+        reason: "REQUIRED_ROLE_MISSING"
       };
     }
 
-
-    this.elements.logoutButton
-      .addEventListener(
-        "click",
-        () => {
-
-          this.logout();
-        }
-      );
-
+    this.elements.logoutButton.addEventListener(
+      "click",
+      () => {
+        this.logout();
+      }
+    );
 
     return this.validateAccess();
   },
@@ -143,7 +142,7 @@ const RoleHome = {
 
   /*
    * ----------------------------------------------------------
-   * CHECK REQUIRED ELEMENTS
+   * REQUIRED ELEMENTS
    * ----------------------------------------------------------
    */
 
@@ -171,10 +170,9 @@ const RoleHome = {
     const localSession =
       SessionManager.get();
 
-
     /*
      * No local session:
-     * redirect to Login with the current page as returnUrl.
+     * redirect to login with current URL as return URL.
      */
 
     if (!localSession) {
@@ -185,14 +183,11 @@ const RoleHome = {
         window.location.href
       );
 
-
       return {
         success: false,
-        reason:
-          "LOCAL_SESSION_NOT_FOUND"
+        reason: "LOCAL_SESSION_NOT_FOUND"
       };
     }
-
 
     const localUser =
       Auth.getUser() || {
@@ -216,54 +211,45 @@ const RoleHome = {
           localSession.verificationStatus || ""
       };
 
-
     /*
-     * Local role mismatch:
-     * do not show a protected page for another role.
+     * Do not display a protected page belonging
+     * to another user role.
      */
 
     if (
       !localUser.role ||
-      localUser.role !==
-        this.requiredRole
+      localUser.role !== this.requiredRole
     ) {
 
       this.handleRoleMismatch(
         localUser.role || ""
       );
 
-
       return {
         success: false,
-        reason:
-          "ROLE_ACCESS_DENIED",
-        requiredRole:
-          this.requiredRole,
-        actualRole:
-          localUser.role || ""
+        reason: "ROLE_ACCESS_DENIED",
+        requiredRole: this.requiredRole,
+        actualRole: localUser.role || ""
       };
     }
 
-
     /*
      * Valid local session:
-     * display the page immediately.
+     * display the protected page immediately.
      */
 
     this.showHome(
       localUser
     );
 
-
     console.log(
       this.requiredRole +
       " Home Access: PASS"
     );
 
-
     /*
-     * A recently validated session does not need another
-     * backend request during page-to-page navigation.
+     * Avoid another backend request during
+     * recent page-to-page navigation.
      */
 
     if (
@@ -276,40 +262,30 @@ const RoleHome = {
         "Session Validation: RECENT"
       );
 
-
       return {
         success: true,
-        authenticated:
-          true,
-        role:
-          localUser.role,
-        user:
-          localUser,
-        source:
-          "LOCAL_RECENT"
+        authenticated: true,
+        role: localUser.role,
+        user: localUser,
+        source: "LOCAL_RECENT"
       };
     }
 
-
     /*
-     * Backend validation runs without blocking the page.
+     * Backend validation does not block
+     * the protected page.
      */
 
     this.validateSessionInBackground(
       localSession
     );
 
-
     return {
       success: true,
-      authenticated:
-        true,
-      role:
-        localUser.role,
-      user:
-        localUser,
-      source:
-        "LOCAL_BACKGROUND_VALIDATION"
+      authenticated: true,
+      role: localUser.role,
+      user: localUser,
+      source: "LOCAL_BACKGROUND_VALIDATION"
     };
   },
 
@@ -328,21 +304,16 @@ const RoleHome = {
 
       return {
         success: false,
-        reason:
-          "VALIDATION_ALREADY_RUNNING"
+        reason: "VALIDATION_ALREADY_RUNNING"
       };
     }
 
-
-    this.validationRunning =
-      true;
-
+    this.validationRunning = true;
 
     try {
 
       const restoration =
         await Auth.restoreSession();
-
 
       if (
         restoration.success === true &&
@@ -352,56 +323,43 @@ const RoleHome = {
         const user =
           restoration.user;
 
-
         if (
           !user ||
-          user.role !==
-            this.requiredRole
+          user.role !== this.requiredRole
         ) {
 
           this.handleRoleMismatch(
-            user
-              ? user.role
-              : ""
+            user ? user.role : ""
           );
-
 
           return {
             success: false,
-            reason:
-              "ROLE_ACCESS_DENIED"
+            reason: "ROLE_ACCESS_DENIED"
           };
         }
-
 
         this.markSessionValidated(
           localSession
         );
 
-
         this.updateUserDetails(
           user
         );
-
 
         console.log(
           "Background Session Validation: PASS"
         );
 
-
         return {
           success: true,
-          authenticated:
-            true,
-          user:
-            user
+          authenticated: true,
+          user
         };
       }
 
-
       /*
-       * Network failure does not prove that the session
-       * is invalid. Keep the locally authenticated page open.
+       * A temporary transport failure does not
+       * prove that the local session is invalid.
        */
 
       if (
@@ -410,37 +368,31 @@ const RoleHome = {
 
         this.showOfflineMessage();
 
-
         console.warn(
           "Background Session Validation: PENDING"
         );
 
-
         return {
           success: false,
-          retryable:
-            true,
+          retryable: true,
           reason:
             restoration.reason ||
             "SESSION_VALIDATION_PENDING"
         };
       }
 
-
       /*
-       * Expired, revoked or invalid session:
-       * SessionManager has cleared invalid local data.
+       * The backend explicitly rejected,
+       * expired or revoked the session.
        */
 
       this.clearValidationRecord();
-
 
       AppRouter.goToLogin(
         this.requiredRole,
         true,
         window.location.href
       );
-
 
       return {
         success: false,
@@ -452,36 +404,31 @@ const RoleHome = {
     } catch (error) {
 
       if (
-        error.code ===
-          "NETWORK_ERROR" ||
-        error.code ===
-          "REQUEST_TIMEOUT"
+        error.code === "NETWORK_ERROR" ||
+        error.code === "REQUEST_TIMEOUT" ||
+        error.code === "HTTP_ERROR"
       ) {
 
         this.showOfflineMessage();
-
 
         console.warn(
           "Background Session Validation: NETWORK PENDING",
           error
         );
 
-
         return {
           success: false,
-          retryable:
-            true,
+          retryable: true,
           reason:
-            error.code
+            error.code ||
+            "SESSION_VALIDATION_PENDING"
         };
       }
-
 
       console.error(
         "Background Session Validation: FAIL",
         error
       );
-
 
       return {
         success: false,
@@ -492,15 +439,14 @@ const RoleHome = {
 
     } finally {
 
-      this.validationRunning =
-        false;
+      this.validationRunning = false;
     }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * CHECK VALIDATION AGE
+   * VALIDATION AGE
    * ----------------------------------------------------------
    */
 
@@ -513,57 +459,45 @@ const RoleHome = {
         this.VALIDATION_STORAGE_KEY
       );
 
-
     if (
       !record ||
       typeof record !== "object"
     ) {
-
       return true;
     }
-
 
     const currentSessionId =
       localSession.sessionId || "";
 
-
     if (
       !record.sessionId ||
-      record.sessionId !==
-        currentSessionId
+      record.sessionId !== currentSessionId
     ) {
-
       return true;
     }
-
 
     const validatedAt =
       Number(
         record.validatedAt
       );
 
-
     if (
       !Number.isFinite(
         validatedAt
       )
     ) {
-
       return true;
     }
 
-
     return (
-      Date.now() -
-      validatedAt
-    ) >=
-      this.VALIDATION_INTERVAL_MS;
+      Date.now() - validatedAt
+    ) >= this.VALIDATION_INTERVAL_MS;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * SAVE VALIDATION TIME
+   * VALIDATION STORAGE
    * ----------------------------------------------------------
    */
 
@@ -584,12 +518,6 @@ const RoleHome = {
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * CLEAR VALIDATION RECORD
-   * ----------------------------------------------------------
-   */
-
   clearValidationRecord() {
 
     AppStorage.remove(
@@ -600,7 +528,7 @@ const RoleHome = {
 
   /*
    * ----------------------------------------------------------
-   * HANDLE WRONG ROLE
+   * WRONG ROLE HANDLING
    * ----------------------------------------------------------
    */
 
@@ -619,10 +547,8 @@ const RoleHome = {
         true
       );
 
-
       return;
     }
-
 
     AppRouter.goToRoleSelection(
       true
@@ -632,7 +558,7 @@ const RoleHome = {
 
   /*
    * ----------------------------------------------------------
-   * DISPLAY PAGE
+   * DISPLAY PROTECTED PAGE
    * ----------------------------------------------------------
    */
 
@@ -645,139 +571,247 @@ const RoleHome = {
       user
     );
 
+    this.elements.loader.classList.add(
+      "hidden"
+    );
 
-    this.elements.loader
-      .classList.add(
-        "hidden"
-      );
-
-
-    this.elements.content
-      .classList.remove(
-        "hidden"
-      );
-
+    this.elements.content.classList.remove(
+      "hidden"
+    );
 
     if (offline) {
-
       this.showOfflineMessage();
     }
   },
 
 
-  /*
-   * ----------------------------------------------------------
-   * UPDATE USER INFORMATION
-   * ----------------------------------------------------------
-   */
-
   updateUserDetails(user) {
 
-    this.elements.userRole
-      .textContent =
-        user &&
-        user.role
-          ? user.role
-          : this.requiredRole;
+    this.elements.userRole.textContent =
+      user && user.role
+        ? user.role
+        : this.requiredRole;
 
-
-    this.elements.userMobile
-      .textContent =
-        user &&
-        user.mobile
-          ? "+91 " +
-            user.mobile
-          : "Verified user";
+    this.elements.userMobile.textContent =
+      user && user.mobile
+        ? "+91 " + user.mobile
+        : "Verified user";
   },
 
 
   /*
    * ----------------------------------------------------------
-   * OFFLINE MESSAGE
+   * PAGE MESSAGES
    * ----------------------------------------------------------
    */
+
+  showMessage(message) {
+
+    if (!this.elements.message) {
+      return false;
+    }
+
+    this.elements.message.textContent =
+      message || "";
+
+    this.elements.message.classList.remove(
+      "hidden"
+    );
+
+    return true;
+  },
+
+
+  clearMessage() {
+
+    if (!this.elements.message) {
+      return false;
+    }
+
+    this.elements.message.textContent = "";
+
+    this.elements.message.classList.add(
+      "hidden"
+    );
+
+    return true;
+  },
+
 
   showOfflineMessage() {
 
-    this.elements.message
-      .textContent =
-        "Offline mode: some live features may be unavailable.";
-
-
-    this.elements.message
-      .classList.remove(
-        "hidden"
-      );
+    this.showMessage(
+      "Offline mode: some live features may be unavailable."
+    );
   },
 
-
-  /*
-   * ----------------------------------------------------------
-   * SHOW ERROR
-   * ----------------------------------------------------------
-   */
 
   showError(message) {
 
     if (this.elements.loader) {
 
-      this.elements.loader
-        .classList.add(
-          "hidden"
-        );
+      this.elements.loader.classList.add(
+        "hidden"
+      );
     }
 
-
-    if (this.elements.message) {
-
-      this.elements.message
-        .textContent =
-          message;
-
-
-      this.elements.message
-        .classList.remove(
-          "hidden"
-        );
-    }
+    this.showMessage(
+      message
+    );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOGOUT
+   * LOGOUT BUTTON LABEL
+   * ----------------------------------------------------------
+   */
+
+  setLogoutButtonLabel(label) {
+
+    if (this.elements.logoutButtonText) {
+
+      this.elements.logoutButtonText.textContent =
+        label;
+
+      return;
+    }
+
+    this.elements.logoutButton.textContent =
+      label;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * PRIVATE CACHE CLEARING
+   * ----------------------------------------------------------
+   */
+
+  clearPrivateCaches() {
+
+    const privateCacheKeys = [
+      "apnabite_food_partner_dashboard",
+      "apnabite_food_partner_products",
+      "apnabite_home_kitchen_discovery",
+      "apnabite_home_resolved_location"
+    ];
+
+    privateCacheKeys.forEach(
+      (key) => {
+        AppStorage.remove(key);
+      }
+    );
+
+    return true;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * WAIT FOR VISIBLE UI FEEDBACK
+   * ----------------------------------------------------------
+   */
+
+  wait(milliseconds) {
+
+    return new Promise(
+      (resolve) => {
+        window.setTimeout(
+          resolve,
+          milliseconds
+        );
+      }
+    );
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * LOGOUT WITH VISIBLE FEEDBACK
    * ----------------------------------------------------------
    */
 
   async logout() {
 
-    this.elements.logoutButton
-      .disabled =
-        true;
+    if (this.logoutRunning) {
 
+      return {
+        success: false,
+        reason: "LOGOUT_ALREADY_RUNNING"
+      };
+    }
+
+    this.logoutRunning = true;
+
+    const logoutButton =
+      this.elements.logoutButton;
+
+    logoutButton.disabled = true;
+
+    logoutButton.setAttribute(
+      "aria-busy",
+      "true"
+    );
+
+    this.setLogoutButtonLabel(
+      "Logging out..."
+    );
+
+    this.showMessage(
+      "Logging out securely..."
+    );
+
+    let logoutResult = null;
+    let localOnly = false;
 
     try {
 
-      await Auth.logout();
+      logoutResult =
+        await Auth.logout();
+
+      this.showMessage(
+        "Logged out successfully. Redirecting..."
+      );
 
     } catch (error) {
 
       /*
-       * Local logout must still complete if the
-       * backend is temporarily unavailable.
+       * Local logout must still complete if
+       * backend logout is temporarily unavailable.
        */
 
+      localOnly = true;
+
       SessionManager.clear();
+
+      this.showMessage(
+        "Logged out from this device. Redirecting..."
+      );
+
+      console.warn(
+        "Backend logout unavailable; local logout completed.",
+        error
+      );
 
     } finally {
 
       this.clearValidationRecord();
 
-
       AppStorage.remove(
         "apnabite_selected_role"
       );
 
+      this.clearPrivateCaches();
+
+      /*
+       * Allow the success message to become
+       * visible before leaving the page.
+       */
+
+      await this.wait(
+        this.LOGOUT_FEEDBACK_DELAY_MS
+      );
 
       window.location.replace(
         AppRouter.getPublicUrl(
@@ -785,12 +819,19 @@ const RoleHome = {
         )
       );
     }
+
+    return {
+      success: true,
+      loggedOut: true,
+      localOnly,
+      result: logoutResult
+    };
   },
 
 
   /*
    * ----------------------------------------------------------
-   * PERFORMANCE TEST
+   * ROLE ACCESS TEST
    *
    * Browser console:
    * RoleHome.test()
@@ -811,34 +852,26 @@ const RoleHome = {
       "========================================"
     );
 
-
     const localSession =
       SessionManager.get();
 
-
     const user =
       Auth.getUser();
-
 
     const supported =
       AppRouter.isSupportedRole(
         this.requiredRole
       );
 
-
     const contentVisible =
-      !this.elements.content
-        .classList.contains(
-          "hidden"
-        );
-
+      !this.elements.content.classList.contains(
+        "hidden"
+      );
 
     const loaderHidden =
-      this.elements.loader
-        .classList.contains(
-          "hidden"
-        );
-
+      this.elements.loader.classList.contains(
+        "hidden"
+      );
 
     const validationRequired =
       localSession
@@ -847,92 +880,71 @@ const RoleHome = {
           )
         : true;
 
-
-    const passed =
-      supported &&
-      Boolean(localSession) &&
-      Boolean(user) &&
-      user.role ===
-        this.requiredRole &&
-      contentVisible &&
-      loaderHidden;
-
+    const logoutFeedbackSupported =
+      typeof this.setLogoutButtonLabel ===
+        "function" &&
+      typeof this.clearPrivateCaches ===
+        "function" &&
+      Number(this.LOGOUT_FEEDBACK_DELAY_MS) > 0;
 
     const results = [
-
       {
-        test:
-          "Required role supported",
-        expected:
-          true,
-        actual:
-          supported,
-        passed:
-          supported
+        test: "Required role supported",
+        expected: true,
+        actual: supported,
+        passed: supported === true
       },
-
       {
-        test:
-          "Local session available",
-        expected:
-          true,
-        actual:
-          Boolean(localSession),
-        passed:
-          Boolean(localSession)
+        test: "Local session available",
+        expected: true,
+        actual: Boolean(localSession),
+        passed: Boolean(localSession)
       },
-
       {
-        test:
-          "Session role",
-        expected:
-          this.requiredRole,
+        test: "Session role",
+        expected: this.requiredRole,
         actual:
-          user
-            ? user.role
-            : "",
+          user ? user.role : "",
         passed:
           Boolean(
             user &&
-            user.role ===
-              this.requiredRole
+            user.role === this.requiredRole
           )
       },
-
       {
-        test:
-          "Content visible",
-        expected:
-          true,
-        actual:
-          contentVisible,
-        passed:
-          contentVisible
+        test: "Content visible",
+        expected: true,
+        actual: contentVisible,
+        passed: contentVisible === true
       },
-
       {
-        test:
-          "Loader hidden",
-        expected:
-          true,
-        actual:
-          loaderHidden,
+        test: "Loader hidden",
+        expected: true,
+        actual: loaderHidden,
+        passed: loaderHidden === true
+      },
+      {
+        test: "Logout feedback support",
+        expected: true,
+        actual: logoutFeedbackSupported,
         passed:
-          loaderHidden
+          logoutFeedbackSupported === true
       }
     ];
 
+    const passed =
+      results.every(
+        (result) => result.passed
+      );
 
     console.table(
       results
     );
 
-
     console.log(
       "Background Validation Required:",
       validationRequired
     );
-
 
     console.log(
       passed
@@ -940,28 +952,20 @@ const RoleHome = {
         : "Fast Role Access Test: FAIL"
     );
 
-
     return {
-      success:
-        passed,
+      success: passed,
       status:
-        passed
-          ? "PASS"
-          : "FAIL",
+        passed ? "PASS" : "FAIL",
       requiredRole:
         this.requiredRole,
       sessionRole:
-        user
-          ? user.role
-          : "",
-      contentVisible:
-        contentVisible,
-      loaderHidden:
-        loaderHidden,
+        user ? user.role : "",
+      contentVisible,
+      loaderHidden,
       backgroundValidationRequired:
         validationRequired,
-      results:
-        results
+      logoutFeedbackSupported,
+      results
     };
   }
 
@@ -977,7 +981,6 @@ const RoleHome = {
 document.addEventListener(
   "DOMContentLoaded",
   () => {
-
     RoleHome.init();
   }
 );
