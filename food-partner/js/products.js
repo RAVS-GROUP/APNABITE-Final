@@ -3,7 +3,7 @@
  * APNABITE FOOD PARTNER
  * FILE: food-partner/js/products.js
  * PURPOSE: Fast cached Smart Menu management
- * VERSION: 3.0.0
+ * VERSION: 4.0.0
  * ============================================================
  */
 
@@ -61,12 +61,15 @@ const FoodPartnerProducts = {
       summaryAvailable: "summaryAvailableProducts",
       summaryOut: "summaryOutOfStockProducts",
       summaryFeatured: "summaryFeaturedProducts",
+      liveDot: "menuLiveDot",
+      kitchenStatus: "menuKitchenStatus",
       add: "addProductButton",
       emptyAdd: "emptyAddProductButton",
       refresh: "refreshProductsButton",
       retry: "retryProductsButton",
       search: "productSearchInput",
       availabilityFilter: "productAvailabilityFilter",
+      filterTabs: "productFilterTabs",
       updateStatus: "productsUpdateStatus",
       lastUpdated: "productsLastUpdated",
       loading: "productsLoading",
@@ -161,6 +164,18 @@ const FoodPartnerProducts = {
       this.state.searchTimer = window.setTimeout(() => this.render(), this.SEARCH_DEBOUNCE_MS);
     });
     this.elements.availabilityFilter.addEventListener("change", () => this.render());
+    this.elements.filterTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-product-filter]");
+      if (!button) return;
+      const filter = button.dataset.productFilter || "ALL";
+      this.elements.availabilityFilter.value = filter;
+      this.elements.filterTabs.querySelectorAll("[data-product-filter]").forEach((item) => {
+        const selected = item === button;
+        item.classList.toggle("active", selected);
+        item.setAttribute("aria-selected", String(selected));
+      });
+      this.render();
+    });
     this.elements.list.addEventListener("click", (event) => this.handleProductAction(event));
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") this.closeForm();
@@ -293,11 +308,12 @@ const FoodPartnerProducts = {
       (this.state.partner && this.state.partner.businessName) || "Food products";
 
     this.updateSummary();
+    this.updateKitchenStatus();
     const visibleProducts = this.filteredProducts();
     this.elements.list.innerHTML = "";
 
-    visibleProducts.forEach((product) => {
-      this.elements.list.appendChild(this.createCard(product));
+    this.groupProductsByCategory(visibleProducts).forEach((group) => {
+      this.elements.list.appendChild(this.createCategorySection(group));
     });
 
     const hasAllProducts = this.state.products.length > 0;
@@ -336,12 +352,39 @@ const FoodPartnerProducts = {
     this.elements.summaryFeatured.textContent = String(featured);
   },
 
+  updateKitchenStatus() {
+    const status = String(
+      (this.state.partner && this.state.partner.operatingStatus) || ""
+    ).toUpperCase();
+
+    this.elements.liveDot.classList.remove("is-open", "is-closed");
+
+    if (status === "OPEN") {
+      this.elements.liveDot.classList.add("is-open");
+      this.elements.kitchenStatus.textContent = "Kitchen is open";
+      return;
+    }
+
+    if (status === "CLOSED") {
+      this.elements.liveDot.classList.add("is-closed");
+      this.elements.kitchenStatus.textContent = "Kitchen is closed";
+      return;
+    }
+
+    this.elements.kitchenStatus.textContent = "Manage item availability";
+  },
+
   filteredProducts() {
     const query = this.normalize(this.elements.search.value).toLowerCase();
     const availability = this.elements.availabilityFilter.value;
 
     return this.state.products.filter((product) => {
-      if (availability !== "ALL" && product.availabilityStatus !== availability) return false;
+      if (availability === "FEATURED" && product.isFeatured !== true) return false;
+      if (
+        availability !== "ALL" &&
+        availability !== "FEATURED" &&
+        product.availabilityStatus !== availability
+      ) return false;
       if (!query) return true;
 
       const searchable = [
@@ -357,70 +400,160 @@ const FoodPartnerProducts = {
     });
   },
 
+  groupProductsByCategory(products) {
+    const order = [
+      "HOME_FOOD",
+      "MEALS",
+      "TIFFIN",
+      "SNACKS",
+      "BAKERY",
+      "SWEETS",
+      "BEVERAGES",
+      "OTHER"
+    ];
+    const groups = new Map();
+
+    products.forEach((product) => {
+      const category = String(product.category || "OTHER").toUpperCase();
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(product);
+    });
+
+    return Array.from(groups.entries())
+      .sort((first, second) => {
+        const firstIndex = order.indexOf(first[0]);
+        const secondIndex = order.indexOf(second[0]);
+        return (firstIndex < 0 ? 999 : firstIndex) - (secondIndex < 0 ? 999 : secondIndex);
+      })
+      .map(([category, items]) => ({ category, items }));
+  },
+
+  createCategorySection(group) {
+    const section = document.createElement("section");
+    section.className = "menu-category-section";
+    section.dataset.category = group.category;
+
+    const header = document.createElement("div");
+    header.className = "menu-category-header";
+    const heading = document.createElement("div");
+    heading.className = "menu-category-heading";
+    const title = document.createElement("h3");
+    title.textContent = this.categoryLabel(group.category);
+    const copy = document.createElement("p");
+    copy.textContent = group.items.length + (group.items.length === 1 ? " item" : " items");
+    heading.append(title, copy);
+
+    const count = document.createElement("span");
+    count.className = "menu-category-count";
+    count.textContent = String(group.items.length);
+
+    const toggle = document.createElement("button");
+    toggle.className = "menu-category-toggle";
+    toggle.type = "button";
+    toggle.textContent = "⌄";
+    toggle.setAttribute("aria-expanded", "true");
+    toggle.setAttribute("aria-label", "Collapse " + this.categoryLabel(group.category));
+
+    const items = document.createElement("div");
+    items.className = "menu-category-items";
+    group.items.forEach((product) => items.appendChild(this.createCard(product)));
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!expanded));
+      items.classList.toggle("hidden", expanded);
+    });
+
+    header.append(heading, count, toggle);
+    section.append(header, items);
+    return section;
+  },
+
+  categoryLabel(category) {
+    const labels = {
+      HOME_FOOD: "Home Food",
+      MEALS: "Main Course & Meals",
+      TIFFIN: "Thali & Combos",
+      SNACKS: "Snacks & Starters",
+      BAKERY: "Bakery",
+      SWEETS: "Desserts & Sweets",
+      BEVERAGES: "Beverages",
+      OTHER: "Other Items"
+    };
+    return labels[category] || this.pretty(category);
+  },
+
   createCard(product) {
     const card = document.createElement("article");
-    card.className = "product-card" + (product.isFeatured ? " featured" : "");
+    card.className = "menu-product-item" + (product.isFeatured ? " featured" : "");
     card.dataset.productId = product.productId || "";
 
+    const mediaWrap = document.createElement("div");
+    mediaWrap.className = "menu-product-image-wrap";
     const media = this.createProductMedia(product);
+    mediaWrap.appendChild(media);
+    const foodMarker = document.createElement("span");
+    foodMarker.className = "menu-food-marker " +
+      (String(product.foodType || "").toUpperCase() === "NON_VEG" ? "non-veg" : "veg");
+    foodMarker.setAttribute("aria-label", this.pretty(product.foodType || "VEG"));
+    mediaWrap.appendChild(foodMarker);
     const content = document.createElement("div");
-    content.className = "product-card-content";
+    content.className = "menu-product-content";
 
     const title = document.createElement("div");
-    title.className = "card-title";
+    title.className = "menu-product-top";
     const heading = document.createElement("h3");
+    heading.className = "menu-product-title";
     heading.textContent = product.productName || "Unnamed product";
     title.appendChild(heading);
 
     if (product.isFeatured) {
       const badge = document.createElement("span");
-      badge.className = "featured-badge";
-      badge.textContent = "★ FEATURED";
+      badge.className = "menu-featured-label";
+      badge.textContent = "FEATURED";
       title.appendChild(badge);
     }
 
     const description = document.createElement("p");
+    description.className = "menu-product-description";
     description.textContent = product.description || "No description added.";
 
-    const chips = document.createElement("div");
-    chips.className = "variant-chips";
     const variants = Array.isArray(product.variants) ? product.variants : [];
-    variants.forEach((variant) => {
-      const chip = document.createElement("span");
-      const out = variant.availabilityStatus === "OUT_OF_STOCK";
-      chip.textContent =
-        (variant.variantName || "Option") +
-        " ₹" + this.money(variant.price) +
-        (out ? " • Out" : "");
-      chip.classList.toggle("is-out", out);
-      chips.appendChild(chip);
-    });
+    const prices = variants.map((variant) => Number(variant.price)).filter((price) => Number.isFinite(price) && price > 0);
+    const price = document.createElement("strong");
+    price.className = "menu-product-price";
+    price.textContent = prices.length ? "₹" + this.money(Math.min(...prices)) + (prices.length > 1 ? " onwards" : "") : "Price not set";
 
     const meta = document.createElement("div");
-    meta.className = "product-meta";
-    meta.textContent = this.pretty(product.category) + " • " + this.pretty(product.productType);
+    meta.className = "menu-product-meta";
+    const optionMeta = document.createElement("span");
+    optionMeta.textContent = variants.length + (variants.length === 1 ? " option" : " options");
+    const prepMeta = document.createElement("span");
+    prepMeta.textContent = Number(product.preparationTimeMinutes || 0) > 0
+      ? "• " + Number(product.preparationTimeMinutes) + " min"
+      : "";
+    meta.append(optionMeta, prepMeta);
 
     const actions = document.createElement("div");
-    actions.className = "product-actions";
+    actions.className = "menu-product-actions";
     this.addAction(actions, "Edit", "edit", product);
-    this.addAction(
-      actions,
-      product.availabilityStatus === "AVAILABLE" ? "Available" : "Out of stock",
-      "availability",
-      product,
-      product.availabilityStatus === "AVAILABLE" ? "available" : "out"
-    );
-    this.addAction(actions, product.isFeatured ? "★ Unpin" : "☆ Feature", "featured", product, "pin");
-    this.addAction(actions, "Category ↑", "cat-up", product);
-    this.addAction(actions, "Category ↓", "cat-down", product);
+    const availabilityLabel = document.createElement("span");
+    availabilityLabel.className = "menu-availability-control";
+    availabilityLabel.textContent = product.availabilityStatus === "AVAILABLE" ? "Available" : "Unavailable";
+    const availability = document.createElement("button");
+    availability.type = "button";
+    availability.className = "menu-switch" + (product.availabilityStatus === "AVAILABLE" ? " is-available" : "");
+    availability.dataset.action = "availability";
+    availability.dataset.id = product.productId;
+    availability.setAttribute("role", "switch");
+    availability.setAttribute("aria-checked", String(product.availabilityStatus === "AVAILABLE"));
+    availability.setAttribute("aria-label", "Change availability for " + (product.productName || "item"));
+    availabilityLabel.appendChild(availability);
+    actions.appendChild(availabilityLabel);
+    this.addAction(actions, product.isFeatured ? "★" : "☆", "featured", product, "menu-more-button");
 
-    if (product.isFeatured) {
-      this.addAction(actions, "Featured ↑", "feature-up", product);
-      this.addAction(actions, "Featured ↓", "feature-down", product);
-    }
-
-    content.append(title, description, chips, meta, actions);
-    card.append(media, content);
+    content.append(title, description, price, meta, actions);
+    card.append(mediaWrap, content);
     return card;
   },
 
@@ -435,6 +568,7 @@ const FoodPartnerProducts = {
     const image = document.createElement("img");
     image.src = product.imageUrl;
     image.alt = product.productName || "Product";
+    image.className = "menu-product-image";
     image.loading = "lazy";
     image.decoding = "async";
     image.addEventListener("error", () => {
@@ -452,7 +586,11 @@ const FoodPartnerProducts = {
     button.textContent = label;
     button.dataset.action = action;
     button.dataset.id = product.productId;
-    if (className) button.className = className;
+    button.className = className || "menu-edit-button";
+    if (action === "featured") {
+      button.setAttribute("aria-label", product.isFeatured ? "Remove from featured" : "Mark as featured");
+      button.title = product.isFeatured ? "Remove from featured" : "Mark as featured";
+    }
     parent.appendChild(button);
   },
 
@@ -466,12 +604,6 @@ const FoodPartnerProducts = {
     if (action === "edit") return this.openEdit(product);
     if (action === "availability") return this.toggleAvailability(product);
     if (action === "featured") return this.updateOrder(product, "TOGGLE_FEATURED", "");
-    if (action === "cat-up" || action === "cat-down") {
-      return this.updateOrder(product, "MOVE_CATEGORY", action.endsWith("up") ? "UP" : "DOWN");
-    }
-    if (action === "feature-up" || action === "feature-down") {
-      return this.updateOrder(product, "MOVE_FEATURED", action.endsWith("up") ? "UP" : "DOWN");
-    }
   },
 
   openCreate() {
@@ -845,6 +977,8 @@ const FoodPartnerProducts = {
       { test: "18 product types", expected: 18, actual: Object.keys(this.PRESETS).length, passed: Object.keys(this.PRESETS).length === 18 },
       { test: "Dynamic variants", expected: true, actual: Boolean(this.elements.variantRows && this.elements.addVariant), passed: Boolean(this.elements.variantRows && this.elements.addVariant) },
       { test: "Bottom navigation", expected: 4, actual: bottomItems, passed: bottomItems === 4 },
+      { test: "Category grouping", expected: true, actual: typeof this.groupProductsByCategory === "function", passed: typeof this.groupProductsByCategory === "function" },
+      { test: "No category arrow controls", expected: 0, actual: document.querySelectorAll('[data-action="cat-up"], [data-action="cat-down"]').length, passed: document.querySelectorAll('[data-action="cat-up"], [data-action="cat-down"]').length === 0 },
       { test: "Search and filter", expected: true, actual: Boolean(this.elements.search && this.elements.availabilityFilter), passed: Boolean(this.elements.search && this.elements.availabilityFilter) },
       { test: "2 MB image limit", expected: 2097152, actual: this.MAX_IMAGE_BYTES, passed: this.MAX_IMAGE_BYTES === 2097152 }
     ];
