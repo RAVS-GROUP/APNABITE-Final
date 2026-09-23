@@ -1,14 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
   <meta name="theme-color" content="#ef5b00">
-  <meta name="description" content="Manage your ApnaBite Food Partner kitchen">
+
+  <meta
+    name="description"
+    content="Manage your ApnaBite Food Partner kitchen, orders, products and earnings"
+  >
+
   <link rel="manifest" href="../../manifest.json">
-  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
-  <title>Food Partner | ApnaBite</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+  <link
+    rel="icon"
+    type="image/webp"
+    href="../../shared/assets/images/apnabite-logo.webp"
+  >
+
+  <title>Food Partner Dashboard | ApnaBite</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  >
+
   <link rel="stylesheet" href="../../shared/css/reset.css">
   <link rel="stylesheet" href="../../shared/css/variables.css">
   <link rel="stylesheet" href="../../shared/css/common.css">
@@ -18,116 +41,1208 @@
   <link rel="stylesheet" href="../css/dashboard.css">
 </head>
 
+
 <body data-required-role="Food Partner">
+
   <main class="partner-app">
-    <div class="partner-loader" id="roleHomeLoader">
-      <div class="loader-spinner" aria-hidden="true"></div>
+
+    <!-- INITIAL ROLE ACCESS LOADER -->
+
+    <div
+      class="partner-loader"
+      id="roleHomeLoader"
+    >
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
       <p>Opening your Food Partner account...</p>
     </div>
 
-    <div class="partner-content hidden" id="roleHomeContent">
+
+    <!-- PROTECTED FOOD PARTNER CONTENT -->
+
+    <div
+      class="partner-content hidden"
+      id="roleHomeContent"
+    >
+
+      <!-- APP HEADER -->
+
       <header class="partner-header">
-        <div class="partner-brand"><span>A</span><strong>ApnaBite Partner</strong></div>
-        <button class="partner-logout" id="roleLogoutButton" type="button">Logout</button>
+
+        <a
+          class="partner-brand"
+          href="dashboard.html"
+          aria-label="ApnaBite Partner Dashboard"
+        >
+          <span aria-hidden="true">A</span>
+
+          <div>
+            <strong>ApnaBite</strong>
+            <small>Partner</small>
+          </div>
+        </a>
+
+
+        <div class="partner-header-actions">
+
+          <button
+            class="header-icon-button"
+            id="dashboardRefreshButton"
+            type="button"
+            aria-label="Refresh dashboard"
+            title="Refresh dashboard"
+          >
+            ↻
+          </button>
+
+
+          <button
+            class="partner-logout"
+            id="roleLogoutButton"
+            type="button"
+          >
+            <span
+              class="logout-icon"
+              aria-hidden="true"
+            >
+              ↪
+            </span>
+
+            <span id="logoutButtonText">
+              Logout
+            </span>
+          </button>
+
+        </div>
+
       </header>
 
-      <div class="hidden" aria-hidden="true">
+
+      <!-- HIDDEN ROLE ACCESS VALUES -->
+
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
         <span id="roleHomeUserRole"></span>
         <span id="roleHomeUserMobile"></span>
       </div>
 
-      <div class="partner-message hidden" id="roleHomeMessage" role="alert" aria-live="polite"></div>
 
-      <section class="partner-state hidden" id="profileLoadingState">
-        <div class="loader-spinner" aria-hidden="true"></div>
-        <p>Checking your kitchen profile...</p>
-      </section>
+      <!-- GLOBAL PAGE MESSAGE -->
 
-      <section class="onboarding hidden" id="onboardingSection">
-        <div class="onboarding-hero">
-          <span class="eyebrow">FOOD PARTNER ONBOARDING</span>
-          <h1>Let's set up your kitchen</h1>
-          <p>Add accurate business and location details. Your kitchen stays closed until verification and approval.</p>
+      <div
+        class="partner-message hidden"
+        id="roleHomeMessage"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- PROFILE LOADING STATE -->
+
+      <section
+        class="partner-state hidden"
+        id="profileLoadingState"
+      >
+        <div
+          class="dashboard-loading-card"
+          aria-hidden="true"
+        >
+          <div class="dashboard-loading-logo skeleton"></div>
+
+          <div class="dashboard-loading-lines">
+            <div class="skeleton dashboard-loading-line wide"></div>
+            <div class="skeleton dashboard-loading-line medium"></div>
+          </div>
         </div>
 
-        <form id="partnerOnboardingForm" class="partner-form" novalidate>
+        <div
+          class="dashboard-loading-grid"
+          aria-hidden="true"
+        >
+          <div class="skeleton dashboard-loading-stat"></div>
+          <div class="skeleton dashboard-loading-stat"></div>
+          <div class="skeleton dashboard-loading-stat"></div>
+          <div class="skeleton dashboard-loading-stat"></div>
+        </div>
+
+        <p>Loading your kitchen dashboard...</p>
+      </section>
+
+
+      <!-- =====================================================
+           FOOD PARTNER ONBOARDING
+           ===================================================== -->
+
+      <section
+        class="onboarding hidden"
+        id="onboardingSection"
+      >
+
+        <div class="onboarding-hero">
+
+          <span class="eyebrow">
+            FOOD PARTNER ONBOARDING
+          </span>
+
+          <h1>Let's set up your kitchen</h1>
+
+          <p>
+            Add accurate business and location details.
+            Your kitchen stays closed until verification
+            and approval.
+          </p>
+
+        </div>
+
+
+        <form
+          id="partnerOnboardingForm"
+          class="partner-form"
+          novalidate
+        >
+
+          <!-- BUSINESS DETAILS -->
+
           <div class="form-section">
+
             <h2>Business details</h2>
-            <label for="businessNameInput">Kitchen or business name</label>
-            <input id="businessNameInput" type="text" maxlength="120" placeholder="Example: Shubham Home Kitchen" required>
 
-            <label for="businessTypeInput">Business type</label>
-            <select id="businessTypeInput" required>
-              <option value="">Select business type</option>
-              <option value="HOME_KITCHEN">Home Kitchen</option>
-              <option value="CLOUD_KITCHEN">Cloud Kitchen</option>
-              <option value="RESTAURANT">Restaurant</option>
-              <option value="BAKERY">Bakery</option>
-              <option value="SWEET_SHOP">Sweet Shop</option>
-              <option value="OTHER">Other</option>
+            <label for="businessNameInput">
+              Kitchen or business name
+            </label>
+
+            <input
+              id="businessNameInput"
+              type="text"
+              maxlength="120"
+              placeholder="Example: Shubham Home Kitchen"
+              required
+            >
+
+
+            <label for="businessTypeInput">
+              Business type
+            </label>
+
+            <select
+              id="businessTypeInput"
+              required
+            >
+              <option value="">
+                Select business type
+              </option>
+
+              <option value="HOME_KITCHEN">
+                Home Kitchen
+              </option>
+
+              <option value="CLOUD_KITCHEN">
+                Cloud Kitchen
+              </option>
+
+              <option value="RESTAURANT">
+                Restaurant
+              </option>
+
+              <option value="BAKERY">
+                Bakery
+              </option>
+
+              <option value="SWEET_SHOP">
+                Sweet Shop
+              </option>
+
+              <option value="OTHER">
+                Other
+              </option>
             </select>
 
-            <label for="ownerNameInput">Owner name</label>
-            <input id="ownerNameInput" type="text" maxlength="100" autocomplete="name" placeholder="Enter owner name" required>
 
-            <label for="partnerEmailInput">Business email <small>(optional)</small></label>
-            <input id="partnerEmailInput" type="email" maxlength="160" autocomplete="email" placeholder="kitchen@example.com">
+            <label for="ownerNameInput">
+              Owner name
+            </label>
 
-            <label for="foodTypeInput">Food served</label>
-            <select id="foodTypeInput" required>
-              <option value="">Select food type</option>
-              <option value="VEG">Veg only</option>
-              <option value="NON_VEG">Non-Veg only</option>
-              <option value="BOTH">Veg and Non-Veg</option>
+            <input
+              id="ownerNameInput"
+              type="text"
+              maxlength="100"
+              autocomplete="name"
+              placeholder="Enter owner name"
+              required
+            >
+
+
+            <label for="partnerEmailInput">
+              Business email
+              <small>(optional)</small>
+            </label>
+
+            <input
+              id="partnerEmailInput"
+              type="email"
+              maxlength="160"
+              autocomplete="email"
+              placeholder="kitchen@example.com"
+            >
+
+
+            <label for="foodTypeInput">
+              Food served
+            </label>
+
+            <select
+              id="foodTypeInput"
+              required
+            >
+              <option value="">
+                Select food type
+              </option>
+
+              <option value="VEG">
+                Veg only
+              </option>
+
+              <option value="NON_VEG">
+                Non-Veg only
+              </option>
+
+              <option value="BOTH">
+                Veg and Non-Veg
+              </option>
             </select>
 
-            <label for="descriptionInput">About your food <small>(optional)</small></label>
-            <textarea id="descriptionInput" maxlength="500" rows="4" placeholder="Tell customers what makes your food special"></textarea>
+
+            <label for="descriptionInput">
+              About your food
+              <small>(optional)</small>
+            </label>
+
+            <textarea
+              id="descriptionInput"
+              maxlength="500"
+              rows="4"
+              placeholder="Tell customers what makes your food special"
+            ></textarea>
+
           </div>
 
+
+          <!-- LOCATION DETAILS -->
+
           <div class="form-section">
+
             <div class="section-title-row">
-              <div><h2>Exact kitchen location</h2><p>Use current location, then drag the pin to the kitchen entrance.</p></div>
-              <button id="useCurrentLocationButton" class="location-button" type="button">⌖ Current</button>
+
+              <div>
+                <h2>Exact kitchen location</h2>
+
+                <p>
+                  Use current location, then drag the pin
+                  to the kitchen entrance.
+                </p>
+              </div>
+
+
+              <button
+                id="useCurrentLocationButton"
+                class="location-button"
+                type="button"
+              >
+                ⌖ Current
+              </button>
+
             </div>
 
-            <div id="partnerMap" class="partner-map" aria-label="Kitchen location map"></div>
-            <p id="mapStatus" class="field-note">Tap Current or drag the pin to set your kitchen location.</p>
-            <input id="latitudeInput" type="hidden">
-            <input id="longitudeInput" type="hidden">
 
-            <label for="businessAddressInput">Complete business address</label>
-            <textarea id="businessAddressInput" maxlength="300" rows="3" placeholder="House/building, street, area, city and pincode" required></textarea>
+            <div
+              id="partnerMap"
+              class="partner-map"
+              aria-label="Kitchen location map"
+            ></div>
 
-            <label for="districtInput">ApnaBite service district</label>
-            <select id="districtInput" required><option value="">Loading service districts...</option></select>
-            <p class="field-note">Choose the district where the kitchen is physically located.</p>
+
+            <p
+              id="mapStatus"
+              class="field-note"
+            >
+              Tap Current or drag the pin to set your
+              kitchen location.
+            </p>
+
+
+            <input
+              id="latitudeInput"
+              type="hidden"
+            >
+
+            <input
+              id="longitudeInput"
+              type="hidden"
+            >
+
+
+            <label for="businessAddressInput">
+              Complete business address
+            </label>
+
+            <textarea
+              id="businessAddressInput"
+              maxlength="300"
+              rows="3"
+              placeholder="House/building, street, area, city and pincode"
+              required
+            ></textarea>
+
+
+            <label for="districtInput">
+              ApnaBite service district
+            </label>
+
+            <select
+              id="districtInput"
+              required
+            >
+              <option value="">
+                Loading service districts...
+              </option>
+            </select>
+
+
+            <p class="field-note">
+              Choose the district where the kitchen is
+              physically located.
+            </p>
+
           </div>
 
-          <div id="formError" class="form-error hidden" role="alert"></div>
-          <button id="savePartnerButton" class="save-partner-button" type="submit">Submit Kitchen Details</button>
-          <p class="submission-note">Submission does not open the kitchen immediately. KYC and admin approval are required.</p>
+
+          <div
+            id="formError"
+            class="form-error hidden"
+            role="alert"
+          ></div>
+
+
+          <button
+            id="savePartnerButton"
+            class="save-partner-button"
+            type="submit"
+          >
+            Submit Kitchen Details
+          </button>
+
+
+          <p class="submission-note">
+            Submission does not open the kitchen immediately.
+            KYC and Admin approval are required.
+          </p>
+
         </form>
+
       </section>
 
-      <section class="partner-dashboard hidden" id="dashboardSection">
+
+      <!-- =====================================================
+           FOOD PARTNER DASHBOARD
+           ===================================================== -->
+
+      <section
+        class="partner-dashboard hidden"
+        id="dashboardSection"
+      >
+
+        <!-- WELCOME HERO -->
+
         <div class="dashboard-hero">
-          <div><span class="eyebrow">FOOD PARTNER</span><h1 id="dashboardBusinessName">Your Kitchen</h1><p id="dashboardAddress"></p></div>
-          <span class="dashboard-icon" aria-hidden="true">👨‍🍳</span>
+
+          <div class="dashboard-hero-content">
+
+            <div class="dashboard-hero-topline">
+
+              <span class="eyebrow">
+                FOOD PARTNER
+              </span>
+
+              <span
+                class="dashboard-live-badge"
+                id="dashboardLiveBadge"
+              >
+                <i aria-hidden="true"></i>
+                <span>Kitchen status</span>
+              </span>
+
+            </div>
+
+
+            <h1 id="dashboardBusinessName">
+              Your Kitchen
+            </h1>
+
+
+            <p id="dashboardAddress">
+              Loading kitchen address...
+            </p>
+
+
+            <div class="dashboard-rating-row">
+
+              <span aria-hidden="true">★</span>
+
+              <strong id="dashboardRating">
+                New
+              </strong>
+
+              <small id="dashboardFoodType">
+                Food Partner
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <span
+            class="dashboard-icon"
+            aria-hidden="true"
+          >
+            👨‍🍳
+          </span>
+
         </div>
+
+
+        <!-- KYC / APPROVAL / KITCHEN STATUS -->
+
         <div class="status-grid">
-          <article><small>KYC</small><strong id="kycStatus">NOT SUBMITTED</strong></article>
-          <article><small>Approval</small><strong id="approvalStatus">PENDING</strong></article>
-          <article><small>Kitchen</small><strong id="operatingStatus">CLOSED</strong></article>
+
+          <article id="kycStatusCard">
+            <span
+              class="status-card-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+
+            <div>
+              <small>KYC</small>
+              <strong id="kycStatus">NOT SUBMITTED</strong>
+            </div>
+          </article>
+
+
+          <article id="approvalStatusCard">
+            <span
+              class="status-card-icon"
+              aria-hidden="true"
+            >
+              ◉
+            </span>
+
+            <div>
+              <small>Approval</small>
+              <strong id="approvalStatus">PENDING</strong>
+            </div>
+          </article>
+
+
+          <article id="operatingStatusCard">
+            <span
+              class="status-card-icon"
+              aria-hidden="true"
+            >
+              ●
+            </span>
+
+            <div>
+              <small>Kitchen</small>
+              <strong id="operatingStatus">CLOSED</strong>
+            </div>
+          </article>
+
         </div>
-        <a class="next-step-card" id="kycStepCard" href="kyc.html"><span>🔐</span><div><h2 id="kycStepTitle">Next: complete KYC</h2><p id="kycStepCopy">Upload all mandatory documents for verification.</p></div><b aria-hidden="true">›</b></a>
-        <a class="menu-step-card locked" id="menuStepCard" href="products.html" aria-disabled="true"><span>🍽️</span><div><h2>Manage Products</h2><p id="menuStepCopy">Available after KYC verification and Admin approval.</p></div><b aria-hidden="true">›</b></a>
-        <button id="editProfileButton" class="secondary-button" type="button">Edit Kitchen Details</button>
+
+
+        <!-- APPROVAL/KYC WARNING -->
+
+        <div
+          class="dashboard-alert hidden"
+          id="dashboardComplianceAlert"
+          role="status"
+        >
+
+          <span
+            class="dashboard-alert-icon"
+            aria-hidden="true"
+          >
+            !
+          </span>
+
+          <div>
+            <strong id="dashboardAlertTitle">
+              Action required
+            </strong>
+
+            <p id="dashboardAlertMessage">
+              Complete your Food Partner requirements.
+            </p>
+          </div>
+
+          <a
+            id="dashboardAlertLink"
+            href="kyc.html"
+          >
+            Review
+          </a>
+
+        </div>
+
+
+        <!-- DASHBOARD DATA LOADING SKELETON -->
+
+        <div
+          class="dashboard-data-skeleton hidden"
+          id="dashboardDataSkeleton"
+          aria-hidden="true"
+        >
+
+          <div class="skeleton dashboard-metric-skeleton"></div>
+          <div class="skeleton dashboard-metric-skeleton"></div>
+          <div class="skeleton dashboard-metric-skeleton"></div>
+          <div class="skeleton dashboard-metric-skeleton"></div>
+
+        </div>
+
+
+        <!-- EARNINGS -->
+
+        <section
+          class="dashboard-section"
+          aria-labelledby="earningsHeading"
+        >
+
+          <div class="dashboard-section-heading">
+
+            <div>
+              <span class="section-kicker">
+                PERFORMANCE
+              </span>
+
+              <h2 id="earningsHeading">
+                Earnings overview
+              </h2>
+            </div>
+
+
+            <button
+              class="section-refresh-button"
+              id="earningsRefreshButton"
+              type="button"
+            >
+              Refresh
+            </button>
+
+          </div>
+
+
+          <div class="earnings-grid">
+
+            <article class="earning-card earning-card-primary">
+
+              <span
+                class="metric-icon"
+                aria-hidden="true"
+              >
+                ₹
+              </span>
+
+              <div>
+                <small>Today's earnings</small>
+
+                <strong id="todayEarnings">
+                  ₹—
+                </strong>
+
+                <p>Completed earnings today</p>
+              </div>
+
+            </article>
+
+
+            <article class="earning-card">
+
+              <span
+                class="metric-icon"
+                aria-hidden="true"
+              >
+                ◈
+              </span>
+
+              <div>
+                <small>Total earnings</small>
+
+                <strong id="totalEarnings">
+                  ₹—
+                </strong>
+
+                <p>Successful partner earnings</p>
+              </div>
+
+            </article>
+
+
+            <article class="earning-card">
+
+              <span
+                class="metric-icon"
+                aria-hidden="true"
+              >
+                ◷
+              </span>
+
+              <div>
+                <small>Pending earnings</small>
+
+                <strong id="pendingEarnings">
+                  ₹—
+                </strong>
+
+                <p>Awaiting settlement</p>
+              </div>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- ORDERS AND PRODUCTS -->
+
+        <section
+          class="dashboard-section"
+          aria-labelledby="activityHeading"
+        >
+
+          <div class="dashboard-section-heading">
+
+            <div>
+              <span class="section-kicker">
+                BUSINESS
+              </span>
+
+              <h2 id="activityHeading">
+                Kitchen activity
+              </h2>
+            </div>
+
+          </div>
+
+
+          <div class="metrics-grid">
+
+            <article class="metric-card">
+
+              <span
+                class="metric-card-icon today"
+                aria-hidden="true"
+              >
+                ▣
+              </span>
+
+              <small>Today orders</small>
+
+              <strong id="todayOrders">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="metric-card">
+
+              <span
+                class="metric-card-icon process"
+                aria-hidden="true"
+              >
+                ◷
+              </span>
+
+              <small>In process</small>
+
+              <strong id="inProcessOrders">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="metric-card">
+
+              <span
+                class="metric-card-icon delivered"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+
+              <small>Delivered</small>
+
+              <strong id="deliveredOrders">
+                —
+              </strong>
+
+            </article>
+
+
+            <article class="metric-card">
+
+              <span
+                class="metric-card-icon products"
+                aria-hidden="true"
+              >
+                🍽
+              </span>
+
+              <small>Products</small>
+
+              <strong id="totalProducts">
+                —
+              </strong>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+        <!-- DASHBOARD TABS -->
+
+        <section class="dashboard-tabs-section">
+
+          <div
+            class="dashboard-tabs"
+            id="dashboardTabs"
+            role="tablist"
+            aria-label="Food Partner dashboard sections"
+          >
+
+            <button
+              class="dashboard-tab active"
+              id="overviewTabButton"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="overviewTabPanel"
+              data-dashboard-tab="overview"
+            >
+              Overview
+            </button>
+
+
+            <button
+              class="dashboard-tab"
+              id="ordersTabButton"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="ordersTabPanel"
+              data-dashboard-tab="orders"
+            >
+              Orders
+            </button>
+
+
+            <button
+              class="dashboard-tab"
+              id="productsTabButton"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="productsTabPanel"
+              data-dashboard-tab="products"
+            >
+              Products
+            </button>
+
+
+            <button
+              class="dashboard-tab"
+              id="profileTabButton"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="profileTabPanel"
+              data-dashboard-tab="profile"
+            >
+              Profile
+            </button>
+
+          </div>
+
+
+          <!-- OVERVIEW TAB -->
+
+          <div
+            class="dashboard-tab-panel"
+            id="overviewTabPanel"
+            role="tabpanel"
+            aria-labelledby="overviewTabButton"
+            data-dashboard-panel="overview"
+          >
+
+            <div class="tab-panel-heading">
+
+              <div>
+                <h2>Recent orders</h2>
+
+                <p>
+                  Latest orders received by your kitchen.
+                </p>
+              </div>
+
+
+              <button
+                class="text-action-button"
+                id="viewAllOrdersButton"
+                type="button"
+              >
+                View all
+              </button>
+
+            </div>
+
+
+            <div
+              class="recent-orders-list"
+              id="recentOrdersList"
+            >
+
+              <div class="recent-orders-empty">
+
+                <span aria-hidden="true">🧾</span>
+
+                <strong>No orders yet</strong>
+
+                <p>
+                  New customer orders will appear here.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ORDERS TAB -->
+
+          <div
+            class="dashboard-tab-panel hidden"
+            id="ordersTabPanel"
+            role="tabpanel"
+            aria-labelledby="ordersTabButton"
+            data-dashboard-panel="orders"
+          >
+
+            <div class="tab-panel-heading">
+
+              <div>
+                <h2>Order summary</h2>
+
+                <p>
+                  Current order activity for this kitchen.
+                </p>
+              </div>
+
+            </div>
+
+
+            <div class="tab-summary-grid">
+
+              <article>
+                <small>Total orders</small>
+                <strong id="totalOrders">—</strong>
+              </article>
+
+              <article>
+                <small>Today</small>
+                <strong id="ordersTabToday">—</strong>
+              </article>
+
+              <article>
+                <small>In process</small>
+                <strong id="ordersTabInProcess">—</strong>
+              </article>
+
+              <article>
+                <small>Delivered</small>
+                <strong id="ordersTabDelivered">—</strong>
+              </article>
+
+              <article>
+                <small>Cancelled</small>
+                <strong id="cancelledOrders">—</strong>
+              </article>
+
+            </div>
+
+          </div>
+
+
+          <!-- PRODUCTS TAB -->
+
+          <div
+            class="dashboard-tab-panel hidden"
+            id="productsTabPanel"
+            role="tabpanel"
+            aria-labelledby="productsTabButton"
+            data-dashboard-panel="products"
+          >
+
+            <div class="tab-panel-heading">
+
+              <div>
+                <h2>Product summary</h2>
+
+                <p>
+                  Product availability across your menu.
+                </p>
+              </div>
+
+
+              <a
+                class="text-action-link"
+                href="products.html"
+              >
+                Manage
+              </a>
+
+            </div>
+
+
+            <div class="tab-summary-grid">
+
+              <article>
+                <small>Total products</small>
+                <strong id="productsTabTotal">—</strong>
+              </article>
+
+              <article>
+                <small>Active</small>
+                <strong id="activeProducts">—</strong>
+              </article>
+
+              <article>
+                <small>Available</small>
+                <strong id="availableProducts">—</strong>
+              </article>
+
+              <article>
+                <small>Out of stock</small>
+                <strong id="outOfStockProducts">—</strong>
+              </article>
+
+            </div>
+
+
+            <a
+              class="dashboard-primary-link"
+              id="menuStepCard"
+              href="products.html"
+              aria-disabled="true"
+            >
+              <span aria-hidden="true">🍽️</span>
+
+              <div>
+                <h2>Manage Products</h2>
+
+                <p id="menuStepCopy">
+                  Available after KYC verification and
+                  Admin approval.
+                </p>
+              </div>
+
+              <b aria-hidden="true">›</b>
+            </a>
+
+          </div>
+
+
+          <!-- PROFILE / KYC TAB -->
+
+          <div
+            class="dashboard-tab-panel hidden"
+            id="profileTabPanel"
+            role="tabpanel"
+            aria-labelledby="profileTabButton"
+            data-dashboard-panel="profile"
+          >
+
+            <div class="tab-panel-heading">
+
+              <div>
+                <h2>Kitchen profile</h2>
+
+                <p>
+                  Verification, business and profile controls.
+                </p>
+              </div>
+
+            </div>
+
+
+            <a
+              class="profile-action-card"
+              id="kycStepCard"
+              href="kyc.html"
+            >
+              <span aria-hidden="true">🔐</span>
+
+              <div>
+                <h2 id="kycStepTitle">
+                  Next: complete KYC
+                </h2>
+
+                <p id="kycStepCopy">
+                  Upload all mandatory documents for verification.
+                </p>
+              </div>
+
+              <b aria-hidden="true">›</b>
+            </a>
+
+
+            <button
+              id="editProfileButton"
+              class="profile-action-card profile-action-button"
+              type="button"
+            >
+              <span aria-hidden="true">✎</span>
+
+              <div>
+                <h2>Edit Kitchen Details</h2>
+
+                <p>
+                  Update business, food and location information.
+                </p>
+              </div>
+
+              <b aria-hidden="true">›</b>
+            </button>
+
+
+            <div class="profile-information-card">
+
+              <div>
+                <small>Owner</small>
+                <strong id="dashboardOwnerName">—</strong>
+              </div>
+
+              <div>
+                <small>Commission rate</small>
+                <strong id="dashboardCommissionRate">—</strong>
+              </div>
+
+              <div>
+                <small>Partner ID</small>
+                <strong id="dashboardChefId">—</strong>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- LAST UPDATED -->
+
+        <p
+          class="dashboard-updated-time"
+          id="dashboardUpdatedTime"
+          aria-live="polite"
+        >
+          Dashboard data has not been refreshed yet.
+        </p>
+
       </section>
+
+
+      <!-- =====================================================
+           MOBILE BOTTOM NAVIGATION
+           ===================================================== -->
+
+      <nav
+        class="partner-bottom-navigation hidden"
+        id="partnerBottomNavigation"
+        aria-label="Food Partner navigation"
+      >
+
+        <button
+          class="partner-nav-item active"
+          type="button"
+          data-dashboard-tab-target="overview"
+          aria-label="Dashboard"
+        >
+          <span aria-hidden="true">⌂</span>
+          <small>Home</small>
+        </button>
+
+
+        <button
+          class="partner-nav-item"
+          type="button"
+          data-dashboard-tab-target="orders"
+          aria-label="Orders"
+        >
+          <span aria-hidden="true">▣</span>
+          <small>Orders</small>
+        </button>
+
+
+        <a
+          class="partner-nav-item"
+          href="products.html"
+          aria-label="Products"
+        >
+          <span aria-hidden="true">🍽</span>
+          <small>Products</small>
+        </a>
+
+
+        <button
+          class="partner-nav-item"
+          type="button"
+          data-dashboard-tab-target="profile"
+          aria-label="Profile and KYC"
+        >
+          <span aria-hidden="true">♙</span>
+          <small>Profile</small>
+        </button>
+
+      </nav>
+
     </div>
+
   </main>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- LEAFLET MAP -->
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+
+
+  <!-- SHARED APPLICATION SERVICES -->
+
   <script src="../../shared/js/storage.js"></script>
   <script src="../../shared/js/cache.js"></script>
   <script src="../../shared/js/api.js"></script>
@@ -137,8 +1252,13 @@
   <script src="../../shared/js/service-location.js"></script>
   <script src="../../shared/js/app-router.js"></script>
   <script src="../../shared/js/role-home.js"></script>
+
+
+  <!-- FOOD PARTNER DASHBOARD -->
+
   <script src="../js/dashboard.js"></script>
   <script src="../js/kitchen-status.js"></script>
-  
+
 </body>
+
 </html>
