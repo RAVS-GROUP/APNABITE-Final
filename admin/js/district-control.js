@@ -1,0 +1,4433 @@
+/**
+ * ============================================================
+ * APNABITE ADMIN
+ * FILE: admin/js/district-control.js
+ * PURPOSE: Pan-India state and district service management
+ * VERSION: 1.0.0
+ * ============================================================
+ */
+
+
+const AdminDistrictControl = {
+
+
+  /*
+   * ==========================================================
+   * CONFIGURATION
+   * ==========================================================
+   */
+
+  CONFIG: {
+
+    API_TIMEOUT_MS: 30000,
+
+    SEARCH_DELAY_MS: 300,
+
+    ACTIONS: {
+
+      GET_GEOGRAPHY:
+        "admin_get_service_geography",
+
+      SET_STATE_STATUS:
+        "admin_set_state_service_status",
+
+      SET_DISTRICT_STATUS:
+        "admin_set_district_service_status",
+
+      BULK_SET_DISTRICT_STATUS:
+        "admin_bulk_set_district_status",
+
+      UPDATE_DISTRICT_RULES:
+        "admin_update_district_service_rules"
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * APPLICATION STATE
+   * ==========================================================
+   */
+
+  state: {
+
+    initialized: false,
+
+    loading: false,
+
+    districtLoading: false,
+
+    summary: {},
+
+    states: [],
+
+    filteredStates: [],
+
+    selectedState: null,
+
+    districts: [],
+
+    filteredDistricts: [],
+
+    selectedDistrictIds: new Set(),
+
+    selectedDistrict: null,
+
+    pendingAction: null,
+
+    stateSearchTimer: null,
+
+    districtSearchTimer: null
+
+  },
+
+
+  /*
+   * ==========================================================
+   * CACHED PAGE ELEMENTS
+   * ==========================================================
+   */
+
+  elements: {},
+
+
+  /*
+   * ==========================================================
+   * INITIALIZATION
+   * ==========================================================
+   */
+
+  init: async function() {
+
+    if (this.state.initialized) {
+      return;
+    }
+
+    this.cacheElements();
+
+    if (!this.elements.pageContent) {
+      console.error(
+        "District Control page elements are unavailable."
+      );
+
+      return;
+    }
+
+    this.state.initialized = true;
+
+    this.bindEvents();
+
+    const session = this.getSession();
+
+    if (
+      !session ||
+      !session.sessionId
+    ) {
+
+      this.showPageError(
+        "Your Admin session is unavailable. Please login again."
+      );
+
+      this.showContent();
+
+      return;
+    }
+
+    await this.loadGeography();
+
+  },
+
+
+  /*
+   * ==========================================================
+   * ELEMENT CACHE
+   * ==========================================================
+   */
+
+  cacheElements: function() {
+
+    const byId = (id) =>
+      document.getElementById(id);
+
+
+    this.elements = {
+
+      pageSkeleton:
+        byId("geographyPageSkeleton"),
+
+      pageContent:
+        byId("geographyPageContent"),
+
+      pageMessage:
+        byId("geographyPageMessage"),
+
+      refreshButton:
+        byId("refreshGeographyButton"),
+
+      mobileLogoutButton:
+        byId("geographyMobileLogoutButton"),
+
+      lastUpdated:
+        byId("geographyLastUpdated"),
+
+
+      totalStates:
+        byId("totalStatesValue"),
+
+      activeStates:
+        byId("activeStatesValue"),
+
+      inactiveStates:
+        byId("inactiveStatesValue"),
+
+      totalDistricts:
+        byId("totalDistrictsValue"),
+
+      activeDistricts:
+        byId("activeDistrictsValue"),
+
+      inactiveDistricts:
+        byId("inactiveDistrictsValue"),
+
+      effectiveActiveDistricts:
+        byId("effectiveActiveDistrictsValue"),
+
+      comingSoonDistricts:
+        byId("comingSoonDistrictsValue"),
+
+
+      stateSearchInput:
+        byId("stateSearchInput"),
+
+      stateStatusFilter:
+        byId("stateStatusFilter"),
+
+      clearStateFiltersButton:
+        byId("clearStateFiltersButton"),
+
+      visibleStatesCount:
+        byId("visibleStatesCount"),
+
+      stateList:
+        byId("stateList"),
+
+      stateEmptyState:
+        byId("stateEmptyState"),
+
+
+      districtPanel:
+        byId("districtPanel"),
+
+      districtPanelBackdrop:
+        byId("districtPanelBackdrop"),
+
+      closeDistrictPanelButton:
+        byId("closeDistrictPanelButton"),
+
+      selectedStateName:
+        byId("selectedStateName"),
+
+      selectedStateMeta:
+        byId("selectedStateMeta"),
+
+      selectedStateStatusBadge:
+        byId("selectedStateStatusBadge"),
+
+      selectedStateControlName:
+        byId("selectedStateControlName"),
+
+      selectedStateControlCode:
+        byId("selectedStateControlCode"),
+
+      stateStatusButton:
+        byId("stateStatusButton"),
+
+      selectedStateDistrictCount:
+        byId("selectedStateDistrictCount"),
+
+      selectedStateActiveCount:
+        byId("selectedStateActiveCount"),
+
+      selectedStateEffectiveCount:
+        byId("selectedStateEffectiveCount"),
+
+
+      districtSearchInput:
+        byId("districtSearchInput"),
+
+      districtStatusFilter:
+        byId("districtStatusFilter"),
+
+      selectAllDistrictsCheckbox:
+        byId("selectAllDistrictsCheckbox"),
+
+      bulkActivateButton:
+        byId("bulkActivateDistrictsButton"),
+
+      bulkDeactivateButton:
+        byId("bulkDeactivateDistrictsButton"),
+
+      districtLoading:
+        byId("districtLoading"),
+
+      districtError:
+        byId("districtError"),
+
+      districtList:
+        byId("districtList"),
+
+      districtEmptyState:
+        byId("districtEmptyState"),
+
+
+      serviceStatusDialog:
+        byId("serviceStatusDialog"),
+
+      serviceStatusDialogTitle:
+        byId("serviceStatusDialogTitle"),
+
+      serviceStatusDialogDescription:
+        byId("serviceStatusDialogDescription"),
+
+      serviceStatusReasonInput:
+        byId("serviceStatusReasonInput"),
+
+      serviceStatusDialogError:
+        byId("serviceStatusDialogError"),
+
+      cancelServiceStatusButton:
+        byId("cancelServiceStatusButton"),
+
+      confirmServiceStatusButton:
+        byId("confirmServiceStatusButton"),
+
+
+      districtRulesDialog:
+        byId("districtRulesDialog"),
+
+      districtRulesTitle:
+        byId("districtRulesTitle"),
+
+      districtRulesId:
+        byId("districtRulesId"),
+
+      districtServiceRadiusInput:
+        byId("districtServiceRadiusInput"),
+
+      districtDeliveryFeeInput:
+        byId("districtDeliveryFeeInput"),
+
+      districtMinimumDeliveryFeeInput:
+        byId("districtMinimumDeliveryFeeInput"),
+
+      districtLongDistanceInput:
+        byId("districtLongDistanceInput"),
+
+      districtRulesReasonInput:
+        byId("districtRulesReasonInput"),
+
+      districtRulesError:
+        byId("districtRulesError"),
+
+      cancelDistrictRulesButton:
+        byId("cancelDistrictRulesButton"),
+
+      saveDistrictRulesButton:
+        byId("saveDistrictRulesButton")
+
+    };
+
+  },
+
+
+  /*
+   * ==========================================================
+   * EVENT BINDING
+   * ==========================================================
+   */
+
+  bindEvents: function() {
+
+    const elements =
+      this.elements;
+
+
+    if (elements.refreshButton) {
+
+      elements.refreshButton.addEventListener(
+        "click",
+        () => this.loadGeography(true)
+      );
+
+    }
+
+
+    if (elements.mobileLogoutButton) {
+
+      elements.mobileLogoutButton.addEventListener(
+        "click",
+        () => {
+
+          const desktopLogout =
+            document.getElementById(
+              "roleLogoutButton"
+            );
+
+          if (desktopLogout) {
+            desktopLogout.click();
+          }
+
+        }
+      );
+
+    }
+
+
+    if (elements.stateSearchInput) {
+
+      elements.stateSearchInput.addEventListener(
+        "input",
+        () => {
+
+          clearTimeout(
+            this.state.stateSearchTimer
+          );
+
+          this.state.stateSearchTimer =
+            setTimeout(
+              () => this.applyStateFilters(),
+              this.CONFIG.SEARCH_DELAY_MS
+            );
+
+        }
+      );
+
+    }
+
+
+    if (elements.stateStatusFilter) {
+
+      elements.stateStatusFilter.addEventListener(
+        "change",
+        () => this.applyStateFilters()
+      );
+
+    }
+
+
+    if (elements.clearStateFiltersButton) {
+
+      elements.clearStateFiltersButton.addEventListener(
+        "click",
+        () => this.clearStateFilters()
+      );
+
+    }
+
+
+    if (elements.stateList) {
+
+      elements.stateList.addEventListener(
+        "click",
+        (event) =>
+          this.handleStateListClick(event)
+      );
+
+    }
+
+
+    if (elements.districtPanelBackdrop) {
+
+      elements.districtPanelBackdrop.addEventListener(
+        "click",
+        () => this.closeDistrictPanel()
+      );
+
+    }
+
+
+    if (elements.closeDistrictPanelButton) {
+
+      elements.closeDistrictPanelButton.addEventListener(
+        "click",
+        () => this.closeDistrictPanel()
+      );
+
+    }
+
+
+    if (elements.stateStatusButton) {
+
+      elements.stateStatusButton.addEventListener(
+        "click",
+        () => this.requestStateStatusChange()
+      );
+
+    }
+
+
+    if (elements.districtSearchInput) {
+
+      elements.districtSearchInput.addEventListener(
+        "input",
+        () => {
+
+          clearTimeout(
+            this.state.districtSearchTimer
+          );
+
+          this.state.districtSearchTimer =
+            setTimeout(
+              () => this.applyDistrictFilters(),
+              this.CONFIG.SEARCH_DELAY_MS
+            );
+
+        }
+      );
+
+    }
+
+
+    if (elements.districtStatusFilter) {
+
+      elements.districtStatusFilter.addEventListener(
+        "change",
+        () => this.applyDistrictFilters()
+      );
+
+    }
+
+
+    if (elements.selectAllDistrictsCheckbox) {
+
+      elements.selectAllDistrictsCheckbox.addEventListener(
+        "change",
+        (event) =>
+          this.toggleAllVisibleDistricts(
+            event.target.checked
+          )
+      );
+
+    }
+
+
+    if (elements.bulkActivateButton) {
+
+      elements.bulkActivateButton.addEventListener(
+        "click",
+        () =>
+          this.requestBulkDistrictStatusChange(
+            "ACTIVE"
+          )
+      );
+
+    }
+
+
+    if (elements.bulkDeactivateButton) {
+
+      elements.bulkDeactivateButton.addEventListener(
+        "click",
+        () =>
+          this.requestBulkDistrictStatusChange(
+            "INACTIVE"
+          )
+      );
+
+    }
+
+
+    if (elements.districtList) {
+
+      elements.districtList.addEventListener(
+        "click",
+        (event) =>
+          this.handleDistrictListClick(event)
+      );
+
+      elements.districtList.addEventListener(
+        "change",
+        (event) =>
+          this.handleDistrictSelectionChange(event)
+      );
+
+    }
+
+
+    if (elements.cancelServiceStatusButton) {
+
+      elements.cancelServiceStatusButton.addEventListener(
+        "click",
+        () => this.closeStatusDialog()
+      );
+
+    }
+
+
+    if (elements.confirmServiceStatusButton) {
+
+      elements.confirmServiceStatusButton.addEventListener(
+        "click",
+        () => this.confirmStatusAction()
+      );
+
+    }
+
+
+    if (elements.cancelDistrictRulesButton) {
+
+      elements.cancelDistrictRulesButton.addEventListener(
+        "click",
+        () => this.closeRulesDialog()
+      );
+
+    }
+
+
+    if (elements.saveDistrictRulesButton) {
+
+      elements.saveDistrictRulesButton.addEventListener(
+        "click",
+        () => this.saveDistrictRules()
+      );
+
+    }
+
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (event.key !== "Escape") {
+          return;
+        }
+
+        if (
+          elements.serviceStatusDialog &&
+          !elements.serviceStatusDialog.classList
+            .contains("hidden")
+        ) {
+
+          this.closeStatusDialog();
+
+          return;
+        }
+
+        if (
+          elements.districtRulesDialog &&
+          !elements.districtRulesDialog.classList
+            .contains("hidden")
+        ) {
+
+          this.closeRulesDialog();
+
+          return;
+        }
+
+        if (
+          elements.districtPanel &&
+          !elements.districtPanel.classList
+            .contains("hidden")
+        ) {
+
+          this.closeDistrictPanel();
+
+        }
+
+      }
+    );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * SESSION
+   * ==========================================================
+   */
+
+  getSession: function() {
+
+    if (
+      typeof SessionManager === "undefined" ||
+      typeof SessionManager.get !== "function"
+    ) {
+
+      return null;
+    }
+
+    return SessionManager.get();
+
+  },
+
+
+  getSessionId: function() {
+
+    const session =
+      this.getSession();
+
+    return session &&
+      session.sessionId
+        ? session.sessionId
+        : "";
+
+  },
+
+
+  /*
+   * ==========================================================
+   * API REQUEST WRAPPER
+   * ==========================================================
+   */
+
+  request: async function(
+    action,
+    payload
+  ) {
+
+    if (
+      typeof API === "undefined" ||
+      typeof API.request !== "function"
+    ) {
+
+      throw new Error(
+        "API service is unavailable."
+      );
+
+    }
+
+    const response =
+      await API.request(
+        action,
+        payload,
+        {
+          timeoutMs:
+            this.CONFIG.API_TIMEOUT_MS
+        }
+      );
+
+    if (
+      !response ||
+      response.success !== true
+    ) {
+
+      throw new Error(
+        this.extractErrorMessage(
+          response
+        )
+      );
+
+    }
+
+    const data =
+      response.data || {};
+
+    if (data.success === false) {
+
+      throw new Error(
+        this.extractErrorMessage(
+          data
+        )
+      );
+
+    }
+
+    return {
+      response: response,
+      data: data
+    };
+
+  },
+
+
+  extractErrorMessage: function(result) {
+
+    if (!result) {
+      return "The request could not be completed.";
+    }
+
+    if (
+      result.error &&
+      result.error.message
+    ) {
+
+      return String(
+        result.error.message
+      );
+
+    }
+
+    if (
+      result.error &&
+      result.error.code
+    ) {
+
+      return String(
+        result.error.code
+      );
+
+    }
+
+    if (result.message) {
+      return String(result.message);
+    }
+
+    if (result.reason) {
+
+      return this.getReasonMessage(
+        result.reason
+      );
+
+    }
+
+    return "The request could not be completed.";
+
+  },
+
+
+  getReasonMessage: function(reason) {
+
+    const messages = {
+
+      INVALID_SESSION:
+        "Your session is not valid. Please login again.",
+
+      SESSION_NOT_FOUND:
+        "Your session was not found. Please login again.",
+
+      SESSION_EXPIRED:
+        "Your session has expired. Please login again.",
+
+      SESSION_NOT_ACTIVE:
+        "Your session is no longer active. Please login again.",
+
+      ADMIN_ACCESS_REQUIRED:
+        "Admin access is required.",
+
+      STATE_CODE_REQUIRED:
+        "State code is required.",
+
+      STATE_NOT_FOUND:
+        "The selected state was not found.",
+
+      DISTRICT_ID_REQUIRED:
+        "District ID is required.",
+
+      DISTRICT_NOT_FOUND:
+        "The selected district was not found.",
+
+      INVALID_SERVICE_STATUS:
+        "Service status must be Active or Inactive.",
+
+      STATE_NOT_ACTIVE:
+        "Activate the parent state before activating this district.",
+
+      CHANGE_REASON_REQUIRED:
+        "Enter a valid reason for this change.",
+
+      DISTRICT_IDS_REQUIRED:
+        "Select at least one district.",
+
+      INVALID_SERVICE_RADIUS:
+        "Enter a valid service radius.",
+
+      INVALID_DELIVERY_FEE:
+        "Enter a valid delivery fee per kilometre.",
+
+      INVALID_MINIMUM_DELIVERY_FEE:
+        "Enter a valid minimum delivery fee.",
+
+      GEOGRAPHY_WRITE_BUSY:
+        "Another geography update is running. Please try again.",
+
+      GEOGRAPHY_UPDATE_FAILED:
+        "Service geography could not be updated."
+
+    };
+
+    return messages[reason] ||
+      String(reason || "Request failed.")
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(
+          /\b\w/g,
+          (character) =>
+            character.toUpperCase()
+        );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * INITIAL GEOGRAPHY LOAD
+   * ==========================================================
+   */
+
+  loadGeography: async function(
+    forceRefresh
+  ) {
+
+    if (this.state.loading) {
+      return;
+    }
+
+    this.state.loading = true;
+
+    this.setRefreshLoading(true);
+
+    this.clearPageMessage();
+
+    if (!forceRefresh) {
+      this.showSkeleton();
+    }
+
+    try {
+
+      const requestResult =
+        await this.request(
+          this.CONFIG.ACTIONS
+            .GET_GEOGRAPHY,
+          {
+            sessionId:
+              this.getSessionId(),
+
+            filters: {
+
+              query: "",
+
+              serviceStatus:
+                "ALL",
+
+              stateCode:
+                "",
+
+              includeDistricts:
+                false
+
+            }
+          }
+        );
+
+      const data =
+        requestResult.data || {};
+
+      this.state.summary =
+        this.normalizeSummary(
+          data.summary || {}
+        );
+
+      this.state.states =
+        this.normalizeStates(
+          data.states || []
+        );
+
+      this.renderSummary();
+
+      this.applyStateFilters();
+
+      this.updateLastUpdated(
+        data.generatedAt
+      );
+
+      this.showContent();
+
+      if (forceRefresh) {
+
+        this.showPageSuccess(
+          "Service geography refreshed successfully."
+        );
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Admin geography load failed:",
+        error
+      );
+
+      this.showContent();
+
+      this.showPageError(
+        error &&
+        error.message
+          ? error.message
+          : "Service geography could not be loaded."
+      );
+
+    } finally {
+
+      this.state.loading = false;
+
+      this.setRefreshLoading(false);
+
+    }
+
+  },
+
+
+  normalizeSummary: function(summary) {
+
+    return {
+
+      totalStates:
+        this.toNumber(
+          summary.totalStates
+        ),
+
+      activeStates:
+        this.toNumber(
+          summary.activeStates
+        ),
+
+      inactiveStates:
+        this.toNumber(
+          summary.inactiveStates
+        ),
+
+      totalDistricts:
+        this.toNumber(
+          summary.totalDistricts
+        ),
+
+      activeDistricts:
+        this.toNumber(
+          summary.activeDistricts
+        ),
+
+      inactiveDistricts:
+        this.toNumber(
+          summary.inactiveDistricts
+        ),
+
+      effectiveActiveDistricts:
+        this.toNumber(
+          summary.effectiveActiveDistricts
+        ),
+
+      comingSoonDistricts:
+        this.toNumber(
+          summary.comingSoonDistricts
+        )
+
+    };
+
+  },
+
+
+  normalizeStates: function(states) {
+
+    if (!Array.isArray(states)) {
+      return [];
+    }
+
+    return states
+      .map(
+        (state) =>
+          this.normalizeState(state)
+      )
+      .filter(
+        (state) =>
+          Boolean(state.stateCode)
+      )
+      .sort(
+        (first, second) =>
+          first.stateName.localeCompare(
+            second.stateName
+          )
+      );
+
+  },
+
+
+  normalizeState: function(state) {
+
+    const counts =
+      state.districtCounts || {};
+
+    return {
+
+      stateId:
+        String(
+          state.stateId ||
+          state.StateID ||
+          ""
+        ).trim(),
+
+      stateCode:
+        String(
+          state.stateCode ||
+          state.lgdStateCode ||
+          state.LGDStateCode ||
+          state.StateCode ||
+          ""
+        ).trim(),
+
+      stateName:
+        String(
+          state.stateName ||
+          state.name ||
+          state.State ||
+          state.StateName ||
+          "Unnamed state"
+        ).trim(),
+
+      serviceStatus:
+        this.normalizeStatus(
+          state.serviceStatus ||
+          state.ServiceStatus ||
+          state.status ||
+          state.Status
+        ),
+
+      customerVisibility:
+        String(
+          state.customerVisibility ||
+          state.CustomerVisibility ||
+          ""
+        ).trim(),
+
+      activationNote:
+        String(
+          state.activationNote ||
+          state.ActivationNote ||
+          ""
+        ).trim(),
+
+      updatedAt:
+        String(
+          state.updatedAt ||
+          state.UpdatedAt ||
+          ""
+        ).trim(),
+
+      districtCounts: {
+
+        total:
+          this.toNumber(
+            counts.total !== undefined
+              ? counts.total
+              : state.totalDistricts
+          ),
+
+        active:
+          this.toNumber(
+            counts.active !== undefined
+              ? counts.active
+              : state.activeDistricts
+          ),
+
+        inactive:
+          this.toNumber(
+            counts.inactive !== undefined
+              ? counts.inactive
+              : state.inactiveDistricts
+          ),
+
+        effectiveActive:
+          this.toNumber(
+            counts.effectiveActive !== undefined
+              ? counts.effectiveActive
+              : state.effectiveActiveDistricts
+          ),
+
+        comingSoon:
+          this.toNumber(
+            counts.comingSoon !== undefined
+              ? counts.comingSoon
+              : state.comingSoonDistricts
+          )
+
+      }
+
+    };
+
+  },
+
+
+  normalizeDistricts: function(districts) {
+
+    if (!Array.isArray(districts)) {
+      return [];
+    }
+
+    return districts
+      .map(
+        (district) =>
+          this.normalizeDistrict(
+            district
+          )
+      )
+      .filter(
+        (district) =>
+          Boolean(district.districtId)
+      )
+      .sort(
+        (first, second) =>
+          first.districtName.localeCompare(
+            second.districtName
+          )
+      );
+
+  },
+
+
+  normalizeDistrict: function(district) {
+
+    return {
+
+      districtId:
+        String(
+          district.districtId ||
+          district.DistrictID ||
+          ""
+        ).trim(),
+
+      districtCode:
+        String(
+          district.districtCode ||
+          district.lgdDistrictCode ||
+          district.LGDDistrictCode ||
+          ""
+        ).trim(),
+
+      districtName:
+        String(
+          district.districtName ||
+          district.name ||
+          district.DistrictName ||
+          "Unnamed district"
+        ).trim(),
+
+      stateCode:
+        String(
+          district.stateCode ||
+          district.lgdStateCode ||
+          district.LGDStateCode ||
+          district.StateCode ||
+          ""
+        ).trim(),
+
+      stateName:
+        String(
+          district.stateName ||
+          district.State ||
+          ""
+        ).trim(),
+
+      serviceStatus:
+        this.normalizeStatus(
+          district.serviceStatus ||
+          district.ServiceStatus ||
+          district.status ||
+          district.Status
+        ),
+
+      effectiveServiceStatus:
+        this.normalizeStatus(
+          district.effectiveServiceStatus ||
+          district.effectiveStatus ||
+          district.EffectiveServiceStatus ||
+          district.serviceStatus ||
+          district.ServiceStatus
+        ),
+
+      customerVisibility:
+        String(
+          district.customerVisibility ||
+          district.CustomerVisibility ||
+          ""
+        ).trim(),
+
+      serviceRadiusKm:
+        this.toNumber(
+          district.serviceRadiusKm !== undefined
+            ? district.serviceRadiusKm
+            : district.ServiceRadiusKm
+        ),
+
+      deliveryFeePerKm:
+        this.toNumber(
+          district.deliveryFeePerKm !== undefined
+            ? district.deliveryFeePerKm
+            : district.DeliveryFeePerKm
+        ),
+
+      minimumDeliveryFee:
+        this.toNumber(
+          district.minimumDeliveryFee !== undefined
+            ? district.minimumDeliveryFee
+            : district.MinimumDeliveryFee
+        ),
+
+      longDistanceEnabled:
+        this.toBoolean(
+          district.longDistanceEnabled !== undefined
+            ? district.longDistanceEnabled
+            : district.LongDistanceEnabled
+        ),
+
+      updatedAt:
+        String(
+          district.updatedAt ||
+          district.UpdatedAt ||
+          ""
+        ).trim()
+
+    };
+
+  },
+
+
+  /*
+   * ==========================================================
+   * SUMMARY RENDERING
+   * ==========================================================
+   */
+
+  renderSummary: function() {
+
+    const summary =
+      this.state.summary;
+
+    this.setText(
+      this.elements.totalStates,
+      summary.totalStates
+    );
+
+    this.setText(
+      this.elements.activeStates,
+      summary.activeStates
+    );
+
+    this.setText(
+      this.elements.inactiveStates,
+      summary.inactiveStates
+    );
+
+    this.setText(
+      this.elements.totalDistricts,
+      summary.totalDistricts
+    );
+
+    this.setText(
+      this.elements.activeDistricts,
+      summary.activeDistricts
+    );
+
+    this.setText(
+      this.elements.inactiveDistricts,
+      summary.inactiveDistricts
+    );
+
+    this.setText(
+      this.elements
+        .effectiveActiveDistricts,
+      summary.effectiveActiveDistricts
+    );
+
+    this.setText(
+      this.elements.comingSoonDistricts,
+      summary.comingSoonDistricts
+    );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * STATE FILTERING
+   * ==========================================================
+   */
+
+  applyStateFilters: function() {
+
+    const query =
+      this.elements.stateSearchInput
+        ? String(
+            this.elements
+              .stateSearchInput.value || ""
+          )
+            .trim()
+            .toLowerCase()
+        : "";
+
+    const status =
+      this.elements.stateStatusFilter
+        ? this.normalizeFilterStatus(
+            this.elements
+              .stateStatusFilter.value
+          )
+        : "ALL";
+
+    this.state.filteredStates =
+      this.state.states.filter(
+        (state) => {
+
+          const matchesQuery =
+            !query ||
+            state.stateName
+              .toLowerCase()
+              .includes(query) ||
+            state.stateCode
+              .toLowerCase()
+              .includes(query);
+
+          const matchesStatus =
+            status === "ALL" ||
+            state.serviceStatus === status;
+
+          return (
+            matchesQuery &&
+            matchesStatus
+          );
+
+        }
+      );
+
+    this.renderStates();
+
+  },
+
+
+  clearStateFilters: function() {
+
+    if (this.elements.stateSearchInput) {
+
+      this.elements
+        .stateSearchInput.value = "";
+
+    }
+
+    if (this.elements.stateStatusFilter) {
+
+      this.elements
+        .stateStatusFilter.value = "ALL";
+
+    }
+
+    this.applyStateFilters();
+
+  },
+
+
+  /*
+   * ==========================================================
+   * STATE RENDERING
+   * ==========================================================
+   */
+
+  renderStates: function() {
+
+    const container =
+      this.elements.stateList;
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+
+    this.setText(
+      this.elements.visibleStatesCount,
+      this.state.filteredStates.length
+    );
+
+    if (
+      this.state.filteredStates.length === 0
+    ) {
+
+      this.show(
+        this.elements.stateEmptyState
+      );
+
+      return;
+    }
+
+    this.hide(
+      this.elements.stateEmptyState
+    );
+
+    const fragment =
+      document.createDocumentFragment();
+
+    this.state.filteredStates.forEach(
+      (state) => {
+
+        fragment.appendChild(
+          this.createStateCard(state)
+        );
+
+      }
+    );
+
+    container.appendChild(fragment);
+
+  },
+
+
+  createStateCard: function(state) {
+
+    const card =
+      document.createElement("article");
+
+    const active =
+      state.serviceStatus === "ACTIVE";
+
+    card.className =
+      "geography-state-card " +
+      (
+        active
+          ? "active"
+          : "inactive"
+      );
+
+    card.dataset.stateCode =
+      state.stateCode;
+
+    card.tabIndex = 0;
+
+    card.setAttribute(
+      "role",
+      "button"
+    );
+
+    card.setAttribute(
+      "aria-label",
+      "Manage " +
+      state.stateName +
+      " districts"
+    );
+
+
+    const main =
+      document.createElement("div");
+
+    main.className =
+      "geography-state-main";
+
+
+    const icon =
+      document.createElement("span");
+
+    icon.className =
+      "geography-state-icon";
+
+    icon.textContent =
+      active
+        ? "✓"
+        : "◈";
+
+
+    const information =
+      document.createElement("div");
+
+    information.className =
+      "geography-state-information";
+
+
+    const title =
+      document.createElement("h4");
+
+    title.textContent =
+      state.stateName;
+
+
+    const meta =
+      document.createElement("p");
+
+    meta.textContent =
+      "LGD State Code: " +
+      (
+        state.stateCode || "—"
+      );
+
+
+    const counts =
+      document.createElement("div");
+
+    counts.className =
+      "geography-state-counts";
+
+
+    counts.appendChild(
+      this.createTextPill(
+        state.districtCounts.total +
+        " districts"
+      )
+    );
+
+
+    const liveCount =
+      this.createTextPill(
+        state.districtCounts
+          .effectiveActive +
+        " live"
+      );
+
+    liveCount.classList.add("live");
+
+    counts.appendChild(liveCount);
+
+
+    information.appendChild(title);
+
+    information.appendChild(meta);
+
+    information.appendChild(counts);
+
+
+    main.appendChild(icon);
+
+    main.appendChild(information);
+
+
+    const action =
+      document.createElement("div");
+
+    action.className =
+      "geography-state-action";
+
+
+    const badge =
+      document.createElement("span");
+
+    badge.className =
+      "geography-status-badge " +
+      (
+        active
+          ? "active"
+          : "inactive"
+      );
+
+    badge.textContent =
+      active
+        ? "ACTIVE"
+        : "INACTIVE";
+
+
+    const open =
+      document.createElement("span");
+
+    open.className =
+      "geography-state-open";
+
+    open.textContent =
+      "Manage";
+
+
+    action.appendChild(badge);
+
+    action.appendChild(open);
+
+
+    card.appendChild(main);
+
+    card.appendChild(action);
+
+
+    card.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key === "Enter" ||
+          event.key === " "
+        ) {
+
+          event.preventDefault();
+
+          this.openStateByCode(
+            state.stateCode
+          );
+
+        }
+
+      }
+    );
+
+
+    return card;
+
+  },
+
+
+  createTextPill: function(text) {
+
+    const pill =
+      document.createElement("span");
+
+    pill.textContent = text;
+
+    return pill;
+
+  },
+
+
+  handleStateListClick: function(event) {
+
+    const card =
+      event.target.closest(
+        "[data-state-code]"
+      );
+
+    if (!card) {
+      return;
+    }
+
+    this.openStateByCode(
+      card.dataset.stateCode
+    );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * OPEN STATE AND LAZY-LOAD DISTRICTS
+   * ==========================================================
+   */
+
+  openStateByCode: async function(
+    stateCode
+  ) {
+
+    const selectedState =
+      this.state.states.find(
+        (state) =>
+          String(state.stateCode) ===
+          String(stateCode)
+      );
+
+    if (!selectedState) {
+
+      this.showPageError(
+        "The selected state was not found."
+      );
+
+      return;
+    }
+
+    this.state.selectedState =
+      selectedState;
+
+    this.state.districts = [];
+
+    this.state.filteredDistricts = [];
+
+    this.state.selectedDistrictIds.clear();
+
+    this.resetDistrictFilters();
+
+    this.renderSelectedStateHeader();
+
+    this.renderDistrictSummary();
+
+    this.renderDistricts();
+
+    this.openDistrictPanel();
+
+    await this.loadSelectedStateDistricts();
+
+  },
+
+
+  openDistrictPanel: function() {
+
+    this.show(
+      this.elements.districtPanel
+    );
+
+    if (this.elements.districtPanel) {
+
+      this.elements.districtPanel
+        .setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+    }
+
+    document.body.style.overflow =
+      "hidden";
+
+  },
+
+
+  closeDistrictPanel: function() {
+
+    this.hide(
+      this.elements.districtPanel
+    );
+
+    if (this.elements.districtPanel) {
+
+      this.elements.districtPanel
+        .setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+    }
+
+    document.body.style.overflow = "";
+
+    this.state.selectedDistrictIds.clear();
+
+    this.updateBulkControls();
+
+  },
+
+
+  loadSelectedStateDistricts:
+    async function() {
+
+      const selectedState =
+        this.state.selectedState;
+
+      if (
+        !selectedState ||
+        this.state.districtLoading
+      ) {
+
+        return;
+
+      }
+
+      this.state.districtLoading = true;
+
+      this.showDistrictLoading(true);
+
+      this.clearDistrictError();
+
+      try {
+
+        const requestResult =
+          await this.request(
+            this.CONFIG.ACTIONS
+              .GET_GEOGRAPHY,
+            {
+              sessionId:
+                this.getSessionId(),
+
+              filters: {
+
+                query: "",
+
+                serviceStatus:
+                  "ALL",
+
+                stateCode:
+                  selectedState.stateCode,
+
+                includeDistricts:
+                  true
+
+              }
+            }
+          );
+
+        const data =
+          requestResult.data || {};
+
+        const returnedStates =
+          Array.isArray(data.states)
+            ? data.states
+            : [];
+
+        const returnedState =
+          returnedStates.find(
+            (state) =>
+              String(
+                state.stateCode ||
+                state.LGDStateCode ||
+                state.StateCode ||
+                ""
+              ) ===
+              String(
+                selectedState.stateCode
+              )
+          ) ||
+          returnedStates[0] ||
+          {};
+
+        const rawDistricts =
+          Array.isArray(
+            returnedState.districts
+          )
+            ? returnedState.districts
+            : (
+                Array.isArray(
+                  data.districts
+                )
+                  ? data.districts
+                  : []
+              );
+
+        this.state.districts =
+          this.normalizeDistricts(
+            rawDistricts
+          );
+
+        const normalizedReturnedState =
+          this.normalizeState(
+            returnedState
+          );
+
+        if (
+          normalizedReturnedState
+            .stateCode
+        ) {
+
+          this.mergeSelectedState(
+            normalizedReturnedState
+          );
+
+        }
+
+        this.applyDistrictFilters();
+
+        this.renderSelectedStateHeader();
+
+        this.renderDistrictSummary();
+
+      } catch (error) {
+
+        console.error(
+          "State districts load failed:",
+          error
+        );
+
+        this.showDistrictError(
+          error &&
+          error.message
+            ? error.message
+            : "Districts could not be loaded."
+        );
+
+      } finally {
+
+        this.state.districtLoading = false;
+
+        this.showDistrictLoading(false);
+
+      }
+
+    },
+
+
+  mergeSelectedState: function(
+    updatedState
+  ) {
+
+    const index =
+      this.state.states.findIndex(
+        (state) =>
+          state.stateCode ===
+          updatedState.stateCode
+      );
+
+    if (index >= 0) {
+
+      this.state.states[index] = {
+        ...this.state.states[index],
+        ...updatedState,
+        districtCounts: {
+          ...this.state.states[index]
+            .districtCounts,
+          ...updatedState.districtCounts
+        }
+      };
+
+      this.state.selectedState =
+        this.state.states[index];
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * SELECTED STATE RENDERING
+   * ==========================================================
+   */
+
+  renderSelectedStateHeader: function() {
+
+    const selectedState =
+      this.state.selectedState;
+
+    if (!selectedState) {
+      return;
+    }
+
+    const active =
+      selectedState.serviceStatus ===
+      "ACTIVE";
+
+    this.setText(
+      this.elements.selectedStateName,
+      selectedState.stateName
+    );
+
+    this.setText(
+      this.elements.selectedStateMeta,
+      selectedState.districtCounts.total +
+      " official districts"
+    );
+
+    this.setText(
+      this.elements.selectedStateControlName,
+      selectedState.stateName
+    );
+
+    this.setText(
+      this.elements.selectedStateControlCode,
+      "LGD State Code: " +
+      selectedState.stateCode
+    );
+
+    if (
+      this.elements
+        .selectedStateStatusBadge
+    ) {
+
+      this.elements
+        .selectedStateStatusBadge
+        .className =
+          "geography-status-badge " +
+          (
+            active
+              ? "active"
+              : "inactive"
+          );
+
+      this.elements
+        .selectedStateStatusBadge
+        .textContent =
+          active
+            ? "ACTIVE"
+            : "INACTIVE";
+
+    }
+
+    if (
+      this.elements.stateStatusButton
+    ) {
+
+      this.elements
+        .stateStatusButton
+        .textContent =
+          active
+            ? "Deactivate state"
+            : "Activate state";
+
+      this.elements
+        .stateStatusButton
+        .className =
+          "geography-state-status-button" +
+          (
+            active
+              ? " deactivate"
+              : ""
+          );
+
+    }
+
+  },
+
+
+  renderDistrictSummary: function() {
+
+    const selectedState =
+      this.state.selectedState;
+
+    if (!selectedState) {
+      return;
+    }
+
+    const counts =
+      selectedState.districtCounts;
+
+    this.setText(
+      this.elements
+        .selectedStateDistrictCount,
+      counts.total
+    );
+
+    this.setText(
+      this.elements
+        .selectedStateActiveCount,
+      counts.active
+    );
+
+    this.setText(
+      this.elements
+        .selectedStateEffectiveCount,
+      counts.effectiveActive
+    );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * DISTRICT FILTERING
+   * ==========================================================
+   */
+
+  resetDistrictFilters: function() {
+
+    if (
+      this.elements.districtSearchInput
+    ) {
+
+      this.elements
+        .districtSearchInput.value = "";
+
+    }
+
+    if (
+      this.elements.districtStatusFilter
+    ) {
+
+      this.elements
+        .districtStatusFilter.value =
+          "ALL";
+
+    }
+
+    if (
+      this.elements
+        .selectAllDistrictsCheckbox
+    ) {
+
+      this.elements
+        .selectAllDistrictsCheckbox
+        .checked = false;
+
+      this.elements
+        .selectAllDistrictsCheckbox
+        .indeterminate = false;
+
+    }
+
+  },
+
+
+  applyDistrictFilters: function() {
+
+    const query =
+      this.elements.districtSearchInput
+        ? String(
+            this.elements
+              .districtSearchInput.value ||
+            ""
+          )
+            .trim()
+            .toLowerCase()
+        : "";
+
+    const status =
+      this.elements.districtStatusFilter
+        ? this.normalizeFilterStatus(
+            this.elements
+              .districtStatusFilter.value
+          )
+        : "ALL";
+
+    this.state.filteredDistricts =
+      this.state.districts.filter(
+        (district) => {
+
+          const matchesQuery =
+            !query ||
+            district.districtName
+              .toLowerCase()
+              .includes(query) ||
+            district.districtId
+              .toLowerCase()
+              .includes(query) ||
+            district.districtCode
+              .toLowerCase()
+              .includes(query);
+
+          const matchesStatus =
+            status === "ALL" ||
+            district.serviceStatus === status;
+
+          return (
+            matchesQuery &&
+            matchesStatus
+          );
+
+        }
+      );
+
+    this.renderDistricts();
+
+  },
+
+
+  /*
+   * ==========================================================
+   * DISTRICT RENDERING
+   * ==========================================================
+   */
+
+  renderDistricts: function() {
+
+    const container =
+      this.elements.districtList;
+
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "";
+
+    if (
+      this.state.districtLoading
+    ) {
+
+      this.hide(
+        this.elements.districtEmptyState
+      );
+
+      return;
+    }
+
+    if (
+      this.state.filteredDistricts
+        .length === 0
+    ) {
+
+      this.show(
+        this.elements.districtEmptyState
+      );
+
+      this.updateBulkControls();
+
+      return;
+    }
+
+    this.hide(
+      this.elements.districtEmptyState
+    );
+
+    const fragment =
+      document.createDocumentFragment();
+
+    this.state.filteredDistricts.forEach(
+      (district) => {
+
+        fragment.appendChild(
+          this.createDistrictCard(
+            district
+          )
+        );
+
+      }
+    );
+
+    container.appendChild(fragment);
+
+    this.updateBulkControls();
+
+  },
+
+
+  createDistrictCard: function(
+    district
+  ) {
+
+    const card =
+      document.createElement("article");
+
+    card.className =
+      "district-card";
+
+    card.dataset.districtId =
+      district.districtId;
+
+    if (
+      this.state.selectedDistrictIds
+        .has(district.districtId)
+    ) {
+
+      card.classList.add("selected");
+
+    }
+
+
+    const checkbox =
+      document.createElement("input");
+
+    checkbox.type = "checkbox";
+
+    checkbox.className =
+      "district-select-checkbox";
+
+    checkbox.dataset.districtId =
+      district.districtId;
+
+    checkbox.checked =
+      this.state.selectedDistrictIds
+        .has(district.districtId);
+
+    checkbox.setAttribute(
+      "aria-label",
+      "Select " +
+      district.districtName
+    );
+
+
+    const information =
+      document.createElement("div");
+
+    information.className =
+      "district-card-information";
+
+
+    const title =
+      document.createElement("h4");
+
+    title.textContent =
+      district.districtName;
+
+
+    const meta =
+      document.createElement("p");
+
+    meta.textContent =
+      "District ID: " +
+      district.districtId +
+      (
+        district.districtCode
+          ? " • LGD " +
+            district.districtCode
+          : ""
+      );
+
+
+    const metrics =
+      document.createElement("div");
+
+    metrics.className =
+      "district-card-metrics";
+
+
+    metrics.appendChild(
+      this.createTextPill(
+        district.serviceRadiusKm +
+        " KM radius"
+      )
+    );
+
+    metrics.appendChild(
+      this.createTextPill(
+        "₹" +
+        this.formatNumber(
+          district.deliveryFeePerKm
+        ) +
+        "/KM"
+      )
+    );
+
+
+    const effectivePill =
+      this.createTextPill(
+        district.effectiveServiceStatus ===
+          "ACTIVE"
+          ? "Customer live"
+          : "Not live"
+      );
+
+    effectivePill.classList.add(
+      district.effectiveServiceStatus ===
+        "ACTIVE"
+        ? "live"
+        : "inactive"
+    );
+
+    metrics.appendChild(
+      effectivePill
+    );
+
+
+    information.appendChild(title);
+
+    information.appendChild(meta);
+
+    information.appendChild(metrics);
+
+
+    const actions =
+      document.createElement("div");
+
+    actions.className =
+      "district-card-actions";
+
+
+    const rulesButton =
+      document.createElement("button");
+
+    rulesButton.type = "button";
+
+    rulesButton.className =
+      "district-rules-button";
+
+    rulesButton.dataset.action =
+      "rules";
+
+    rulesButton.dataset.districtId =
+      district.districtId;
+
+    rulesButton.textContent =
+      "Rules";
+
+
+    const statusButton =
+      document.createElement("button");
+
+    statusButton.type = "button";
+
+    statusButton.dataset.action =
+      "status";
+
+    statusButton.dataset.districtId =
+      district.districtId;
+
+    const districtActive =
+      district.serviceStatus ===
+      "ACTIVE";
+
+    statusButton.className =
+      "district-status-button" +
+      (
+        districtActive
+          ? " deactivate"
+          : ""
+      );
+
+    statusButton.textContent =
+      districtActive
+        ? "Deactivate"
+        : "Activate";
+
+    if (
+      !districtActive &&
+      this.state.selectedState &&
+      this.state.selectedState
+        .serviceStatus !== "ACTIVE"
+    ) {
+
+      statusButton.disabled = true;
+
+      statusButton.title =
+        "Activate the parent state first.";
+
+    }
+
+
+    actions.appendChild(
+      rulesButton
+    );
+
+    actions.appendChild(
+      statusButton
+    );
+
+
+    card.appendChild(checkbox);
+
+    card.appendChild(information);
+
+    card.appendChild(actions);
+
+
+    return card;
+
+  },
+
+
+  handleDistrictSelectionChange:
+    function(event) {
+
+      const checkbox =
+        event.target.closest(
+          ".district-select-checkbox"
+        );
+
+      if (!checkbox) {
+        return;
+      }
+
+      const districtId =
+        String(
+          checkbox.dataset.districtId ||
+          ""
+        );
+
+      if (!districtId) {
+        return;
+      }
+
+      if (checkbox.checked) {
+
+        this.state.selectedDistrictIds
+          .add(districtId);
+
+      } else {
+
+        this.state.selectedDistrictIds
+          .delete(districtId);
+
+      }
+
+      const card =
+        checkbox.closest(
+          ".district-card"
+        );
+
+      if (card) {
+
+        card.classList.toggle(
+          "selected",
+          checkbox.checked
+        );
+
+      }
+
+      this.updateBulkControls();
+
+    },
+
+
+  handleDistrictListClick:
+    function(event) {
+
+      const button =
+        event.target.closest(
+          "button[data-action]"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const districtId =
+        String(
+          button.dataset.districtId ||
+          ""
+        );
+
+      const district =
+        this.state.districts.find(
+          (item) =>
+            item.districtId ===
+            districtId
+        );
+
+      if (!district) {
+
+        this.showDistrictError(
+          "The selected district was not found."
+        );
+
+        return;
+      }
+
+      if (
+        button.dataset.action ===
+        "rules"
+      ) {
+
+        this.openRulesDialog(
+          district
+        );
+
+        return;
+      }
+
+      if (
+        button.dataset.action ===
+        "status"
+      ) {
+
+        this.requestDistrictStatusChange(
+          district
+        );
+
+      }
+
+    },
+
+
+  /*
+   * ==========================================================
+   * DISTRICT SELECTION
+   * ==========================================================
+   */
+
+  toggleAllVisibleDistricts:
+    function(checked) {
+
+      this.state.filteredDistricts
+        .forEach(
+          (district) => {
+
+            if (checked) {
+
+              this.state
+                .selectedDistrictIds
+                .add(
+                  district.districtId
+                );
+
+            } else {
+
+              this.state
+                .selectedDistrictIds
+                .delete(
+                  district.districtId
+                );
+
+            }
+
+          }
+        );
+
+      this.renderDistricts();
+
+  },
+
+
+  updateBulkControls: function() {
+
+    const selectedCount =
+      this.state.selectedDistrictIds
+        .size;
+
+    if (
+      this.elements.bulkActivateButton
+    ) {
+
+      this.elements
+        .bulkActivateButton.disabled =
+          selectedCount === 0 ||
+          !this.state.selectedState ||
+          this.state.selectedState
+            .serviceStatus !== "ACTIVE";
+
+    }
+
+    if (
+      this.elements.bulkDeactivateButton
+    ) {
+
+      this.elements
+        .bulkDeactivateButton.disabled =
+          selectedCount === 0;
+
+    }
+
+    const checkbox =
+      this.elements
+        .selectAllDistrictsCheckbox;
+
+    if (!checkbox) {
+      return;
+    }
+
+    const visibleIds =
+      this.state.filteredDistricts.map(
+        (district) =>
+          district.districtId
+      );
+
+    const selectedVisible =
+      visibleIds.filter(
+        (districtId) =>
+          this.state.selectedDistrictIds
+            .has(districtId)
+      ).length;
+
+    checkbox.checked =
+      visibleIds.length > 0 &&
+      selectedVisible ===
+        visibleIds.length;
+
+    checkbox.indeterminate =
+      selectedVisible > 0 &&
+      selectedVisible <
+        visibleIds.length;
+
+  },
+
+
+  /*
+   * ==========================================================
+   * STATUS ACTION REQUESTS
+   * ==========================================================
+   */
+
+  requestStateStatusChange:
+    function() {
+
+      const selectedState =
+        this.state.selectedState;
+
+      if (!selectedState) {
+        return;
+      }
+
+      const nextStatus =
+        selectedState.serviceStatus ===
+          "ACTIVE"
+          ? "INACTIVE"
+          : "ACTIVE";
+
+      this.state.pendingAction = {
+
+        type:
+          "STATE_STATUS",
+
+        stateCode:
+          selectedState.stateCode,
+
+        stateName:
+          selectedState.stateName,
+
+        serviceStatus:
+          nextStatus
+
+      };
+
+      const actionText =
+        nextStatus === "ACTIVE"
+          ? "activate"
+          : "deactivate";
+
+      this.openStatusDialog(
+        (
+          nextStatus === "ACTIVE"
+            ? "Activate "
+            : "Deactivate "
+        ) +
+        selectedState.stateName,
+        "This will " +
+        actionText +
+        " service for the entire state. " +
+        (
+          nextStatus === "INACTIVE"
+            ? "All districts will immediately become unavailable to customers."
+            : "Previously active districts can become available again."
+        )
+      );
+
+  },
+
+
+  requestDistrictStatusChange:
+    function(district) {
+
+      const nextStatus =
+        district.serviceStatus ===
+          "ACTIVE"
+          ? "INACTIVE"
+          : "ACTIVE";
+
+      if (
+        nextStatus === "ACTIVE" &&
+        this.state.selectedState &&
+        this.state.selectedState
+          .serviceStatus !== "ACTIVE"
+      ) {
+
+        this.showDistrictError(
+          "Activate the parent state before activating this district."
+        );
+
+        return;
+      }
+
+      this.state.pendingAction = {
+
+        type:
+          "DISTRICT_STATUS",
+
+        districtId:
+          district.districtId,
+
+        districtName:
+          district.districtName,
+
+        serviceStatus:
+          nextStatus
+
+      };
+
+      this.openStatusDialog(
+        (
+          nextStatus === "ACTIVE"
+            ? "Activate "
+            : "Deactivate "
+        ) +
+        district.districtName,
+        "Confirm the district service-status change. Customer availability will be updated immediately."
+      );
+
+  },
+
+
+  requestBulkDistrictStatusChange:
+    function(serviceStatus) {
+
+      const districtIds =
+        Array.from(
+          this.state.selectedDistrictIds
+        );
+
+      if (districtIds.length === 0) {
+
+        this.showDistrictError(
+          "Select at least one district."
+        );
+
+        return;
+      }
+
+      if (
+        serviceStatus === "ACTIVE" &&
+        this.state.selectedState &&
+        this.state.selectedState
+          .serviceStatus !== "ACTIVE"
+      ) {
+
+        this.showDistrictError(
+          "Activate the parent state before activating its districts."
+        );
+
+        return;
+      }
+
+      this.state.pendingAction = {
+
+        type:
+          "BULK_DISTRICT_STATUS",
+
+        districtIds:
+          districtIds,
+
+        serviceStatus:
+          serviceStatus
+
+      };
+
+      this.openStatusDialog(
+        (
+          serviceStatus === "ACTIVE"
+            ? "Activate "
+            : "Deactivate "
+        ) +
+        districtIds.length +
+        " districts",
+        "This bulk operation will update all selected districts."
+      );
+
+  },
+
+
+  /*
+   * ==========================================================
+   * STATUS CONFIRMATION DIALOG
+   * ==========================================================
+   */
+
+  openStatusDialog: function(
+    title,
+    description
+  ) {
+
+    this.setText(
+      this.elements
+        .serviceStatusDialogTitle,
+      title
+    );
+
+    this.setText(
+      this.elements
+        .serviceStatusDialogDescription,
+      description
+    );
+
+    if (
+      this.elements
+        .serviceStatusReasonInput
+    ) {
+
+      this.elements
+        .serviceStatusReasonInput.value =
+          "";
+
+    }
+
+    this.hide(
+      this.elements
+        .serviceStatusDialogError
+    );
+
+    this.show(
+      this.elements.serviceStatusDialog
+    );
+
+    if (
+      this.elements.serviceStatusDialog
+    ) {
+
+      this.elements
+        .serviceStatusDialog
+        .setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+    }
+
+    setTimeout(
+      () => {
+
+        if (
+          this.elements
+            .serviceStatusReasonInput
+        ) {
+
+          this.elements
+            .serviceStatusReasonInput
+            .focus();
+
+        }
+
+      },
+      50
+    );
+
+  },
+
+
+  closeStatusDialog: function() {
+
+    this.hide(
+      this.elements.serviceStatusDialog
+    );
+
+    if (
+      this.elements.serviceStatusDialog
+    ) {
+
+      this.elements
+        .serviceStatusDialog
+        .setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+    }
+
+    this.state.pendingAction = null;
+
+  },
+
+
+  confirmStatusAction:
+    async function() {
+
+      const pendingAction =
+        this.state.pendingAction;
+
+      if (!pendingAction) {
+        return;
+      }
+
+      const reason =
+        this.elements
+          .serviceStatusReasonInput
+          ? String(
+              this.elements
+                .serviceStatusReasonInput
+                .value || ""
+            ).trim()
+          : "";
+
+      if (reason.length < 3) {
+
+        this.showStatusDialogError(
+          "Enter a change reason of at least 3 characters."
+        );
+
+        return;
+      }
+
+      this.setStatusDialogLoading(true);
+
+      this.hide(
+        this.elements
+          .serviceStatusDialogError
+      );
+
+      try {
+
+        if (
+          pendingAction.type ===
+          "STATE_STATUS"
+        ) {
+
+          await this.updateStateStatus(
+            pendingAction,
+            reason
+          );
+
+        } else if (
+          pendingAction.type ===
+          "DISTRICT_STATUS"
+        ) {
+
+          await this.updateDistrictStatus(
+            pendingAction,
+            reason
+          );
+
+        } else if (
+          pendingAction.type ===
+          "BULK_DISTRICT_STATUS"
+        ) {
+
+          await this.updateBulkDistrictStatus(
+            pendingAction,
+            reason
+          );
+
+        }
+
+        this.closeStatusDialog();
+
+      } catch (error) {
+
+        console.error(
+          "Geography status update failed:",
+          error
+        );
+
+        this.showStatusDialogError(
+          error &&
+          error.message
+            ? error.message
+            : "Service status could not be updated."
+        );
+
+      } finally {
+
+        this.setStatusDialogLoading(false);
+
+      }
+
+    },
+
+
+  /*
+   * ==========================================================
+   * STATE STATUS UPDATE
+   * ==========================================================
+   */
+
+  updateStateStatus: async function(
+    action,
+    reason
+  ) {
+
+    await this.request(
+      this.CONFIG.ACTIONS
+        .SET_STATE_STATUS,
+      {
+        sessionId:
+          this.getSessionId(),
+
+        stateCode:
+          action.stateCode,
+
+        serviceStatus:
+          action.serviceStatus,
+
+        reason:
+          reason,
+
+        changeReason:
+          reason
+      }
+    );
+
+    await this.loadGeography(true);
+
+    const refreshedState =
+      this.state.states.find(
+        (state) =>
+          state.stateCode ===
+          action.stateCode
+      );
+
+    if (refreshedState) {
+
+      this.state.selectedState =
+        refreshedState;
+
+      this.renderSelectedStateHeader();
+
+      await this.loadSelectedStateDistricts();
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * DISTRICT STATUS UPDATE
+   * ==========================================================
+   */
+
+  updateDistrictStatus:
+    async function(
+      action,
+      reason
+    ) {
+
+      await this.request(
+        this.CONFIG.ACTIONS
+          .SET_DISTRICT_STATUS,
+        {
+          sessionId:
+            this.getSessionId(),
+
+          districtId:
+            action.districtId,
+
+          serviceStatus:
+            action.serviceStatus,
+
+          reason:
+            reason,
+
+          changeReason:
+            reason
+        }
+      );
+
+      await this.refreshAfterDistrictWrite();
+
+  },
+
+
+  /*
+   * ==========================================================
+   * BULK DISTRICT STATUS UPDATE
+   * ==========================================================
+   */
+
+  updateBulkDistrictStatus:
+    async function(
+      action,
+      reason
+    ) {
+
+      await this.request(
+        this.CONFIG.ACTIONS
+          .BULK_SET_DISTRICT_STATUS,
+        {
+          sessionId:
+            this.getSessionId(),
+
+          districtIds:
+            action.districtIds,
+
+          serviceStatus:
+            action.serviceStatus,
+
+          reason:
+            reason,
+
+          changeReason:
+            reason
+        }
+      );
+
+      this.state.selectedDistrictIds.clear();
+
+      await this.refreshAfterDistrictWrite();
+
+  },
+
+
+  refreshAfterDistrictWrite:
+    async function() {
+
+      const selectedStateCode =
+        this.state.selectedState
+          ? this.state.selectedState
+              .stateCode
+          : "";
+
+      await this.loadGeography(true);
+
+      if (!selectedStateCode) {
+        return;
+      }
+
+      const refreshedState =
+        this.state.states.find(
+          (state) =>
+            state.stateCode ===
+            selectedStateCode
+        );
+
+      if (refreshedState) {
+
+        this.state.selectedState =
+          refreshedState;
+
+        this.renderSelectedStateHeader();
+
+        this.renderDistrictSummary();
+
+        await this.loadSelectedStateDistricts();
+
+      }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * DISTRICT RULES
+   * ==========================================================
+   */
+
+  openRulesDialog: function(district) {
+
+    this.state.selectedDistrict =
+      district;
+
+    this.setText(
+      this.elements.districtRulesTitle,
+      district.districtName +
+      " service rules"
+    );
+
+    this.setText(
+      this.elements.districtRulesId,
+      district.districtId +
+      (
+        district.districtCode
+          ? " • LGD " +
+            district.districtCode
+          : ""
+      )
+    );
+
+    this.setInputValue(
+      this.elements
+        .districtServiceRadiusInput,
+      district.serviceRadiusKm
+    );
+
+    this.setInputValue(
+      this.elements
+        .districtDeliveryFeeInput,
+      district.deliveryFeePerKm
+    );
+
+    this.setInputValue(
+      this.elements
+        .districtMinimumDeliveryFeeInput,
+      district.minimumDeliveryFee
+    );
+
+    if (
+      this.elements
+        .districtLongDistanceInput
+    ) {
+
+      this.elements
+        .districtLongDistanceInput
+        .value =
+          district.longDistanceEnabled
+            ? "TRUE"
+            : "FALSE";
+
+    }
+
+    if (
+      this.elements
+        .districtRulesReasonInput
+    ) {
+
+      this.elements
+        .districtRulesReasonInput.value =
+          "";
+
+    }
+
+    this.hide(
+      this.elements.districtRulesError
+    );
+
+    this.show(
+      this.elements.districtRulesDialog
+    );
+
+    if (
+      this.elements.districtRulesDialog
+    ) {
+
+      this.elements
+        .districtRulesDialog
+        .setAttribute(
+          "aria-hidden",
+          "false"
+        );
+
+    }
+
+  },
+
+
+  closeRulesDialog: function() {
+
+    this.hide(
+      this.elements.districtRulesDialog
+    );
+
+    if (
+      this.elements.districtRulesDialog
+    ) {
+
+      this.elements
+        .districtRulesDialog
+        .setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+    }
+
+    this.state.selectedDistrict = null;
+
+  },
+
+
+  saveDistrictRules:
+    async function() {
+
+      const district =
+        this.state.selectedDistrict;
+
+      if (!district) {
+        return;
+      }
+
+      const serviceRadiusKm =
+        this.readNumberInput(
+          this.elements
+            .districtServiceRadiusInput
+        );
+
+      const deliveryFeePerKm =
+        this.readNumberInput(
+          this.elements
+            .districtDeliveryFeeInput
+        );
+
+      const minimumDeliveryFee =
+        this.readNumberInput(
+          this.elements
+            .districtMinimumDeliveryFeeInput
+        );
+
+      const longDistanceEnabled =
+        this.elements
+          .districtLongDistanceInput
+          ? this.elements
+              .districtLongDistanceInput
+              .value === "TRUE"
+          : false;
+
+      const reason =
+        this.elements
+          .districtRulesReasonInput
+          ? String(
+              this.elements
+                .districtRulesReasonInput
+                .value || ""
+            ).trim()
+          : "";
+
+      if (
+        !Number.isFinite(
+          serviceRadiusKm
+        ) ||
+        serviceRadiusKm <= 0 ||
+        serviceRadiusKm > 100
+      ) {
+
+        this.showRulesError(
+          "Service radius must be between 1 and 100 KM."
+        );
+
+        return;
+      }
+
+      if (
+        !Number.isFinite(
+          deliveryFeePerKm
+        ) ||
+        deliveryFeePerKm < 0
+      ) {
+
+        this.showRulesError(
+          "Enter a valid delivery fee per kilometre."
+        );
+
+        return;
+      }
+
+      if (
+        !Number.isFinite(
+          minimumDeliveryFee
+        ) ||
+        minimumDeliveryFee < 0
+      ) {
+
+        this.showRulesError(
+          "Enter a valid minimum delivery fee."
+        );
+
+        return;
+      }
+
+      if (reason.length < 3) {
+
+        this.showRulesError(
+          "Enter an update reason of at least 3 characters."
+        );
+
+        return;
+      }
+
+      this.setRulesLoading(true);
+
+      this.hide(
+        this.elements.districtRulesError
+      );
+
+      try {
+
+        const rules = {
+
+          serviceRadiusKm:
+            serviceRadiusKm,
+
+          deliveryFeePerKm:
+            deliveryFeePerKm,
+
+          minimumDeliveryFee:
+            minimumDeliveryFee,
+
+          longDistanceEnabled:
+            longDistanceEnabled
+
+        };
+
+        await this.request(
+          this.CONFIG.ACTIONS
+            .UPDATE_DISTRICT_RULES,
+          {
+            sessionId:
+              this.getSessionId(),
+
+            districtId:
+              district.districtId,
+
+            rules:
+              rules,
+
+            serviceRadiusKm:
+              serviceRadiusKm,
+
+            deliveryFeePerKm:
+              deliveryFeePerKm,
+
+            minimumDeliveryFee:
+              minimumDeliveryFee,
+
+            longDistanceEnabled:
+              longDistanceEnabled,
+
+            reason:
+              reason,
+
+            changeReason:
+              reason
+          }
+        );
+
+        this.closeRulesDialog();
+
+        await this.refreshAfterDistrictWrite();
+
+      } catch (error) {
+
+        console.error(
+          "District rules update failed:",
+          error
+        );
+
+        this.showRulesError(
+          error &&
+          error.message
+            ? error.message
+            : "District rules could not be updated."
+        );
+
+      } finally {
+
+        this.setRulesLoading(false);
+
+      }
+
+    },
+
+
+  /*
+   * ==========================================================
+   * PAGE VISIBILITY
+   * ==========================================================
+   */
+
+  showSkeleton: function() {
+
+    this.show(
+      this.elements.pageSkeleton
+    );
+
+    this.hide(
+      this.elements.pageContent
+    );
+
+  },
+
+
+  showContent: function() {
+
+    this.hide(
+      this.elements.pageSkeleton
+    );
+
+    this.show(
+      this.elements.pageContent
+    );
+
+  },
+
+
+  showDistrictLoading: function(
+    loading
+  ) {
+
+    if (loading) {
+
+      this.show(
+        this.elements.districtLoading
+      );
+
+      this.hide(
+        this.elements.districtList
+      );
+
+      this.hide(
+        this.elements.districtEmptyState
+      );
+
+    } else {
+
+      this.hide(
+        this.elements.districtLoading
+      );
+
+      this.show(
+        this.elements.districtList
+      );
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * ERROR AND SUCCESS MESSAGES
+   * ==========================================================
+   */
+
+  showPageError: function(message) {
+
+    const element =
+      this.elements.pageMessage;
+
+    if (!element) {
+      return;
+    }
+
+    element.className =
+      "admin-global-message admin-error-message";
+
+    element.textContent =
+      message;
+
+    this.show(element);
+
+  },
+
+
+  showPageSuccess: function(message) {
+
+    const element =
+      this.elements.pageMessage;
+
+    if (!element) {
+      return;
+    }
+
+    element.className =
+      "admin-global-message admin-success-message";
+
+    element.textContent =
+      message;
+
+    this.show(element);
+
+    setTimeout(
+      () => {
+
+        if (
+          element.textContent ===
+          message
+        ) {
+
+          this.hide(element);
+
+        }
+
+      },
+      3500
+    );
+
+  },
+
+
+  clearPageMessage: function() {
+
+    if (
+      this.elements.pageMessage
+    ) {
+
+      this.elements
+        .pageMessage.textContent = "";
+
+      this.hide(
+        this.elements.pageMessage
+      );
+
+    }
+
+  },
+
+
+  showDistrictError: function(message) {
+
+    const element =
+      this.elements.districtError;
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent = message;
+
+    this.show(element);
+
+  },
+
+
+  clearDistrictError: function() {
+
+    if (
+      this.elements.districtError
+    ) {
+
+      this.elements
+        .districtError.textContent =
+          "";
+
+      this.hide(
+        this.elements.districtError
+      );
+
+    }
+
+  },
+
+
+  showStatusDialogError:
+    function(message) {
+
+      const element =
+        this.elements
+          .serviceStatusDialogError;
+
+      if (!element) {
+        return;
+      }
+
+      element.textContent = message;
+
+      this.show(element);
+
+    },
+
+
+  showRulesError: function(message) {
+
+    const element =
+      this.elements.districtRulesError;
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent = message;
+
+    this.show(element);
+
+  },
+
+
+  /*
+   * ==========================================================
+   * BUTTON LOADING STATES
+   * ==========================================================
+   */
+
+  setRefreshLoading: function(
+    loading
+  ) {
+
+    const button =
+      this.elements.refreshButton;
+
+    if (!button) {
+      return;
+    }
+
+    button.disabled = loading;
+
+    button.innerHTML =
+      loading
+        ? "<span>↻</span> Loading"
+        : "<span>↻</span> Refresh";
+
+  },
+
+
+  setStatusDialogLoading:
+    function(loading) {
+
+      const button =
+        this.elements
+          .confirmServiceStatusButton;
+
+      if (!button) {
+        return;
+      }
+
+      button.disabled = loading;
+
+      button.textContent =
+        loading
+          ? "Updating..."
+          : "Confirm change";
+
+    },
+
+
+  setRulesLoading: function(loading) {
+
+    const button =
+      this.elements
+        .saveDistrictRulesButton;
+
+    if (!button) {
+      return;
+    }
+
+    button.disabled = loading;
+
+    button.textContent =
+      loading
+        ? "Saving..."
+        : "Save service rules";
+
+  },
+
+
+  /*
+   * ==========================================================
+   * GENERAL HELPERS
+   * ==========================================================
+   */
+
+  normalizeStatus: function(value) {
+
+    const status =
+      String(value || "")
+        .trim()
+        .toUpperCase();
+
+    return status === "ACTIVE"
+      ? "ACTIVE"
+      : "INACTIVE";
+
+  },
+
+
+  normalizeFilterStatus:
+    function(value) {
+
+      const status =
+        String(value || "ALL")
+          .trim()
+          .toUpperCase();
+
+      if (
+        status === "ACTIVE" ||
+        status === "INACTIVE"
+      ) {
+
+        return status;
+
+      }
+
+      return "ALL";
+
+    },
+
+
+  toNumber: function(value) {
+
+    const number =
+      Number(value);
+
+    return Number.isFinite(number)
+      ? number
+      : 0;
+
+  },
+
+
+  toBoolean: function(value) {
+
+    if (value === true) {
+      return true;
+    }
+
+    const normalized =
+      String(value || "")
+        .trim()
+        .toUpperCase();
+
+    return (
+      normalized === "TRUE" ||
+      normalized === "YES" ||
+      normalized === "1" ||
+      normalized === "ENABLED"
+    );
+
+  },
+
+
+  readNumberInput: function(element) {
+
+    if (!element) {
+      return NaN;
+    }
+
+    const value =
+      String(element.value || "")
+        .trim();
+
+    if (!value) {
+      return NaN;
+    }
+
+    return Number(value);
+
+  },
+
+
+  formatNumber: function(value) {
+
+    const number =
+      this.toNumber(value);
+
+    return number.toLocaleString(
+      "en-IN",
+      {
+        maximumFractionDigits: 2
+      }
+    );
+
+  },
+
+
+  updateLastUpdated: function(value) {
+
+    if (!this.elements.lastUpdated) {
+      return;
+    }
+
+    if (!value) {
+
+      this.elements
+        .lastUpdated.textContent = "—";
+
+      return;
+    }
+
+    const date =
+      new Date(value);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      this.elements
+        .lastUpdated.textContent =
+          String(value);
+
+      return;
+    }
+
+    this.elements
+      .lastUpdated.textContent =
+        date.toLocaleString(
+          "en-IN",
+          {
+            dateStyle: "medium",
+            timeStyle: "short"
+          }
+        );
+
+  },
+
+
+  setText: function(
+    element,
+    value
+  ) {
+
+    if (!element) {
+      return;
+    }
+
+    element.textContent =
+      value === undefined ||
+      value === null
+        ? ""
+        : String(value);
+
+  },
+
+
+  setInputValue: function(
+    element,
+    value
+  ) {
+
+    if (!element) {
+      return;
+    }
+
+    element.value =
+      value === undefined ||
+      value === null
+        ? ""
+        : String(value);
+
+  },
+
+
+  show: function(element) {
+
+    if (element) {
+
+      element.classList.remove(
+        "hidden"
+      );
+
+    }
+
+  },
+
+
+  hide: function(element) {
+
+    if (element) {
+
+      element.classList.add(
+        "hidden"
+      );
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * READ-ONLY INTEGRATION TEST
+   * ==========================================================
+   */
+
+  test: async function() {
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE ADMIN DISTRICT CONTROL TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    const startedAt =
+      performance.now();
+
+    let apiData = {};
+
+    let requestError = "";
+
+
+    try {
+
+      const result =
+        await this.request(
+          this.CONFIG.ACTIONS
+            .GET_GEOGRAPHY,
+          {
+            sessionId:
+              this.getSessionId(),
+
+            filters: {
+
+              query: "",
+
+              serviceStatus:
+                "ALL",
+
+              stateCode:
+                "",
+
+              includeDistricts:
+                false
+
+            }
+          }
+        );
+
+      apiData =
+        result.data || {};
+
+    } catch (error) {
+
+      requestError =
+        error &&
+        error.message
+          ? error.message
+          : String(error);
+
+    }
+
+
+    const states =
+      Array.isArray(apiData.states)
+        ? apiData.states
+        : [];
+
+    const summary =
+      apiData.summary || {};
+
+    const pageVisible =
+      Boolean(
+        this.elements.pageContent &&
+        !this.elements.pageContent
+          .classList.contains("hidden")
+      );
+
+    const drawerHidden =
+      Boolean(
+        this.elements.districtPanel &&
+        this.elements.districtPanel
+          .classList.contains("hidden")
+      );
+
+    const tests = [
+
+      {
+        test:
+          "Required role",
+
+        expected:
+          "Admin",
+
+        actual:
+          document.body.dataset
+            .requiredRole || "",
+
+        passed:
+          document.body.dataset
+            .requiredRole === "Admin"
+      },
+
+      {
+        test:
+          "Geography API",
+
+        expected:
+          true,
+
+        actual:
+          apiData.success,
+
+        passed:
+          apiData.success === true
+      },
+
+      {
+        test:
+          "State array",
+
+        expected:
+          true,
+
+        actual:
+          Array.isArray(
+            apiData.states
+          ),
+
+        passed:
+          Array.isArray(
+            apiData.states
+          )
+      },
+
+      {
+        test:
+          "Official states and UTs",
+
+        expected:
+          36,
+
+        actual:
+          states.length,
+
+        passed:
+          states.length === 36
+      },
+
+      {
+        test:
+          "Official districts",
+
+        expected:
+          784,
+
+        actual:
+          Number(
+            summary.totalDistricts || 0
+          ),
+
+        passed:
+          Number(
+            summary.totalDistricts || 0
+          ) === 784
+      },
+
+      {
+        test:
+          "Only state summary loaded",
+
+        expected:
+          true,
+
+        actual:
+          states.every(
+            (state) =>
+              !Array.isArray(
+                state.districts
+              ) ||
+              state.districts.length === 0
+          ),
+
+        passed:
+          states.every(
+            (state) =>
+              !Array.isArray(
+                state.districts
+              ) ||
+              state.districts.length === 0
+          )
+      },
+
+      {
+        test:
+          "Page visible",
+
+        expected:
+          true,
+
+        actual:
+          pageVisible,
+
+        passed:
+          pageVisible
+      },
+
+      {
+        test:
+          "State search available",
+
+        expected:
+          true,
+
+        actual:
+          Boolean(
+            this.elements
+              .stateSearchInput
+          ),
+
+        passed:
+          Boolean(
+            this.elements
+              .stateSearchInput
+          )
+      },
+
+      {
+        test:
+          "District lazy drawer",
+
+        expected:
+          true,
+
+        actual:
+          Boolean(
+            this.elements
+              .districtPanel
+          ),
+
+        passed:
+          Boolean(
+            this.elements
+              .districtPanel
+          )
+      },
+
+      {
+        test:
+          "District drawer initially hidden",
+
+        expected:
+          true,
+
+        actual:
+          drawerHidden,
+
+        passed:
+          drawerHidden
+      },
+
+      {
+        test:
+          "State write action available",
+
+        expected:
+          true,
+
+        actual:
+          Boolean(
+            this.CONFIG.ACTIONS
+              .SET_STATE_STATUS
+          ),
+
+        passed:
+          Boolean(
+            this.CONFIG.ACTIONS
+              .SET_STATE_STATUS
+          )
+      },
+
+      {
+        test:
+          "District write actions available",
+
+        expected:
+          true,
+
+        actual:
+          Boolean(
+            this.CONFIG.ACTIONS
+              .SET_DISTRICT_STATUS &&
+            this.CONFIG.ACTIONS
+              .BULK_SET_DISTRICT_STATUS &&
+            this.CONFIG.ACTIONS
+              .UPDATE_DISTRICT_RULES
+          ),
+
+        passed:
+          Boolean(
+            this.CONFIG.ACTIONS
+              .SET_DISTRICT_STATUS &&
+            this.CONFIG.ACTIONS
+              .BULK_SET_DISTRICT_STATUS &&
+            this.CONFIG.ACTIONS
+              .UPDATE_DISTRICT_RULES
+          )
+      },
+
+      {
+        test:
+          "No service data modified",
+
+        expected:
+          true,
+
+        actual:
+          true,
+
+        passed:
+          true
+      }
+
+    ];
+
+
+    const passed =
+      tests.every(
+        (test) =>
+          test.passed
+      );
+
+    const durationMs =
+      Math.round(
+        performance.now() -
+        startedAt
+      );
+
+
+    console.table(tests);
+
+    console.log(
+      "Admin Geography Data:",
+      apiData
+    );
+
+    console.log(
+      "Request Error:",
+      requestError
+    );
+
+    console.log(
+      "Duration:",
+      durationMs,
+      "ms"
+    );
+
+    console.log(
+      passed
+        ? "Admin District Control Test: PASS"
+        : "Admin District Control Test: FAIL"
+    );
+
+
+    return {
+
+      success:
+        passed,
+
+      status:
+        passed
+          ? "PASS"
+          : "FAIL",
+
+      durationMs:
+        durationMs,
+
+      data:
+        apiData,
+
+      error:
+        requestError,
+
+      results:
+        tests
+
+    };
+
+  }
+
+};
+
+
+/*
+ * ============================================================
+ * AUTOMATIC PAGE START
+ * ============================================================
+ */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    AdminDistrictControl.init()
+      .catch(
+        function(error) {
+
+          console.error(
+            "Admin District Control initialization failed:",
+            error
+          );
+
+        }
+      );
+
+  }
+);
