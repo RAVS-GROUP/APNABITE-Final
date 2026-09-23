@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#111827"
+  >
+
+  <meta
+    name="description"
+    content="ApnaBite secure finance expense and audit management"
+  >
+
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
+
+  <link
+    rel="icon"
+    type="image/webp"
+    href="../../shared/assets/images/apnabite-logo.webp"
+  >
+
+  <title>
+    Finance & Expenses | ApnaBite Admin
+  </title>
+
+
+  <!-- Shared styles -->
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
+
+
+  <!-- Admin styles -->
+
+  <link
+    rel="stylesheet"
+    href="../css/admin-common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/dashboard.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="../css/finance-expenses.css"
+  >
+
+</head>
+
+
+<body data-required-role="Admin">
+
+  <main class="admin-app">
+
+
+    <!-- =====================================================
+         ACCESS LOADER
+         ===================================================== -->
+
+    <div
+      class="admin-role-loader"
+      id="roleHomeLoader"
+    >
+
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
+
+      <strong>
+        Opening Finance Control
+      </strong>
+
+      <p>
+        Verifying secure Admin access...
+      </p>
+
+    </div>
+
+
+    <!-- =====================================================
+         PROTECTED CONTENT
+         ===================================================== -->
+
+    <div
+      class="admin-shell hidden"
+      id="roleHomeContent"
+    >
+
+
+      <!-- ===================================================
+           DESKTOP SIDEBAR
+           =================================================== -->
+
+      <aside
+        class="admin-sidebar"
+        aria-label="Admin navigation"
+      >
+
+        <a
+          class="admin-sidebar-brand"
+          href="dashboard.html"
+        >
+
+          <div
+            class="admin-brand-mark"
+            aria-hidden="true"
+          >
+            A
+          </div>
+
+          <div>
+
+            <strong>
+              ApnaBite
+            </strong>
+
+            <span>
+              Control Centre
+            </span>
+
+          </div>
+
+        </a>
+
+
+        <div class="admin-identity">
+
+          <span class="admin-identity-icon">
+            👤
+          </span>
+
+          <div>
+
+            <small>
+              SIGNED IN AS
+            </small>
+
+            <strong id="roleHomeUserRole">
+              Admin
+            </strong>
+
+            <span id="roleHomeUserMobile">
+              Verified administrator
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <nav class="admin-sidebar-navigation">
+
+          <p>
+            COMMAND CENTRE
+          </p>
+
+
+          <a
+            class="admin-navigation-item"
+            href="dashboard.html"
+          >
+
+            <span>
+              ◫
+            </span>
+
+            <strong>
+              Founder Overview
+            </strong>
+
+          </a>
+
+
+          <a
+            class="admin-navigation-item active"
+            href="finance-expenses.html"
+            aria-current="page"
+          >
+
+            <span>
+              ₹
+            </span>
+
+            <strong>
+              Finance & Audit
+            </strong>
+
+          </a>
+
+
+          <a
+            class="admin-navigation-item"
+            href="dashboard.html?view=operations"
+          >
+
+            <span>
+              ⚙
+            </span>
+
+            <strong>
+              Operations
+            </strong>
+
+          </a>
+
+
+          <a
+            class="admin-navigation-item"
+            href="dashboard.html?view=growth"
+          >
+
+            <span>
+              ↗
+            </span>
+
+            <strong>
+              Growth & Offers
+            </strong>
+
+          </a>
+
+
+          <p>
+            MANAGEMENT
+          </p>
+
+
+          <a
+            class="admin-navigation-item"
+            href="kyc-review.html"
+          >
+
+            <span>
+              ✓
+            </span>
+
+            <strong>
+              Partner KYC
+            </strong>
+
+          </a>
+
+
+          <a
+            class="admin-navigation-item"
+            href="dashboard.html?view=support"
+          >
+
+            <span>
+              ◉
+            </span>
+
+            <strong>
+              Support
+            </strong>
+
+          </a>
+
+
+          <a
+            class="admin-navigation-item"
+            href="dashboard.html?view=districts"
+          >
+
+            <span>
+              ⌖
+            </span>
+
+            <strong>
+              Districts
+            </strong>
+
+          </a>
+
+        </nav>
+
+
+        <div class="admin-sidebar-footer">
+
+          <button
+            class="admin-logout-button"
+            id="roleLogoutButton"
+            type="button"
+          >
+
+            <span>
+              ↪
+            </span>
+
+            Logout
+
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      <!-- ===================================================
+           FINANCE WORKSPACE
+           =================================================== -->
+
+      <section class="admin-workspace finance-workspace">
+
+
+        <!-- =================================================
+             TOP BAR
+             ================================================= -->
+
+        <header class="admin-topbar finance-topbar">
+
+          <div class="finance-topbar-main">
+
+            <a
+              class="finance-back-button"
+              href="dashboard.html?view=finance"
+              aria-label="Back to dashboard"
+            >
+              ←
+            </a>
+
+
+            <div class="admin-topbar-title">
+
+              <small>
+                FINANCE & AUDIT
+              </small>
+
+              <h1>
+                Expense Control
+              </h1>
+
+              <p>
+                Record, approve and audit business expenses
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="admin-topbar-actions">
+
+            <div class="admin-live-status">
+
+              <span></span>
+
+              Secure ledger
+
+            </div>
+
+
+            <button
+              class="admin-refresh-button"
+              id="refreshExpensesButton"
+              type="button"
+            >
+
+              <span>
+                ↻
+              </span>
+
+              <strong>
+                Refresh
+              </strong>
+
+            </button>
+
+
+            <button
+              class="finance-add-button"
+              id="addExpenseButton"
+              type="button"
+            >
+
+              <span>
+                ＋
+              </span>
+
+              Add Expense
+
+            </button>
+
+
+            <button
+              class="admin-mobile-logout"
+              id="financeMobileLogoutButton"
+              type="button"
+              aria-label="Logout"
+            >
+              ↪
+            </button>
+
+          </div>
+
+        </header>
+
+
+        <!-- Required by RoleHome -->
+
+        <div
+          class="admin-global-message hidden"
+          id="roleHomeMessage"
+          role="alert"
+          aria-live="polite"
+        ></div>
+
+
+        <!-- Finance request error -->
+
+        <div
+          class="admin-global-message admin-error-message hidden"
+          id="financePageError"
+          role="alert"
+          aria-live="assertive"
+        >
+
+          <div>
+
+            <strong>
+              Finance request failed
+            </strong>
+
+            <p id="financePageErrorText">
+              Please try again.
+            </p>
+
+          </div>
+
+          <button
+            id="retryFinanceButton"
+            type="button"
+          >
+            Retry
+          </button>
+
+        </div>
+
+
+        <!-- =================================================
+             PAGE SKELETON
+             ================================================= -->
+
+        <section
+          class="finance-skeleton"
+          id="financePageSkeleton"
+          aria-label="Loading finance expenses"
+        >
+
+          <div class="finance-skeleton-heading"></div>
+
+          <div class="finance-skeleton-cards">
+
+            <div></div>
+
+            <div></div>
+
+            <div></div>
+
+            <div></div>
+
+          </div>
+
+          <div class="finance-skeleton-table"></div>
+
+        </section>
+
+
+        <!-- =================================================
+             LIVE FINANCE PAGE
+             ================================================= -->
+
+        <div
+          class="finance-page hidden"
+          id="financePageContent"
+        >
+
+
+          <!-- ===============================================
+               PAGE HEADING
+               =============================================== -->
+
+          <section class="finance-page-heading">
+
+            <div>
+
+              <span class="admin-eyebrow">
+                FINANCIAL LEDGER
+              </span>
+
+              <h2>
+                Business expenses
+              </h2>
+
+              <p>
+                Every record follows an approval and audit workflow.
+              </p>
+
+            </div>
+
+
+            <div class="finance-page-heading-actions">
+
+              <span>
+                Last updated
+              </span>
+
+              <strong id="financeLastUpdated">
+                —
+              </strong>
+
+            </div>
+
+          </section>
+
+
+          <!-- ===============================================
+               SUMMARY CARDS
+               =============================================== -->
+
+          <section class="finance-summary-grid">
+
+
+            <article class="finance-summary-card total">
+
+              <div>
+
+                <span>
+                  APPROVED EXPENSES
+                </span>
+
+                <strong id="approvedExpenseTotal">
+                  ₹0
+                </strong>
+
+              </div>
+
+              <b>
+                ₹
+              </b>
+
+              <p>
+                Approved business cost
+              </p>
+
+            </article>
+
+
+            <article class="finance-summary-card paid">
+
+              <div>
+
+                <span>
+                  PAID EXPENSES
+                </span>
+
+                <strong id="paidExpenseTotal">
+                  ₹0
+                </strong>
+
+              </div>
+
+              <b>
+                ✓
+              </b>
+
+              <p>
+                Completed payments
+              </p>
+
+            </article>
+
+
+            <article class="finance-summary-card pending">
+
+              <div>
+
+                <span>
+                  PENDING APPROVAL
+                </span>
+
+                <strong id="pendingApprovalTotal">
+                  ₹0
+                </strong>
+
+              </div>
+
+              <b>
+                !
+              </b>
+
+              <p>
+                <strong id="pendingApprovalCount">
+                  0
+                </strong>
+                records waiting
+              </p>
+
+            </article>
+
+
+            <article class="finance-summary-card month">
+
+              <div>
+
+                <span>
+                  CURRENT MONTH
+                </span>
+
+                <strong id="currentMonthExpense">
+                  ₹0
+                </strong>
+
+              </div>
+
+              <b>
+                ◫
+              </b>
+
+              <p>
+                Approved this period
+              </p>
+
+            </article>
+
+          </section>
+
+
+          <!-- ===============================================
+               STATUS COUNTS
+               =============================================== -->
+
+          <section class="finance-status-strip">
+
+            <button
+              class="active"
+              type="button"
+              data-quick-filter="ALL"
+            >
+
+              <span>
+                All records
+              </span>
+
+              <strong id="totalExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+
+            <button
+              type="button"
+              data-quick-filter="DRAFT"
+            >
+
+              <span>
+                Draft
+              </span>
+
+              <strong id="draftExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+
+            <button
+              type="button"
+              data-quick-filter="PENDING"
+            >
+
+              <span>
+                Pending
+              </span>
+
+              <strong id="pendingExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+
+            <button
+              type="button"
+              data-quick-filter="APPROVED"
+            >
+
+              <span>
+                Approved
+              </span>
+
+              <strong id="approvedExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+
+            <button
+              type="button"
+              data-quick-filter="REJECTED"
+            >
+
+              <span>
+                Rejected
+              </span>
+
+              <strong id="rejectedExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+
+            <button
+              type="button"
+              data-quick-filter="PAID"
+            >
+
+              <span>
+                Paid
+              </span>
+
+              <strong id="paidExpenseCount">
+                0
+              </strong>
+
+            </button>
+
+          </section>
+
+
+          <!-- ===============================================
+               FILTERS
+               =============================================== -->
+
+          <section class="finance-filter-panel">
+
+            <div class="finance-search-box">
+
+              <span>
+                ⌕
+              </span>
+
+              <input
+                id="expenseSearchInput"
+                type="search"
+                maxlength="100"
+                autocomplete="off"
+                placeholder="Search ID, vendor, invoice or description"
+              >
+
+            </div>
+
+
+            <select
+              id="expenseApprovalFilter"
+              aria-label="Approval status"
+            >
+
+              <option value="ALL">
+                All approval statuses
+              </option>
+
+              <option value="DRAFT">
+                Draft
+              </option>
+
+              <option value="PENDING">
+                Pending
+              </option>
+
+              <option value="APPROVED">
+                Approved
+              </option>
+
+              <option value="REJECTED">
+                Rejected
+              </option>
+
+              <option value="VOID">
+                Void
+              </option>
+
+            </select>
+
+
+            <select
+              id="expensePaymentFilter"
+              aria-label="Payment status"
+            >
+
+              <option value="ALL">
+                All payment statuses
+              </option>
+
+              <option value="UNPAID">
+                Unpaid
+              </option>
+
+              <option value="PAID">
+                Paid
+              </option>
+
+              <option value="REFUNDED">
+                Refunded
+              </option>
+
+              <option value="VOID">
+                Void
+              </option>
+
+            </select>
+
+
+            <select
+              id="expenseCategoryFilter"
+              aria-label="Expense category"
+            >
+
+              <option value="ALL">
+                All categories
+              </option>
+
+              <option value="TECHNOLOGY">
+                Technology
+              </option>
+
+              <option value="MARKETING">
+                Marketing
+              </option>
+
+              <option value="OPERATIONS">
+                Operations
+              </option>
+
+              <option value="DELIVERY">
+                Delivery
+              </option>
+
+              <option value="CUSTOMER_SUPPORT">
+                Customer Support
+              </option>
+
+              <option value="PARTNER_SUPPORT">
+                Partner Support
+              </option>
+
+              <option value="SALARY">
+                Salary
+              </option>
+
+              <option value="OFFICE">
+                Office
+              </option>
+
+              <option value="LEGAL">
+                Legal
+              </option>
+
+              <option value="COMPLIANCE">
+                Compliance
+              </option>
+
+              <option value="TAX">
+                Tax
+              </option>
+
+              <option value="BANK_CHARGES">
+                Bank Charges
+              </option>
+
+              <option value="REFUND_LOSS">
+                Refund Loss
+              </option>
+
+              <option value="RIDER_SUBSIDY">
+                Rider Subsidy
+              </option>
+
+              <option value="DISCOUNT_SUBSIDY">
+                Discount Subsidy
+              </option>
+
+              <option value="CASHBACK">
+                Cashback
+              </option>
+
+              <option value="REWARDS">
+                Rewards
+              </option>
+
+              <option value="OTHER">
+                Other
+              </option>
+
+            </select>
+
+
+            <label class="finance-date-filter">
+
+              <span>
+                From
+              </span>
+
+              <input
+                id="expenseFromDate"
+                type="date"
+              >
+
+            </label>
+
+
+            <label class="finance-date-filter">
+
+              <span>
+                To
+              </span>
+
+              <input
+                id="expenseToDate"
+                type="date"
+              >
+
+            </label>
+
+
+            <button
+              class="finance-clear-filter"
+              id="clearExpenseFiltersButton"
+              type="button"
+            >
+              Clear
+            </button>
+
+          </section>
+
+
+          <!-- ===============================================
+               EXPENSE LIST
+               =============================================== -->
+
+          <section class="finance-ledger-card">
+
+            <div class="finance-ledger-heading">
+
+              <div>
+
+                <span class="admin-eyebrow">
+                  EXPENSE REGISTER
+                </span>
+
+                <h3>
+                  Expense records
+                </h3>
+
+                <p>
+                  Showing
+                  <strong id="visibleExpenseCount">
+                    0
+                  </strong>
+                  records
+                </p>
+
+              </div>
+
+
+              <button
+                id="mobileAddExpenseButton"
+                type="button"
+              >
+                ＋ Add
+              </button>
+
+            </div>
+
+
+            <div
+              class="finance-table-wrapper"
+              id="financeTableWrapper"
+            >
+
+              <table class="finance-expense-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Expense
+                    </th>
+
+                    <th>
+                      Category
+                    </th>
+
+                    <th>
+                      Vendor
+                    </th>
+
+                    <th>
+                      Date
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Approval
+                    </th>
+
+                    <th>
+                      Payment
+                    </th>
+
+                    <th>
+                      Action
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody id="expenseTableBody"></tbody>
+
+              </table>
+
+            </div>
+
+
+            <div
+              class="finance-mobile-list"
+              id="expenseMobileList"
+            ></div>
+
+
+            <div
+              class="finance-empty-state hidden"
+              id="expenseEmptyState"
+            >
+
+              <span>
+                ₹
+              </span>
+
+              <strong>
+                No expenses found
+              </strong>
+
+              <p>
+                Add the first business expense or change the filters.
+              </p>
+
+              <button
+                id="emptyAddExpenseButton"
+                type="button"
+              >
+                Add First Expense
+              </button>
+
+            </div>
+
+          </section>
+
+
+          <!-- ===============================================
+               AUDIT NOTE
+               =============================================== -->
+
+          <footer class="finance-audit-note">
+
+            <span>
+              🔒
+            </span>
+
+            <div>
+
+              <strong>
+                Audit-protected ledger
+              </strong>
+
+              <p>
+                Financial records are never deleted. Every create, update,
+                approval, rejection and payment action is logged.
+              </p>
+
+            </div>
+
+          </footer>
+
+        </div>
+
+
+        <!-- =================================================
+             MOBILE BOTTOM NAVIGATION
+             ================================================= -->
+
+        <nav
+          class="admin-mobile-navigation"
+          aria-label="Admin navigation"
+        >
+
+          <a href="dashboard.html">
+
+            <span>
+              ◫
+            </span>
+
+            <strong>
+              Overview
+            </strong>
+
+          </a>
+
+
+          <a
+            class="active"
+            href="finance-expenses.html"
+            aria-current="page"
+          >
+
+            <span>
+              ₹
+            </span>
+
+            <strong>
+              Finance
+            </strong>
+
+          </a>
+
+
+          <a href="dashboard.html?view=operations">
+
+            <span>
+              ⚙
+            </span>
+
+            <strong>
+              Operations
+            </strong>
+
+          </a>
+
+
+          <a href="dashboard.html?view=growth">
+
+            <span>
+              ↗
+            </span>
+
+            <strong>
+              Growth
+            </strong>
+
+          </a>
+
+        </nav>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         ADD / EDIT EXPENSE DRAWER
+         ===================================================== -->
+
+    <div
+      class="finance-dialog hidden"
+      id="expenseFormDialog"
+      aria-hidden="true"
+    >
+
+      <button
+        class="finance-dialog-backdrop"
+        type="button"
+        data-close-expense-form="true"
+        aria-label="Close expense form"
+      ></button>
+
+
+      <section
+        class="finance-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expenseFormTitle"
+      >
+
+        <header>
+
+          <div>
+
+            <span class="admin-eyebrow">
+              FINANCE ENTRY
+            </span>
+
+            <h2 id="expenseFormTitle">
+              Add Expense
+            </h2>
+
+            <p>
+              Save as a draft before approval.
+            </p>
+
+          </div>
+
+
+          <button
+            id="closeExpenseFormButton"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+        </header>
+
+
+        <form
+          id="expenseForm"
+          novalidate
+        >
+
+          <input
+            id="expenseIdInput"
+            type="hidden"
+          >
+
+
+          <div class="finance-form-section">
+
+            <div class="finance-form-section-heading">
+
+              <span>
+                1
+              </span>
+
+              <div>
+
+                <strong>
+                  Expense details
+                </strong>
+
+                <small>
+                  Basic accounting information
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="finance-form-grid">
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseDateInput">
+                  Expense date
+                </label>
+
+                <input
+                  id="expenseDateInput"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseTypeInput">
+                  Expense type
+                </label>
+
+                <select
+                  id="expenseTypeInput"
+                  required
+                >
+
+                  <option value="">
+                    Select type
+                  </option>
+
+                  <option value="OPEX">
+                    OPEX – Operating expense
+                  </option>
+
+                  <option value="CAPEX">
+                    CAPEX – Capital expense
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseCategoryInput">
+                  Category
+                </label>
+
+                <select
+                  id="expenseCategoryInput"
+                  required
+                >
+
+                  <option value="">
+                    Select category
+                  </option>
+
+                  <option value="TECHNOLOGY">
+                    Technology
+                  </option>
+
+                  <option value="MARKETING">
+                    Marketing
+                  </option>
+
+                  <option value="OPERATIONS">
+                    Operations
+                  </option>
+
+                  <option value="DELIVERY">
+                    Delivery
+                  </option>
+
+                  <option value="CUSTOMER_SUPPORT">
+                    Customer Support
+                  </option>
+
+                  <option value="PARTNER_SUPPORT">
+                    Partner Support
+                  </option>
+
+                  <option value="SALARY">
+                    Salary
+                  </option>
+
+                  <option value="OFFICE">
+                    Office
+                  </option>
+
+                  <option value="LEGAL">
+                    Legal
+                  </option>
+
+                  <option value="COMPLIANCE">
+                    Compliance
+                  </option>
+
+                  <option value="TAX">
+                    Tax
+                  </option>
+
+                  <option value="BANK_CHARGES">
+                    Bank Charges
+                  </option>
+
+                  <option value="REFUND_LOSS">
+                    Refund Loss
+                  </option>
+
+                  <option value="RIDER_SUBSIDY">
+                    Rider Subsidy
+                  </option>
+
+                  <option value="DISCOUNT_SUBSIDY">
+                    Discount Subsidy
+                  </option>
+
+                  <option value="CASHBACK">
+                    Cashback
+                  </option>
+
+                  <option value="REWARDS">
+                    Rewards
+                  </option>
+
+                  <option value="OTHER">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseSubcategoryInput">
+                  Subcategory
+                </label>
+
+                <input
+                  id="expenseSubcategoryInput"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Example: Cloud hosting"
+                >
+
+              </div>
+
+
+              <div class="finance-form-field finance-full-field">
+
+                <label for="expenseDescriptionInput">
+                  Description
+                </label>
+
+                <textarea
+                  id="expenseDescriptionInput"
+                  maxlength="500"
+                  rows="3"
+                  placeholder="Explain the business purpose of this expense"
+                  required
+                ></textarea>
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseCostCenterInput">
+                  Cost centre
+                </label>
+
+                <select
+                  id="expenseCostCenterInput"
+                  required
+                >
+
+                  <option value="">
+                    Select cost centre
+                  </option>
+
+                  <option value="FOUNDER">
+                    Founder
+                  </option>
+
+                  <option value="FINANCE">
+                    Finance
+                  </option>
+
+                  <option value="TECHNOLOGY">
+                    Technology
+                  </option>
+
+                  <option value="OPERATIONS">
+                    Operations
+                  </option>
+
+                  <option value="GROWTH">
+                    Growth
+                  </option>
+
+                  <option value="MARKETING">
+                    Marketing
+                  </option>
+
+                  <option value="CUSTOMER_SUPPORT">
+                    Customer Support
+                  </option>
+
+                  <option value="FOOD_PARTNER">
+                    Food Partner
+                  </option>
+
+                  <option value="RIDER">
+                    Rider
+                  </option>
+
+                  <option value="DISTRICT">
+                    District
+                  </option>
+
+                  <option value="GENERAL">
+                    General
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseVendorInput">
+                  Vendor / Payee
+                </label>
+
+                <input
+                  id="expenseVendorInput"
+                  type="text"
+                  maxlength="150"
+                  placeholder="Vendor or employee name"
+                >
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="finance-form-section">
+
+            <div class="finance-form-section-heading">
+
+              <span>
+                2
+              </span>
+
+              <div>
+
+                <strong>
+                  Amount and tax
+                </strong>
+
+                <small>
+                  Total is calculated by the server
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="finance-form-grid">
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseBaseAmountInput">
+                  Base amount
+                </label>
+
+                <div class="finance-money-input">
+
+                  <span>
+                    ₹
+                  </span>
+
+                  <input
+                    id="expenseBaseAmountInput"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    max="100000000"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseTaxAmountInput">
+                  Tax / GST amount
+                </label>
+
+                <div class="finance-money-input">
+
+                  <span>
+                    ₹
+                  </span>
+
+                  <input
+                    id="expenseTaxAmountInput"
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="100000000"
+                    step="0.01"
+                    value="0"
+                  >
+
+                </div>
+
+              </div>
+
+
+              <div class="finance-total-preview finance-full-field">
+
+                <span>
+                  TOTAL EXPENSE
+                </span>
+
+                <strong id="expenseTotalPreview">
+                  ₹0
+                </strong>
+
+                <small>
+                  Base amount + tax
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="finance-form-section">
+
+            <div class="finance-form-section-heading">
+
+              <span>
+                3
+              </span>
+
+              <div>
+
+                <strong>
+                  Invoice and references
+                </strong>
+
+                <small>
+                  Optional supporting information
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="finance-form-grid">
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseInvoiceNumberInput">
+                  Invoice number
+                </label>
+
+                <input
+                  id="expenseInvoiceNumberInput"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Invoice or bill number"
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseInvoiceUrlInput">
+                  Invoice URL
+                </label>
+
+                <input
+                  id="expenseInvoiceUrlInput"
+                  type="url"
+                  maxlength="500"
+                  placeholder="https://..."
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseDistrictInput">
+                  District ID
+                </label>
+
+                <input
+                  id="expenseDistrictInput"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseOrderInput">
+                  Related Order ID
+                </label>
+
+                <input
+                  id="expenseOrderInput"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label for="expenseCampaignInput">
+                  Campaign ID
+                </label>
+
+                <input
+                  id="expenseCampaignInput"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="finance-form-field">
+
+                <label class="finance-check-field">
+
+                  <input
+                    id="expenseRecurringInput"
+                    type="checkbox"
+                  >
+
+                  <span>
+                    This is a recurring expense
+                  </span>
+
+                </label>
+
+              </div>
+
+
+              <div
+                class="finance-form-field finance-full-field hidden"
+                id="recurringFrequencyField"
+              >
+
+                <label for="expenseRecurringFrequencyInput">
+                  Recurring frequency
+                </label>
+
+                <select id="expenseRecurringFrequencyInput">
+
+                  <option value="MONTHLY">
+                    Monthly
+                  </option>
+
+                  <option value="WEEKLY">
+                    Weekly
+                  </option>
+
+                  <option value="QUARTERLY">
+                    Quarterly
+                  </option>
+
+                  <option value="YEARLY">
+                    Yearly
+                  </option>
+
+                  <option value="DAILY">
+                    Daily
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="finance-form-error hidden"
+            id="expenseFormError"
+            role="alert"
+          ></div>
+
+
+          <div class="finance-form-actions">
+
+            <button
+              class="finance-secondary-button"
+              id="cancelExpenseButton"
+              type="button"
+            >
+              Cancel
+            </button>
+
+
+            <button
+              class="finance-primary-button"
+              id="saveExpenseButton"
+              type="submit"
+            >
+              Save Draft
+            </button>
+
+          </div>
+
+        </form>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         EXPENSE REVIEW DRAWER
+         ===================================================== -->
+
+    <div
+      class="finance-dialog hidden"
+      id="expenseReviewDialog"
+      aria-hidden="true"
+    >
+
+      <button
+        class="finance-dialog-backdrop"
+        type="button"
+        data-close-expense-review="true"
+        aria-label="Close expense review"
+      ></button>
+
+
+      <section
+        class="finance-drawer finance-review-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expenseReviewTitle"
+      >
+
+        <header>
+
+          <div>
+
+            <span class="admin-eyebrow">
+              EXPENSE REVIEW
+            </span>
+
+            <h2 id="expenseReviewTitle">
+              Expense details
+            </h2>
+
+            <p id="expenseReviewId">
+              —
+            </p>
+
+          </div>
+
+
+          <button
+            id="closeExpenseReviewButton"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+        </header>
+
+
+        <div class="finance-review-content">
+
+
+          <div class="finance-review-statuses">
+
+            <span id="reviewApprovalStatus">
+              DRAFT
+            </span>
+
+            <span id="reviewPaymentStatus">
+              UNPAID
+            </span>
+
+          </div>
+
+
+          <div class="finance-review-amount">
+
+            <span>
+              TOTAL EXPENSE
+            </span>
+
+            <strong id="reviewTotalAmount">
+              ₹0
+            </strong>
+
+          </div>
+
+
+          <dl class="finance-review-details">
+
+            <div>
+              <dt>Description</dt>
+              <dd id="reviewDescription">—</dd>
+            </div>
+
+            <div>
+              <dt>Category</dt>
+              <dd id="reviewCategory">—</dd>
+            </div>
+
+            <div>
+              <dt>Expense type</dt>
+              <dd id="reviewType">—</dd>
+            </div>
+
+            <div>
+              <dt>Cost centre</dt>
+              <dd id="reviewCostCenter">—</dd>
+            </div>
+
+            <div>
+              <dt>Vendor</dt>
+              <dd id="reviewVendor">—</dd>
+            </div>
+
+            <div>
+              <dt>Expense date</dt>
+              <dd id="reviewDate">—</dd>
+            </div>
+
+            <div>
+              <dt>Base amount</dt>
+              <dd id="reviewBaseAmount">₹0</dd>
+            </div>
+
+            <div>
+              <dt>Tax amount</dt>
+              <dd id="reviewTaxAmount">₹0</dd>
+            </div>
+
+            <div>
+              <dt>Invoice</dt>
+              <dd id="reviewInvoice">—</dd>
+            </div>
+
+            <div>
+              <dt>Created by</dt>
+              <dd id="reviewCreatedBy">—</dd>
+            </div>
+
+          </dl>
+
+
+          <div
+            class="finance-rejection-note hidden"
+            id="reviewRejectionNote"
+          >
+
+            <strong>
+              Rejection reason
+            </strong>
+
+            <p id="reviewRejectionReason"></p>
+
+          </div>
+
+
+          <div
+            class="finance-review-error hidden"
+            id="expenseReviewError"
+            role="alert"
+          ></div>
+
+
+          <div
+            class="finance-review-actions"
+            id="expenseReviewActions"
+          >
+
+            <button
+              class="finance-secondary-button hidden"
+              id="editExpenseButton"
+              type="button"
+            >
+              Edit Draft
+            </button>
+
+
+            <button
+              class="finance-submit-button hidden"
+              id="submitExpenseButton"
+              type="button"
+            >
+              Submit for Approval
+            </button>
+
+
+            <button
+              class="finance-reject-button hidden"
+              id="rejectExpenseButton"
+              type="button"
+            >
+              Reject
+            </button>
+
+
+            <button
+              class="finance-approve-button hidden"
+              id="approveExpenseButton"
+              type="button"
+            >
+              Approve
+            </button>
+
+
+            <button
+              class="finance-paid-button hidden"
+              id="markExpensePaidButton"
+              type="button"
+            >
+              Mark as Paid
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         REJECTION DIALOG
+         ===================================================== -->
+
+    <div
+      class="finance-confirm-dialog hidden"
+      id="expenseRejectDialog"
+      aria-hidden="true"
+    >
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rejectExpenseTitle"
+      >
+
+        <h2 id="rejectExpenseTitle">
+          Reject expense
+        </h2>
+
+        <p>
+          Enter a clear reason. It will remain in the audit history.
+        </p>
+
+
+        <textarea
+          id="expenseRejectionReasonInput"
+          maxlength="500"
+          rows="4"
+          placeholder="Reason for rejection"
+        ></textarea>
+
+
+        <div
+          class="finance-form-error hidden"
+          id="expenseRejectError"
+          role="alert"
+        ></div>
+
+
+        <div>
+
+          <button
+            class="finance-secondary-button"
+            id="cancelExpenseRejectButton"
+            type="button"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            class="finance-reject-button"
+            id="confirmExpenseRejectButton"
+            type="button"
+          >
+            Confirm Reject
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         PAYMENT DIALOG
+         ===================================================== -->
+
+    <div
+      class="finance-confirm-dialog hidden"
+      id="expensePaymentDialog"
+      aria-hidden="true"
+    >
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="markPaidTitle"
+      >
+
+        <h2 id="markPaidTitle">
+          Mark expense as paid
+        </h2>
+
+        <p>
+          Enter the payment method and transaction reference.
+        </p>
+
+
+        <label for="expensePaymentMethodInput">
+          Payment method
+        </label>
+
+        <select id="expensePaymentMethodInput">
+
+          <option value="">
+            Select payment method
+          </option>
+
+          <option value="BANK_TRANSFER">
+            Bank Transfer
+          </option>
+
+          <option value="UPI">
+            UPI
+          </option>
+
+          <option value="CASH">
+            Cash
+          </option>
+
+          <option value="CARD">
+            Card
+          </option>
+
+          <option value="CHEQUE">
+            Cheque
+          </option>
+
+          <option value="PAYMENT_GATEWAY">
+            Payment Gateway
+          </option>
+
+          <option value="WALLET">
+            Wallet
+          </option>
+
+          <option value="OTHER">
+            Other
+          </option>
+
+        </select>
+
+
+        <label for="expensePaymentReferenceInput">
+          Payment reference
+        </label>
+
+        <input
+          id="expensePaymentReferenceInput"
+          type="text"
+          maxlength="150"
+          placeholder="UTR, transaction ID or receipt number"
+        >
+
+
+        <div
+          class="finance-form-error hidden"
+          id="expensePaymentError"
+          role="alert"
+        ></div>
+
+
+        <div>
+
+          <button
+            class="finance-secondary-button"
+            id="cancelExpensePaymentButton"
+            type="button"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            class="finance-paid-button"
+            id="confirmExpensePaymentButton"
+            type="button"
+          >
+            Confirm Payment
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- Shared scripts -->
+
+  <script src="../../shared/js/storage.js"></script>
+
+  <script src="../../shared/js/cache.js"></script>
+
+  <script src="../../shared/js/api.js"></script>
+
+  <script src="../../shared/js/session.js"></script>
+
+  <script src="../../shared/js/auth.js"></script>
+
+  <script src="../../shared/js/app-router.js"></script>
+
+  <script src="../../shared/js/role-home.js"></script>
+
+
+  <!-- Finance page -->
+
+  <script src="../js/finance-expenses.js"></script>
+
+</body>
+
+</html>
