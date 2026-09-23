@@ -3,7 +3,7 @@
  * APNABITE FOOD PARTNER
  * FILE: food-partner/js/dashboard.js
  * PURPOSE: Onboarding and live Food Partner dashboard
- * VERSION: 2.0.0
+ * VERSION: 2.1.0
  * ============================================================
  */
 
@@ -247,6 +247,17 @@ const FoodPartnerDashboard = {
         );
       });
     });
+
+    window.addEventListener(
+      "popstate",
+      () => {
+        this.selectTab(
+          this.getTabFromUrl(),
+          false,
+          false
+        );
+      }
+    );
 
     document.addEventListener(
       "apnabite:kitchen-status-updated",
@@ -624,6 +635,12 @@ const FoodPartnerDashboard = {
     if (summary) {
       this.renderSummary(summary);
     }
+
+    this.selectTab(
+      this.getTabFromUrl(),
+      false,
+      false
+    );
 
     return true;
   },
@@ -1129,14 +1146,103 @@ const FoodPartnerDashboard = {
    * ----------------------------------------------------------
    */
 
-  selectTab(tabName, scrollToTabs = false) {
+  getAllowedTabs() {
 
-    const allowed = [
+    return [
       "overview",
       "orders",
       "products",
       "profile"
     ];
+  },
+
+
+  getTabFromUrl() {
+
+    try {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const requested =
+        String(
+          parameters.get("tab") ||
+          "overview"
+        )
+          .trim()
+          .toLowerCase();
+
+      return this.getAllowedTabs().includes(
+        requested
+      )
+        ? requested
+        : "overview";
+
+    } catch (error) {
+      return "overview";
+    }
+  },
+
+
+  updateTabUrl(tabName) {
+
+    if (
+      !window.history ||
+      typeof window.history.pushState !==
+        "function"
+    ) {
+      return false;
+    }
+
+    const url =
+      new URL(
+        window.location.href
+      );
+
+    if (tabName === "overview") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set(
+        "tab",
+        tabName
+      );
+    }
+
+    const nextUrl =
+      url.pathname +
+      url.search +
+      url.hash;
+
+    const currentUrl =
+      window.location.pathname +
+      window.location.search +
+      window.location.hash;
+
+    if (nextUrl === currentUrl) {
+      return true;
+    }
+
+    window.history.pushState(
+      {
+        dashboardTab: tabName
+      },
+      "",
+      nextUrl
+    );
+
+    return true;
+  },
+
+
+  selectTab(
+    tabName,
+    scrollToTabs = false,
+    updateUrl = true
+  ) {
+
+    const allowed =
+      this.getAllowedTabs();
 
     if (!allowed.includes(tabName)) {
       return {
@@ -1147,6 +1253,10 @@ const FoodPartnerDashboard = {
 
     this.activeTab =
       tabName;
+
+    if (updateUrl) {
+      this.updateTabUrl(tabName);
+    }
 
     this.elements.tabButtons.forEach((button) => {
 
@@ -2115,6 +2225,28 @@ const FoodPartnerDashboard = {
           document.querySelectorAll(
             ".partner-nav-item"
           ).length === 4
+      },
+      {
+        test: "URL tab support",
+        expected: true,
+        actual:
+          typeof this.getTabFromUrl ===
+            "function" &&
+          typeof this.updateTabUrl ===
+            "function",
+        passed:
+          typeof this.getTabFromUrl ===
+            "function" &&
+          typeof this.updateTabUrl ===
+            "function"
+      },
+      {
+        test: "Allowed dashboard tabs",
+        expected: 4,
+        actual:
+          this.getAllowedTabs().length,
+        passed:
+          this.getAllowedTabs().length === 4
       }
     ];
 
