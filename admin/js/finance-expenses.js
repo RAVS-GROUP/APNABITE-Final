@@ -37,116 +37,136 @@ const AdminFinanceExpenses = {
 
   init() {
 
-    const ids = {
-      refresh: "refreshFinanceButton",
-      retry: "retryFinanceButton",
+  const ids = {
+  refresh: "refreshExpensesButton",
+  retry: "retryFinanceButton",
 
-      add: "addExpenseButton",
-      mobileAdd: "mobileAddExpenseButton",
-      emptyAdd: "emptyAddExpenseButton",
+  add: "addExpenseButton",
+  mobileAdd: "mobileAddExpenseButton",
+  emptyAdd: "emptyAddExpenseButton",
 
-      pageError: "financePageError",
-      loading: "financeLoading",
-      content: "financeContent",
+  pageError: "financePageError",
+  loading: "financePageSkeleton",
+  content: "financePageContent",
 
-      search: "expenseSearchInput",
-      approvalFilter: "approvalStatusFilter",
-      paymentFilter: "paymentStatusFilter",
-      categoryFilter: "expenseCategoryFilter",
-      fromDate: "expenseFromDate",
-      toDate: "expenseToDate",
-      clearFilters: "clearExpenseFiltersButton",
-      quickFilters: "expenseQuickFilters",
+  search: "expenseSearchInput",
+  approvalFilter: "expenseApprovalFilter",
+  paymentFilter: "expensePaymentFilter",
+  categoryFilter: "expenseCategoryFilter",
+  fromDate: "expenseFromDate",
+  toDate: "expenseToDate",
+  clearFilters: "clearExpenseFiltersButton",
+  quickFilters: "expenseQuickFilters",
 
-      approvedTotal: "approvedExpenseTotal",
-      paidTotal: "paidExpenseTotal",
-      pendingTotal: "pendingApprovalTotal",
-      monthTotal: "currentMonthExpense",
+  approvedTotal: "approvedExpenseTotal",
+  paidTotal: "paidExpenseTotal",
+  pendingTotal: "pendingApprovalTotal",
+  monthTotal: "currentMonthExpense",
 
-      pendingApprovalCount: "pendingApprovalCount",
-      totalCount: "totalExpenseCount",
-      draftCount: "draftExpenseCount",
-      pendingCount: "pendingExpenseCount",
-      approvedCount: "approvedExpenseCount",
-      rejectedCount: "rejectedExpenseCount",
-      paidCount: "paidExpenseCount",
-      visibleCount: "visibleExpenseCount",
-      lastUpdated: "financeLastUpdated",
+  pendingApprovalCount: "pendingApprovalCount",
+  totalCount: "totalExpenseCount",
+  draftCount: "draftExpenseCount",
+  pendingCount: "pendingExpenseCount",
+  approvedCount: "approvedExpenseCount",
+  rejectedCount: "rejectedExpenseCount",
+  paidCount: "paidExpenseCount",
+  visibleCount: "visibleExpenseCount",
+  lastUpdated: "financeLastUpdated",
 
-      tableBody: "expenseTableBody",
-      mobileList: "expenseMobileList",
-      empty: "expenseEmpty",
+  tableBody: "expenseTableBody",
+  mobileList: "expenseMobileList",
+  empty: "expenseEmptyState",
 
-      formDialog: "expenseFormDialog",
-      formTitle: "expenseFormTitle",
-      form: "expenseForm",
-      closeForm: "closeExpenseFormButton",
-      cancelForm: "cancelExpenseFormButton",
-      saveDraft: "saveExpenseDraftButton",
-      formError: "expenseFormError",
+  formDialog: "expenseFormDialog",
+  formTitle: "expenseFormTitle",
+  form: "expenseForm",
+  closeForm: "closeExpenseFormButton",
+  cancelForm: "cancelExpenseButton",
+  saveDraft: "saveExpenseButton",
+  formError: "expenseFormError",
 
-      expenseId: "expenseIdInput",
-      expenseDate: "expenseDateInput",
-      category: "expenseCategoryInput",
-      subcategory: "expenseSubcategoryInput",
-      type: "expenseTypeInput",
-      costCenter: "expenseCostCenterInput",
-      description: "expenseDescriptionInput",
-      vendor: "expenseVendorInput",
-      invoiceNumber: "expenseInvoiceNumberInput",
-      invoiceUrl: "expenseInvoiceUrlInput",
-      baseAmount: "expenseBaseAmountInput",
-      taxAmount: "expenseTaxAmountInput",
-      totalAmount: "expenseTotalAmount",
-      districtId: "expenseDistrictIdInput",
-      orderId: "expenseOrderIdInput",
-      campaignId: "expenseCampaignIdInput",
-      recurring: "expenseRecurringInput",
-      recurringFrequency: "expenseRecurringFrequencyInput",
-      recurringBox: "recurringFrequencyBox",
+  expenseId: "expenseIdInput",
+  expenseDate: "expenseDateInput",
+  category: "expenseCategoryInput",
+  subcategory: "expenseSubcategoryInput",
+  type: "expenseTypeInput",
+  costCenter: "expenseCostCenterInput",
+  description: "expenseDescriptionInput",
+  vendor: "expenseVendorInput",
+  invoiceNumber: "expenseInvoiceNumberInput",
+  invoiceUrl: "expenseInvoiceUrlInput",
+  baseAmount: "expenseBaseAmountInput",
+  taxAmount: "expenseTaxAmountInput",
+  totalAmount: "expenseTotalPreview",
+  districtId: "expenseDistrictInput",
+  orderId: "expenseOrderInput",
+  campaignId: "expenseCampaignInput",
+  recurring: "expenseRecurringInput",
+  recurringFrequency: "expenseRecurringFrequencyInput",
+  recurringBox: "recurringFrequencyBox",
 
-      reviewDialog: "expenseReviewDialog",
-      closeReview: "closeExpenseReviewButton",
-      reviewContent: "expenseReviewContent",
-      editReview: "editReviewedExpenseButton",
-      submitReview: "submitExpenseButton",
-      approveReview: "approveExpenseButton",
-      rejectReview: "rejectExpenseButton",
-      paidReview: "markExpensePaidButton",
-      reviewError: "expenseReviewError",
+  reviewDialog: "expenseReviewDialog",
+  reviewTitle: "expenseReviewTitle",
+  reviewId: "expenseReviewId",
+  closeReview: "closeExpenseReviewButton",
+  reviewApproval: "reviewApprovalStatus",
+  reviewPayment: "reviewPaymentStatus",
+  reviewTotal: "reviewTotalAmount",
+  reviewDescription: "reviewDescription",
+  reviewCategory: "reviewCategory",
+  reviewType: "reviewType",
+  reviewCostCenter: "reviewCostCenter",
+  reviewVendor: "reviewVendor",
+  reviewDate: "reviewDate",
+  reviewBaseAmount: "reviewBaseAmount",
+  reviewTaxAmount: "reviewTaxAmount",
+  reviewInvoice: "reviewInvoice",
+  reviewCreatedBy: "reviewCreatedBy",
+  reviewRejectionNote: "reviewRejectionNote",
+  reviewRejectionReason: "reviewRejectionReason",
 
-      rejectDialog: "rejectExpenseDialog",
-      rejectReason: "expenseRejectionReasonInput",
-      rejectError: "expenseRejectError",
-      cancelReject: "cancelExpenseRejectButton",
-      confirmReject: "confirmExpenseRejectButton",
+  editReview: "editExpenseButton",
+  submitReview: "submitExpenseButton",
+  approveReview: "approveExpenseButton",
+  rejectReview: "rejectExpenseButton",
+  paidReview: "markExpensePaidButton",
+  reviewError: "expenseReviewError",
 
-      paymentDialog: "expensePaymentDialog",
-      paymentMethod: "expensePaymentMethodInput",
-      paymentReference: "expensePaymentReferenceInput",
-      paymentError: "expensePaymentError",
-      cancelPayment: "cancelExpensePaymentButton",
-      confirmPayment: "confirmExpensePaymentButton",
+  rejectDialog: "expenseRejectDialog",
+  rejectReason: "expenseRejectionReasonInput",
+  rejectError: "expenseRejectError",
+  cancelReject: "cancelExpenseRejectButton",
+  confirmReject: "confirmExpenseRejectButton",
 
-      mobileLogout: "mobileFinanceLogoutButton"
-    };
+  paymentDialog: "expensePaymentDialog",
+  paymentMethod: "expensePaymentMethodInput",
+  paymentReference: "expensePaymentReferenceInput",
+  paymentError: "expensePaymentError",
+  cancelPayment: "cancelExpensePaymentButton",
+  confirmPayment: "confirmExpensePaymentButton",
 
+  mobileLogout: "financeMobileLogoutButton"
+};  
+    
     Object.keys(ids).forEach((key) => {
       this.elements[key] =
         document.getElementById(ids[key]);
     });
 
-    const required = [
-      "loading",
-      "content",
-      "tableBody",
-      "mobileList",
-      "formDialog",
-      "form",
-      "reviewDialog",
-      "reviewContent"
-    ];
-
+  const required = [
+  "loading",
+  "content",
+  "tableBody",
+  "mobileList",
+  "formDialog",
+  "form",
+  "saveDraft",
+  "reviewDialog",
+  "reviewTitle",
+  "reviewId",
+  "reviewDescription"
+];
+    
     const missing = required.filter((key) => {
       return !this.elements[key];
     });
@@ -1893,162 +1913,162 @@ const AdminFinanceExpenses = {
     }
   },
 
-  renderReview(expense) {
+renderReview(expense) {
 
-    this.clearInlineError(
-      this.elements.reviewError
+  this.clearInlineError(
+    this.elements.reviewError
+  );
+
+  this.setText(
+    this.elements.reviewTitle,
+    expense.description || "Expense review"
+  );
+
+  this.setText(
+    this.elements.reviewId,
+    expense.expenseId || "—"
+  );
+
+  this.setText(
+    this.elements.reviewApproval,
+    this.pretty(
+      expense.approvalStatus || "DRAFT"
+    )
+  );
+
+  this.setText(
+    this.elements.reviewPayment,
+    this.pretty(
+      expense.paymentStatus || "UNPAID"
+    )
+  );
+
+  this.setText(
+    this.elements.reviewTotal,
+    this.money(expense.totalAmount)
+  );
+
+  this.setText(
+    this.elements.reviewDescription,
+    expense.description || "—"
+  );
+
+  this.setText(
+    this.elements.reviewCategory,
+    this.pretty(expense.expenseCategory) || "—"
+  );
+
+  this.setText(
+    this.elements.reviewType,
+    this.pretty(expense.expenseType) || "—"
+  );
+
+  this.setText(
+    this.elements.reviewCostCenter,
+    this.pretty(expense.costCenter) || "—"
+  );
+
+  this.setText(
+    this.elements.reviewVendor,
+    expense.vendorName || "—"
+  );
+
+  this.setText(
+    this.elements.reviewDate,
+    expense.expenseDate || "—"
+  );
+
+  this.setText(
+    this.elements.reviewBaseAmount,
+    this.money(expense.baseAmount)
+  );
+
+  this.setText(
+    this.elements.reviewTaxAmount,
+    this.money(expense.taxAmount)
+  );
+
+  if (
+    expense.invoiceUrl &&
+    /^https:\/\//i.test(expense.invoiceUrl)
+  ) {
+    this.elements.reviewInvoice.innerHTML =
+      '<a href="' +
+      this.escape(expense.invoiceUrl) +
+      '" target="_blank" rel="noopener noreferrer">' +
+      this.escape(
+        expense.invoiceNumber || "Open invoice"
+      ) +
+      "</a>";
+  } else {
+    this.setText(
+      this.elements.reviewInvoice,
+      expense.invoiceNumber || "—"
+    );
+  }
+
+  this.setText(
+    this.elements.reviewCreatedBy,
+    expense.createdBy ||
+    expense.submittedBy ||
+    "—"
+  );
+
+  const rejectionReason =
+    String(
+      expense.rejectionReason || ""
+    ).trim();
+
+  this.elements.reviewRejectionNote
+    ?.classList.toggle(
+      "hidden",
+      !rejectionReason
     );
 
-    this.elements.reviewContent.innerHTML =
+  this.setText(
+    this.elements.reviewRejectionReason,
+    rejectionReason || "—"
+  );
 
-      this.reviewRow(
-        "Expense ID",
-        expense.expenseId
-      ) +
+  const approval =
+    String(
+      expense.approvalStatus || "DRAFT"
+    ).toUpperCase();
 
-      this.reviewRow(
-        "Expense date",
-        expense.expenseDate
-      ) +
+  const payment =
+    String(
+      expense.paymentStatus || "UNPAID"
+    ).toUpperCase();
 
-      this.reviewRow(
-        "Category",
-        this.pretty(
-          expense.expenseCategory
-        )
-      ) +
+  this.toggleButton(
+    this.elements.editReview,
+    approval === "DRAFT" ||
+    approval === "REJECTED"
+  );
 
-      this.reviewRow(
-        "Subcategory",
-        expense.expenseSubcategory
-      ) +
+  this.toggleButton(
+    this.elements.submitReview,
+    approval === "DRAFT" ||
+    approval === "REJECTED"
+  );
 
-      this.reviewRow(
-        "Expense type",
-        this.pretty(
-          expense.expenseType
-        )
-      ) +
+  this.toggleButton(
+    this.elements.approveReview,
+    approval === "PENDING"
+  );
 
-      this.reviewRow(
-        "Cost centre",
-        this.pretty(
-          expense.costCenter
-        )
-      ) +
+  this.toggleButton(
+    this.elements.rejectReview,
+    approval === "PENDING"
+  );
 
-      this.reviewRow(
-        "Description",
-        expense.description
-      ) +
-
-      this.reviewRow(
-        "Vendor",
-        expense.vendorName
-      ) +
-
-      this.reviewRow(
-        "Invoice number",
-        expense.invoiceNumber
-      ) +
-
-      this.reviewRow(
-        "Base amount",
-        this.money(
-          expense.baseAmount
-        )
-      ) +
-
-      this.reviewRow(
-        "Tax amount",
-        this.money(
-          expense.taxAmount
-        )
-      ) +
-
-      this.reviewRow(
-        "Total amount",
-        this.money(
-          expense.totalAmount
-        ),
-        true
-      ) +
-
-      this.reviewRow(
-        "Approval",
-        this.pretty(
-          expense.approvalStatus
-        )
-      ) +
-
-      this.reviewRow(
-        "Payment",
-        this.pretty(
-          expense.paymentStatus
-        )
-      ) +
-
-      this.reviewRow(
-        "Submitted by",
-        expense.submittedBy
-      ) +
-
-      this.reviewRow(
-        "Approved by",
-        expense.approvedBy
-      ) +
-
-      this.reviewRow(
-        "Payment reference",
-        expense.paymentReference
-      ) +
-
-      this.reviewRow(
-        "Rejection reason",
-        expense.rejectionReason
-      );
-
-    const approval =
-      String(
-        expense.approvalStatus ||
-        "DRAFT"
-      ).toUpperCase();
-
-    const payment =
-      String(
-        expense.paymentStatus ||
-        "UNPAID"
-      ).toUpperCase();
-
-    this.toggleButton(
-      this.elements.editReview,
-      approval === "DRAFT" ||
-      approval === "REJECTED"
-    );
-
-    this.toggleButton(
-      this.elements.submitReview,
-      approval === "DRAFT" ||
-      approval === "REJECTED"
-    );
-
-    this.toggleButton(
-      this.elements.approveReview,
-      approval === "PENDING"
-    );
-
-    this.toggleButton(
-      this.elements.rejectReview,
-      approval === "PENDING"
-    );
-
-    this.toggleButton(
-      this.elements.paidReview,
-      approval === "APPROVED" &&
-      payment !== "PAID"
-    );
-  },
-
+  this.toggleButton(
+    this.elements.paidReview,
+    approval === "APPROVED" &&
+    payment !== "PAID"
+  );
+},
+  
   reviewRow(
     label,
     value,
