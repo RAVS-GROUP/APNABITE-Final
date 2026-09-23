@@ -84,8 +84,11 @@ button {
 
 .admin-app {
   width: 100%;
+  max-width: none !important;
   min-height: 100vh;
   min-height: 100dvh;
+  margin: 0 !important;
+  background: var(--admin-bg);
 }
 
 .admin-shell {
