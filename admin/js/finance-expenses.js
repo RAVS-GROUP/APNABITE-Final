@@ -2,8 +2,7 @@
  * ============================================================
  * APNABITE ADMIN FINANCE & AUDIT
  * FILE: admin/js/finance-expenses.js
- * PURPOSE: Expense ledger, approval and payment management
- * VERSION: 1.0.0
+ * VERSION: 1.2.0
  * ============================================================
  */
 
@@ -12,6 +11,7 @@ const AdminFinanceExpenses = {
   CACHE_KEY: "apnabite_admin_finance_expenses_v1",
   CACHE_TTL_MS: 5 * 60 * 1000,
   REQUEST_TIMEOUT_MS: 30000,
+  REQUEST_GAP_MS: 1200,
 
   state: {
     expenses: [],
@@ -26,6 +26,7 @@ const AdminFinanceExpenses = {
   },
 
   elements: {},
+  toastTimer: null,
 
 
   /*
@@ -131,16 +132,37 @@ const AdminFinanceExpenses = {
     };
 
     Object.keys(ids).forEach((key) => {
-      this.elements[key] = document.getElementById(ids[key]);
+      this.elements[key] =
+        document.getElementById(ids[key]);
     });
 
-    if (
-      !this.elements.tableBody ||
-      !this.elements.mobileList ||
-      !this.elements.form ||
-      !this.elements.reviewDialog
-    ) {
-      console.error("Admin Finance page elements are missing.");
+    const required = [
+      "loading",
+      "content",
+      "tableBody",
+      "mobileList",
+      "formDialog",
+      "form",
+      "reviewDialog",
+      "reviewContent"
+    ];
+
+    const missing = required.filter((key) => {
+      return !this.elements[key];
+    });
+
+    if (missing.length > 0) {
+
+      console.error(
+        "Finance page elements missing:",
+        missing
+      );
+
+      this.showFatalError(
+        "Finance page setup is incomplete: " +
+        missing.join(", ")
+      );
+
       return false;
     }
 
@@ -148,7 +170,9 @@ const AdminFinanceExpenses = {
     this.setDefaultDate();
     this.loadInitial();
 
-    console.log("ApnaBite Admin Finance initialized.");
+    console.log(
+      "ApnaBite Admin Finance initialized."
+    );
 
     return true;
   },
@@ -162,60 +186,100 @@ const AdminFinanceExpenses = {
 
   bind() {
 
-    this.elements.refresh?.addEventListener("click", () => {
-      this.load(true);
-    });
+    this.elements.refresh
+      ?.addEventListener(
+        "click",
+        () => this.load(true)
+      );
 
-    this.elements.retry?.addEventListener("click", () => {
-      this.load(true);
-    });
+    this.elements.retry
+      ?.addEventListener(
+        "click",
+        () => this.load(true)
+      );
 
     [
       this.elements.add,
       this.elements.mobileAdd,
       this.elements.emptyAdd
     ].forEach((button) => {
-      button?.addEventListener("click", () => this.openCreate());
+
+      button?.addEventListener(
+        "click",
+        () => this.openCreate()
+      );
     });
 
-    this.elements.closeForm?.addEventListener("click", () => {
-      this.closeForm();
-    });
+    this.elements.closeForm
+      ?.addEventListener(
+        "click",
+        () => this.closeForm()
+      );
 
-    this.elements.cancelForm?.addEventListener("click", () => {
-      this.closeForm();
-    });
+    this.elements.cancelForm
+      ?.addEventListener(
+        "click",
+        () => this.closeForm()
+      );
 
-    this.elements.formDialog?.addEventListener("click", (event) => {
-      if (event.target.dataset.closeExpenseForm === "true") {
-        this.closeForm();
-      }
-    });
+    this.elements.formDialog
+      ?.addEventListener(
+        "click",
+        (event) => {
 
-    this.elements.form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      this.saveExpense();
-    });
+          if (
+            event.target.dataset
+              .closeExpenseForm === "true"
+          ) {
+            this.closeForm();
+          }
+        }
+      );
 
-    this.elements.baseAmount?.addEventListener("input", () => {
-      this.updateCalculatedTotal();
-    });
+    this.elements.form
+      .addEventListener(
+        "submit",
+        (event) => {
 
-    this.elements.taxAmount?.addEventListener("input", () => {
-      this.updateCalculatedTotal();
-    });
+          event.preventDefault();
+          this.saveExpense();
+        }
+      );
 
-    this.elements.recurring?.addEventListener("change", () => {
-      this.updateRecurringState();
-    });
+    this.elements.baseAmount
+      ?.addEventListener(
+        "input",
+        () => this.updateCalculatedTotal()
+      );
 
-    this.elements.search?.addEventListener("input", () => {
-      clearTimeout(this.state.searchTimer);
+    this.elements.taxAmount
+      ?.addEventListener(
+        "input",
+        () => this.updateCalculatedTotal()
+      );
 
-      this.state.searchTimer = setTimeout(() => {
-        this.load(true);
-      }, 350);
-    });
+    this.elements.recurring
+      ?.addEventListener(
+        "change",
+        () => this.updateRecurringState()
+      );
+
+    this.elements.search
+      ?.addEventListener(
+        "input",
+        () => {
+
+          clearTimeout(
+            this.state.searchTimer
+          );
+
+          this.state.searchTimer =
+            setTimeout(
+              () => this.load(true),
+              350
+            );
+        }
+      );
 
     [
       this.elements.approvalFilter,
@@ -224,154 +288,278 @@ const AdminFinanceExpenses = {
       this.elements.fromDate,
       this.elements.toDate
     ].forEach((element) => {
-      element?.addEventListener("change", () => this.load(true));
+
+      element?.addEventListener(
+        "change",
+        () => this.load(true)
+      );
     });
 
-    this.elements.clearFilters?.addEventListener("click", () => {
-      this.clearFilters();
-    });
+    this.elements.clearFilters
+      ?.addEventListener(
+        "click",
+        () => this.clearFilters()
+      );
 
-    this.elements.quickFilters?.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-expense-filter]");
+    this.elements.quickFilters
+      ?.addEventListener(
+        "click",
+        (event) => {
 
-      if (!button) return;
+          const button =
+            event.target.closest(
+              "[data-expense-filter]"
+            );
 
-      this.applyQuickFilter(button.dataset.expenseFilter, button);
-    });
+          if (!button) return;
+
+          this.applyQuickFilter(
+            button.dataset.expenseFilter,
+            button
+          );
+        }
+      );
 
     const listClickHandler = (event) => {
-      const button = event.target.closest("[data-expense-view]");
+
+      const button =
+        event.target.closest(
+          "[data-expense-view]"
+        );
 
       if (!button) return;
 
-      this.openReview(button.dataset.expenseView);
+      this.openReview(
+        button.dataset.expenseView
+      );
     };
 
-    this.elements.tableBody.addEventListener("click", listClickHandler);
-    this.elements.mobileList.addEventListener("click", listClickHandler);
+    this.elements.tableBody
+      .addEventListener(
+        "click",
+        listClickHandler
+      );
 
-    this.elements.closeReview?.addEventListener("click", () => {
-      this.closeReview();
-    });
+    this.elements.mobileList
+      .addEventListener(
+        "click",
+        listClickHandler
+      );
 
-    this.elements.reviewDialog?.addEventListener("click", (event) => {
-      if (event.target.dataset.closeExpenseReview === "true") {
-        this.closeReview();
+    this.elements.closeReview
+      ?.addEventListener(
+        "click",
+        () => this.closeReview()
+      );
+
+    this.elements.reviewDialog
+      ?.addEventListener(
+        "click",
+        (event) => {
+
+          if (
+            event.target.dataset
+              .closeExpenseReview === "true"
+          ) {
+            this.closeReview();
+          }
+        }
+      );
+
+    this.elements.editReview
+      ?.addEventListener(
+        "click",
+        () => {
+
+          const expense =
+            this.state.selectedExpense;
+
+          if (!expense) return;
+
+          this.closeReview(true);
+          this.openEdit(expense);
+        }
+      );
+
+    this.elements.submitReview
+      ?.addEventListener(
+        "click",
+        () => this.submitSelectedExpense()
+      );
+
+    this.elements.approveReview
+      ?.addEventListener(
+        "click",
+        () => this.approveSelectedExpense()
+      );
+
+    this.elements.rejectReview
+      ?.addEventListener(
+        "click",
+        () => this.openRejectDialog()
+      );
+
+    this.elements.paidReview
+      ?.addEventListener(
+        "click",
+        () => this.openPaymentDialog()
+      );
+
+    this.elements.cancelReject
+      ?.addEventListener(
+        "click",
+        () => this.closeRejectDialog()
+      );
+
+    this.elements.confirmReject
+      ?.addEventListener(
+        "click",
+        () => this.rejectSelectedExpense()
+      );
+
+    this.elements.cancelPayment
+      ?.addEventListener(
+        "click",
+        () => this.closePaymentDialog()
+      );
+
+    this.elements.confirmPayment
+      ?.addEventListener(
+        "click",
+        () => this.markSelectedExpensePaid()
+      );
+
+    this.elements.paymentMethod
+      ?.addEventListener(
+        "change",
+        () => this.updatePaymentReferenceState()
+      );
+
+    this.elements.mobileLogout
+      ?.addEventListener(
+        "click",
+        () => {
+
+          document
+            .getElementById(
+              "roleLogoutButton"
+            )
+            ?.click();
+        }
+      );
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (event.key !== "Escape") {
+          return;
+        }
+
+        if (
+          !this.isHidden(
+            this.elements.rejectDialog
+          )
+        ) {
+          this.closeRejectDialog();
+          return;
+        }
+
+        if (
+          !this.isHidden(
+            this.elements.paymentDialog
+          )
+        ) {
+          this.closePaymentDialog();
+          return;
+        }
+
+        if (
+          !this.isHidden(
+            this.elements.reviewDialog
+          )
+        ) {
+          this.closeReview();
+          return;
+        }
+
+        if (
+          !this.isHidden(
+            this.elements.formDialog
+          )
+        ) {
+          this.closeForm();
+        }
       }
-    });
-
-    this.elements.editReview?.addEventListener("click", () => {
-      if (!this.state.selectedExpense) return;
-
-      const expense = this.state.selectedExpense;
-
-      this.closeReview(true);
-      this.openEdit(expense);
-    });
-
-    this.elements.submitReview?.addEventListener("click", () => {
-      this.submitSelectedExpense();
-    });
-
-    this.elements.approveReview?.addEventListener("click", () => {
-      this.approveSelectedExpense();
-    });
-
-    this.elements.rejectReview?.addEventListener("click", () => {
-      this.openRejectDialog();
-    });
-
-    this.elements.paidReview?.addEventListener("click", () => {
-      this.openPaymentDialog();
-    });
-
-    this.elements.cancelReject?.addEventListener("click", () => {
-      this.closeRejectDialog();
-    });
-
-    this.elements.confirmReject?.addEventListener("click", () => {
-      this.rejectSelectedExpense();
-    });
-
-    this.elements.cancelPayment?.addEventListener("click", () => {
-      this.closePaymentDialog();
-    });
-
-    this.elements.confirmPayment?.addEventListener("click", () => {
-      this.markSelectedExpensePaid();
-    });
-
-    this.elements.paymentMethod?.addEventListener("change", () => {
-      this.updatePaymentReferenceState();
-    });
-
-    this.elements.mobileLogout?.addEventListener("click", () => {
-      document.getElementById("roleLogoutButton")?.click();
-    });
-
-    document.addEventListener("keydown", (event) => {
-
-      if (event.key !== "Escape") return;
-
-      if (!this.isHidden(this.elements.rejectDialog)) {
-        this.closeRejectDialog();
-        return;
-      }
-
-      if (!this.isHidden(this.elements.paymentDialog)) {
-        this.closePaymentDialog();
-        return;
-      }
-
-      if (!this.isHidden(this.elements.reviewDialog)) {
-        this.closeReview();
-        return;
-      }
-
-      if (!this.isHidden(this.elements.formDialog)) {
-        this.closeForm();
-      }
-    });
+    );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * SESSION AND CACHE
+   * SESSION
    * ----------------------------------------------------------
    */
 
   sessionId() {
-    const session = SessionManager.get();
 
-    return session && session.sessionId
+    const session =
+      SessionManager.get();
+
+    return (
+      session &&
+      session.sessionId
+    )
       ? session.sessionId
       : "";
   },
 
-  userCacheKey() {
-    const session = SessionManager.get() || {};
 
-    return this.CACHE_KEY + "_" + String(
-      session.userId ||
-      session.mobile ||
-      "admin"
+  /*
+   * ----------------------------------------------------------
+   * CACHE
+   * ----------------------------------------------------------
+   */
+
+  userCacheKey() {
+
+    const session =
+      SessionManager.get() || {};
+
+    return (
+      this.CACHE_KEY +
+      "_" +
+      String(
+        session.userId ||
+        session.mobile ||
+        "admin"
+      )
     );
   },
 
   readCache() {
 
     try {
-      const raw = localStorage.getItem(this.userCacheKey());
+
+      const raw =
+        localStorage.getItem(
+          this.userCacheKey()
+        );
 
       if (!raw) return null;
 
-      const cache = JSON.parse(raw);
-      const age = Date.now() - Number(cache.savedAt || 0);
+      const cache =
+        JSON.parse(raw);
+
+      const age =
+        Date.now() -
+        Number(cache.savedAt || 0);
 
       if (
         age > this.CACHE_TTL_MS ||
-        !Array.isArray(cache.expenses) ||
+        !Array.isArray(
+          cache.expenses
+        ) ||
         !cache.summary
       ) {
         return null;
@@ -380,6 +568,7 @@ const AdminFinanceExpenses = {
       return cache;
 
     } catch (error) {
+
       return null;
     }
   },
@@ -387,53 +576,252 @@ const AdminFinanceExpenses = {
   writeCache() {
 
     try {
+
       localStorage.setItem(
         this.userCacheKey(),
         JSON.stringify({
           savedAt: Date.now(),
-          expenses: this.state.expenses,
-          summary: this.state.summary
+          expenses:
+            this.state.expenses,
+          summary:
+            this.state.summary
         })
       );
+
     } catch (error) {
-      console.warn("Finance cache could not be saved.");
+
+      console.warn(
+        "Finance cache could not be saved."
+      );
     }
   },
 
   clearCache() {
+
     try {
-      localStorage.removeItem(this.userCacheKey());
+
+      localStorage.removeItem(
+        this.userCacheKey()
+      );
+
     } catch (error) {
-      // Cache removal is optional.
+
+      console.warn(
+        "Finance cache could not be cleared."
+      );
     }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * LOAD DATA
+   * INITIAL LOAD
    * ----------------------------------------------------------
    */
 
   loadInitial() {
 
-    const cache = this.readCache();
+    const cache =
+      this.readCache();
 
     if (cache) {
-      this.state.expenses = cache.expenses;
-      this.state.summary = cache.summary;
+
+      this.state.expenses =
+        cache.expenses;
+
+      this.state.summary =
+        cache.summary;
+
       this.render();
       this.showContent();
+
       this.load(true, true);
+
       return;
     }
 
-    this.load(false);
+    this.load(false, false);
   },
 
-  async load(force = false, background = false) {
 
-    if (this.state.loading && !force) return null;
+  /*
+   * ----------------------------------------------------------
+   * SAFE API REQUEST
+   * ----------------------------------------------------------
+   */
+
+  requestWithTimeout(
+    action,
+    payload
+  ) {
+
+    let timer = null;
+
+    const timeoutPromise =
+      new Promise(
+        (_, reject) => {
+
+          timer =
+            setTimeout(
+              () => {
+
+                reject(
+                  new Error(
+                    action +
+                    " request timed out. Please tap Refresh."
+                  )
+                );
+              },
+              this.REQUEST_TIMEOUT_MS +
+              5000
+            );
+        }
+      );
+
+    return Promise.race([
+      API.request(
+        action,
+        payload,
+        {
+          timeoutMs:
+            this.REQUEST_TIMEOUT_MS
+        }
+      ),
+      timeoutPromise
+    ]).finally(() => {
+
+      if (timer) {
+        clearTimeout(timer);
+      }
+    });
+  },
+
+  wait(milliseconds) {
+
+    return new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * LIST REQUEST
+   * ----------------------------------------------------------
+   */
+
+  fetchList() {
+
+    if (this.state.listPromise) {
+      return this.state.listPromise;
+    }
+
+    this.state.listPromise =
+      this.requestWithTimeout(
+        "admin_list_finance_expenses",
+        {
+          sessionId:
+            this.sessionId(),
+
+          filters:
+            this.getFilters()
+        }
+      )
+        .then((response) => {
+
+          const data =
+            response.data || {};
+
+          if (
+            data.success !== true ||
+            !Array.isArray(
+              data.expenses
+            )
+          ) {
+            throw new Error(
+              "Invalid expense list response."
+            );
+          }
+
+          return data;
+        })
+        .finally(() => {
+
+          this.state.listPromise =
+            null;
+        });
+
+    return this.state.listPromise;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * SUMMARY REQUEST
+   * ----------------------------------------------------------
+   */
+
+  fetchSummary() {
+
+    if (
+      this.state.summaryPromise
+    ) {
+      return this.state.summaryPromise;
+    }
+
+    this.state.summaryPromise =
+      this.requestWithTimeout(
+        "admin_get_finance_expense_summary",
+        {
+          sessionId:
+            this.sessionId()
+        }
+      )
+        .then((response) => {
+
+          const data =
+            response.data || {};
+
+          if (
+            data.success !== true ||
+            !data.summary
+          ) {
+            throw new Error(
+              "Invalid finance summary response."
+            );
+          }
+
+          return data;
+        })
+        .finally(() => {
+
+          this.state.summaryPromise =
+            null;
+        });
+
+    return this.state.summaryPromise;
+  },
+
+
+  /*
+   * ----------------------------------------------------------
+   * LOAD PAGE DATA
+   * ----------------------------------------------------------
+   */
+
+  async load(
+    force = false,
+    background = false
+  ) {
+
+    if (this.state.loading) {
+
+      console.log(
+        "Finance load already running."
+      );
+
+      return null;
+    }
 
     this.state.loading = true;
     this.clearPageError();
@@ -442,19 +830,87 @@ const AdminFinanceExpenses = {
       this.showLoading();
     }
 
+    let listData = null;
+    let summaryData = null;
+
     try {
-      const listData = await this.fetchList();
-      const summaryData = await this.fetchSummary();
 
-      this.state.expenses = Array.isArray(listData.expenses)
-        ? listData.expenses
-        : [];
+      /*
+       * First request: expense list.
+       */
 
-      this.state.summary = summaryData.summary || {};
+      listData =
+        await this.fetchList();
+
+      this.state.expenses =
+        Array.isArray(
+          listData.expenses
+        )
+          ? listData.expenses
+          : [];
+
+      /*
+       * Show the page immediately after
+       * receiving the expense list.
+       */
+
+      this.renderExpenses();
+      this.showContent();
+
+      /*
+       * Prevent Apps Script consecutive
+       * request collision.
+       */
+
+      await this.wait(
+        this.REQUEST_GAP_MS
+      );
+
+      /*
+       * Second request: summary.
+       */
+
+      try {
+
+        summaryData =
+          await this.fetchSummary();
+
+        this.state.summary =
+          summaryData.summary || {};
+
+        this.renderSummary();
+
+      } catch (summaryError) {
+
+        console.error(
+          "Finance summary request failed:",
+          summaryError
+        );
+
+        /*
+         * Do not return to skeleton.
+         * Expense ledger remains usable.
+         */
+
+        this.showNonBlockingError(
+          "Expense list loaded, but summary could not be refreshed. Tap Refresh to try again."
+        );
+      }
 
       this.writeCache();
-      this.render();
+      this.updateLastUpdated();
       this.showContent();
+
+      console.log(
+        "Admin Finance data loaded:",
+        {
+          expenses:
+            this.state.expenses.length,
+
+          summaryLoaded:
+            Boolean(summaryData)
+        }
+      );
 
       return {
         success: true,
@@ -463,92 +919,170 @@ const AdminFinanceExpenses = {
       };
 
     } catch (error) {
-      console.error("Admin Finance load failed:", error);
+
+      console.error(
+        "Admin Finance load failed:",
+        error
+      );
 
       this.showPageError(
         error.message ||
         "Finance expenses could not be loaded."
       );
 
+      /*
+       * Never leave permanent skeleton.
+       */
+
+      this.showContent();
+
       return {
         success: false,
+        list: listData,
+        summary: summaryData,
         error: error
       };
 
     } finally {
+
       this.state.loading = false;
     }
   },
 
-  fetchList() {
 
-    if (this.state.listPromise) {
-      return this.state.listPromise;
-    }
-
-    this.state.listPromise = API.request(
-      "admin_list_finance_expenses",
-      {
-        sessionId: this.sessionId(),
-        filters: this.getFilters()
-      },
-      {
-        timeoutMs: this.REQUEST_TIMEOUT_MS
-      }
-    )
-      .then((response) => response.data || {})
-      .finally(() => {
-        this.state.listPromise = null;
-      });
-
-    return this.state.listPromise;
-  },
-
-  fetchSummary() {
-
-    if (this.state.summaryPromise) {
-      return this.state.summaryPromise;
-    }
-
-    this.state.summaryPromise = API.request(
-      "admin_get_finance_expense_summary",
-      {
-        sessionId: this.sessionId()
-      },
-      {
-        timeoutMs: this.REQUEST_TIMEOUT_MS
-      }
-    )
-      .then((response) => response.data || {})
-      .finally(() => {
-        this.state.summaryPromise = null;
-      });
-
-    return this.state.summaryPromise;
-  },
+  /*
+   * ----------------------------------------------------------
+   * FILTERS
+   * ----------------------------------------------------------
+   */
 
   getFilters() {
+
     return {
       approvalStatus:
-        this.elements.approvalFilter?.value || "ALL",
+        this.elements.approvalFilter
+          ?.value || "ALL",
 
       paymentStatus:
-        this.elements.paymentFilter?.value || "ALL",
+        this.elements.paymentFilter
+          ?.value || "ALL",
 
       category:
-        this.elements.categoryFilter?.value || "ALL",
+        this.elements.categoryFilter
+          ?.value || "ALL",
 
       fromDate:
-        this.elements.fromDate?.value || "",
+        this.elements.fromDate
+          ?.value || "",
 
       toDate:
-        this.elements.toDate?.value || "",
+        this.elements.toDate
+          ?.value || "",
 
       query:
-        this.elements.search?.value.trim() || "",
+        this.elements.search
+          ?.value
+          .trim() || "",
 
       limit: 200
     };
+  },
+
+  applyQuickFilter(
+    filter,
+    activeButton
+  ) {
+
+    this.elements.quickFilters
+      ?.querySelectorAll(
+        "[data-expense-filter]"
+      )
+      .forEach((button) => {
+
+        button.classList.toggle(
+          "active",
+          button === activeButton
+        );
+      });
+
+    if (
+      this.elements.approvalFilter
+    ) {
+      this.elements
+        .approvalFilter
+        .value =
+          filter === "PAID"
+            ? "ALL"
+            : filter;
+    }
+
+    if (
+      this.elements.paymentFilter
+    ) {
+      this.elements
+        .paymentFilter
+        .value =
+          filter === "PAID"
+            ? "PAID"
+            : "ALL";
+    }
+
+    this.load(true);
+  },
+
+  clearFilters() {
+
+    if (this.elements.search) {
+      this.elements.search.value = "";
+    }
+
+    if (
+      this.elements.approvalFilter
+    ) {
+      this.elements
+        .approvalFilter
+        .value = "ALL";
+    }
+
+    if (
+      this.elements.paymentFilter
+    ) {
+      this.elements
+        .paymentFilter
+        .value = "ALL";
+    }
+
+    if (
+      this.elements.categoryFilter
+    ) {
+      this.elements
+        .categoryFilter
+        .value = "ALL";
+    }
+
+    if (this.elements.fromDate) {
+      this.elements.fromDate.value = "";
+    }
+
+    if (this.elements.toDate) {
+      this.elements.toDate.value = "";
+    }
+
+    this.elements.quickFilters
+      ?.querySelectorAll(
+        "[data-expense-filter]"
+      )
+      .forEach(
+        (button, index) => {
+
+          button.classList.toggle(
+            "active",
+            index === 0
+          );
+        }
+      );
+
+    this.load(true);
   },
 
 
@@ -559,37 +1093,43 @@ const AdminFinanceExpenses = {
    */
 
   render() {
+
     this.renderSummary();
     this.renderExpenses();
-
-    if (this.elements.lastUpdated) {
-      this.elements.lastUpdated.textContent =
-        "Updated " + new Date().toLocaleString("en-IN");
-    }
+    this.updateLastUpdated();
   },
 
   renderSummary() {
 
-    const summary = this.state.summary || {};
+    const summary =
+      this.state.summary || {};
 
     this.setText(
       this.elements.approvedTotal,
-      this.money(summary.approvedExpenseTotal)
+      this.money(
+        summary.approvedExpenseTotal
+      )
     );
 
     this.setText(
       this.elements.paidTotal,
-      this.money(summary.paidExpenseTotal)
+      this.money(
+        summary.paidExpenseTotal
+      )
     );
 
     this.setText(
       this.elements.pendingTotal,
-      this.money(summary.pendingApprovalTotal)
+      this.money(
+        summary.pendingApprovalTotal
+      )
     );
 
     this.setText(
       this.elements.monthTotal,
-      this.money(summary.currentMonthExpense)
+      this.money(
+        summary.currentMonthExpense
+      )
     );
 
     this.setText(
@@ -630,141 +1170,249 @@ const AdminFinanceExpenses = {
 
   renderExpenses() {
 
-    const expenses = this.state.expenses;
+    const expenses =
+      this.state.expenses;
 
-    this.elements.tableBody.innerHTML = "";
-    this.elements.mobileList.innerHTML = "";
+    this.elements.tableBody.innerHTML =
+      "";
+
+    this.elements.mobileList.innerHTML =
+      "";
 
     expenses.forEach((expense) => {
-      this.elements.tableBody.appendChild(
-        this.createTableRow(expense)
-      );
 
-      this.elements.mobileList.appendChild(
-        this.createMobileCard(expense)
-      );
+      this.elements.tableBody
+        .appendChild(
+          this.createTableRow(
+            expense
+          )
+        );
+
+      this.elements.mobileList
+        .appendChild(
+          this.createMobileCard(
+            expense
+          )
+        );
     });
 
-    this.setText(this.elements.visibleCount, expenses.length);
-
-    this.elements.empty?.classList.toggle(
-      "hidden",
-      expenses.length > 0
+    this.setText(
+      this.elements.visibleCount,
+      expenses.length
     );
+
+    this.elements.empty
+      ?.classList.toggle(
+        "hidden",
+        expenses.length > 0
+      );
   },
 
   createTableRow(expense) {
 
-    const row = document.createElement("tr");
+    const row =
+      document.createElement("tr");
 
     row.innerHTML =
-      "<td>" + this.escape(expense.expenseDate || "—") + "</td>" +
-      "<td><strong>" + this.escape(expense.description || "Expense") +
-      "</strong><small>" + this.escape(expense.vendorName || "No vendor") +
-      "</small></td>" +
-      "<td>" + this.escape(this.pretty(expense.expenseCategory)) + "</td>" +
-      "<td>" + this.escape(this.pretty(expense.costCenter)) + "</td>" +
-      "<td><strong>" + this.money(expense.totalAmount) + "</strong></td>" +
-      "<td>" + this.statusBadge(expense.approvalStatus) + "</td>" +
-      "<td>" + this.statusBadge(expense.paymentStatus) + "</td>" +
-      '<td><button type="button" class="view-expense-button" ' +
-      'data-expense-view="' + this.escape(expense.expenseId) +
-      '">Review</button></td>';
+      "<td>" +
+        this.escape(
+          expense.expenseDate || "—"
+        ) +
+      "</td>" +
+
+      "<td>" +
+        "<strong>" +
+          this.escape(
+            expense.description ||
+            "Expense"
+          ) +
+        "</strong>" +
+
+        "<small>" +
+          this.escape(
+            expense.vendorName ||
+            "No vendor"
+          ) +
+        "</small>" +
+      "</td>" +
+
+      "<td>" +
+        this.escape(
+          this.pretty(
+            expense.expenseCategory
+          )
+        ) +
+      "</td>" +
+
+      "<td>" +
+        this.escape(
+          this.pretty(
+            expense.costCenter
+          )
+        ) +
+      "</td>" +
+
+      "<td><strong>" +
+        this.money(
+          expense.totalAmount
+        ) +
+      "</strong></td>" +
+
+      "<td>" +
+        this.statusBadge(
+          expense.approvalStatus
+        ) +
+      "</td>" +
+
+      "<td>" +
+        this.statusBadge(
+          expense.paymentStatus
+        ) +
+      "</td>" +
+
+      "<td>" +
+        '<button type="button" ' +
+          'class="view-expense-button" ' +
+          'data-expense-view="' +
+          this.escape(
+            expense.expenseId
+          ) +
+        '">' +
+          "Review" +
+        "</button>" +
+      "</td>";
 
     return row;
   },
 
   createMobileCard(expense) {
 
-    const card = document.createElement("article");
-    card.className = "expense-mobile-card";
+    const card =
+      document.createElement(
+        "article"
+      );
+
+    card.className =
+      "expense-mobile-card";
 
     card.innerHTML =
       '<div class="expense-mobile-heading">' +
-      "<div><small>" + this.escape(expense.expenseDate || "—") +
-      "</small><strong>" + this.escape(expense.description || "Expense") +
-      "</strong></div><b>" + this.money(expense.totalAmount) +
-      "</b></div>" +
+
+        "<div>" +
+          "<small>" +
+            this.escape(
+              expense.expenseDate ||
+              "—"
+            ) +
+          "</small>" +
+
+          "<strong>" +
+            this.escape(
+              expense.description ||
+              "Expense"
+            ) +
+          "</strong>" +
+        "</div>" +
+
+        "<b>" +
+          this.money(
+            expense.totalAmount
+          ) +
+        "</b>" +
+
+      "</div>" +
+
       '<div class="expense-mobile-meta">' +
-      "<span>" + this.escape(this.pretty(expense.expenseCategory)) + "</span>" +
-      "<span>" + this.escape(expense.vendorName || "No vendor") + "</span>" +
+
+        "<span>" +
+          this.escape(
+            this.pretty(
+              expense.expenseCategory
+            )
+          ) +
+        "</span>" +
+
+        "<span>" +
+          this.escape(
+            expense.vendorName ||
+            "No vendor"
+          ) +
+        "</span>" +
+
       "</div>" +
+
       '<div class="expense-mobile-footer">' +
-      "<div>" +
-      this.statusBadge(expense.approvalStatus) +
-      this.statusBadge(expense.paymentStatus) +
-      "</div>" +
-      '<button type="button" data-expense-view="' +
-      this.escape(expense.expenseId) +
-      '">Review</button></div>';
+
+        "<div>" +
+          this.statusBadge(
+            expense.approvalStatus
+          ) +
+
+          this.statusBadge(
+            expense.paymentStatus
+          ) +
+        "</div>" +
+
+        '<button type="button" ' +
+          'data-expense-view="' +
+          this.escape(
+            expense.expenseId
+          ) +
+        '">' +
+          "Review" +
+        "</button>" +
+
+      "</div>";
 
     return card;
   },
 
   statusBadge(status) {
 
-    const value = String(status || "UNKNOWN").toUpperCase();
+    const value =
+      String(
+        status || "UNKNOWN"
+      ).toUpperCase();
 
-    return '<span class="expense-status status-' +
-      value.toLowerCase().replace(/[^a-z0-9]/g, "-") +
-      '">' + this.escape(this.pretty(value)) + "</span>";
+    const className =
+      value
+        .toLowerCase()
+        .replace(
+          /[^a-z0-9]/g,
+          "-"
+        );
+
+    return (
+      '<span class="expense-status status-' +
+      className +
+      '">' +
+      this.escape(
+        this.pretty(value)
+      ) +
+      "</span>"
+    );
+  },
+
+  updateLastUpdated() {
+
+    if (
+      this.elements.lastUpdated
+    ) {
+      this.elements
+        .lastUpdated
+        .textContent =
+          "Updated " +
+          new Date()
+            .toLocaleString(
+              "en-IN"
+            );
+    }
   },
 
 
   /*
    * ----------------------------------------------------------
-   * FILTERS
-   * ----------------------------------------------------------
-   */
-
-  applyQuickFilter(filter, activeButton) {
-
-    if (this.elements.quickFilters) {
-      this.elements.quickFilters
-        .querySelectorAll("[data-expense-filter]")
-        .forEach((button) => {
-          button.classList.toggle(
-            "active",
-            button === activeButton
-          );
-        });
-    }
-
-    if (this.elements.approvalFilter) {
-      this.elements.approvalFilter.value =
-        filter === "PAID" ? "ALL" : filter;
-    }
-
-    if (this.elements.paymentFilter) {
-      this.elements.paymentFilter.value =
-        filter === "PAID" ? "PAID" : "ALL";
-    }
-
-    this.load(true);
-  },
-
-  clearFilters() {
-
-    if (this.elements.search) this.elements.search.value = "";
-    if (this.elements.approvalFilter) this.elements.approvalFilter.value = "ALL";
-    if (this.elements.paymentFilter) this.elements.paymentFilter.value = "ALL";
-    if (this.elements.categoryFilter) this.elements.categoryFilter.value = "ALL";
-    if (this.elements.fromDate) this.elements.fromDate.value = "";
-    if (this.elements.toDate) this.elements.toDate.value = "";
-
-    this.elements.quickFilters
-      ?.querySelectorAll("[data-expense-filter]")
-      .forEach((button, index) => {
-        button.classList.toggle("active", index === 0);
-      });
-
-    this.load(true);
-  },
-
-
-  /*
-   * ----------------------------------------------------------
-   * CREATE AND EDIT
+   * CREATE AND EDIT FORM
    * ----------------------------------------------------------
    */
 
@@ -772,49 +1420,111 @@ const AdminFinanceExpenses = {
 
     this.resetForm();
 
-    this.elements.formTitle.textContent = "Add expense";
-    this.elements.saveDraft.textContent = "Save Draft";
+    this.setText(
+      this.elements.formTitle,
+      "Add expense"
+    );
 
-    this.showDialog(this.elements.formDialog);
-    this.elements.expenseDate?.focus();
+    this.setText(
+      this.elements.saveDraft,
+      "Save Draft"
+    );
+
+    this.showDialog(
+      this.elements.formDialog
+    );
+
+    this.elements.expenseDate
+      ?.focus();
   },
 
   openEdit(expense) {
 
     this.resetForm();
 
-    this.elements.formTitle.textContent = "Edit expense";
-    this.elements.saveDraft.textContent = "Save Changes";
+    this.setText(
+      this.elements.formTitle,
+      "Edit expense"
+    );
 
-    this.elements.expenseId.value = expense.expenseId || "";
-    this.elements.expenseDate.value = expense.expenseDate || "";
-    this.elements.category.value = expense.expenseCategory || "";
-    this.elements.subcategory.value = expense.expenseSubcategory || "";
-    this.elements.type.value = expense.expenseType || "";
-    this.elements.costCenter.value = expense.costCenter || "";
-    this.elements.description.value = expense.description || "";
-    this.elements.vendor.value = expense.vendorName || "";
-    this.elements.invoiceNumber.value = expense.invoiceNumber || "";
-    this.elements.invoiceUrl.value = expense.invoiceUrl || "";
-    this.elements.baseAmount.value = expense.baseAmount || "";
-    this.elements.taxAmount.value = expense.taxAmount || 0;
-    this.elements.districtId.value = expense.districtId || "";
-    this.elements.orderId.value = expense.orderId || "";
-    this.elements.campaignId.value = expense.campaignId || "";
-    this.elements.recurring.checked = expense.isRecurring === true;
-    this.elements.recurringFrequency.value =
-      expense.recurringFrequency || "";
+    this.setText(
+      this.elements.saveDraft,
+      "Save Changes"
+    );
+
+    this.elements.expenseId.value =
+      expense.expenseId || "";
+
+    this.elements.expenseDate.value =
+      expense.expenseDate || "";
+
+    this.elements.category.value =
+      expense.expenseCategory || "";
+
+    this.elements.subcategory.value =
+      expense.expenseSubcategory || "";
+
+    this.elements.type.value =
+      expense.expenseType || "";
+
+    this.elements.costCenter.value =
+      expense.costCenter || "";
+
+    this.elements.description.value =
+      expense.description || "";
+
+    this.elements.vendor.value =
+      expense.vendorName || "";
+
+    this.elements.invoiceNumber.value =
+      expense.invoiceNumber || "";
+
+    this.elements.invoiceUrl.value =
+      expense.invoiceUrl || "";
+
+    this.elements.baseAmount.value =
+      expense.baseAmount || "";
+
+    this.elements.taxAmount.value =
+      expense.taxAmount || 0;
+
+    this.elements.districtId.value =
+      expense.districtId || "";
+
+    this.elements.orderId.value =
+      expense.orderId || "";
+
+    this.elements.campaignId.value =
+      expense.campaignId || "";
+
+    this.elements.recurring.checked =
+      expense.isRecurring === true;
+
+    this.elements
+      .recurringFrequency
+      .value =
+        expense.recurringFrequency ||
+        "";
 
     this.updateRecurringState();
     this.updateCalculatedTotal();
-    this.showDialog(this.elements.formDialog);
+
+    this.showDialog(
+      this.elements.formDialog
+    );
   },
 
   resetForm() {
 
     this.elements.form.reset();
-    this.elements.expenseId.value = "";
-    this.clearInlineError(this.elements.formError);
+
+    this.elements.expenseId.value =
+      "";
+
+    this.clearInlineError(
+      this.elements.formError
+    );
+
     this.setDefaultDate();
     this.updateRecurringState();
     this.updateCalculatedTotal();
@@ -827,32 +1537,52 @@ const AdminFinanceExpenses = {
       !this.elements.expenseDate.value
     ) {
       this.elements.expenseDate.value =
-        new Date().toISOString().slice(0, 10);
+        new Date()
+          .toISOString()
+          .slice(0, 10);
     }
   },
 
   updateRecurringState() {
 
-    const recurring = this.elements.recurring?.checked === true;
+    const recurring =
+      this.elements.recurring
+        ?.checked === true;
 
-    this.elements.recurringBox?.classList.toggle(
-      "hidden",
-      !recurring
-    );
+    this.elements.recurringBox
+      ?.classList.toggle(
+        "hidden",
+        !recurring
+      );
 
-    if (this.elements.recurringFrequency) {
-      this.elements.recurringFrequency.required = recurring;
+    if (
+      this.elements.recurringFrequency
+    ) {
+      this.elements
+        .recurringFrequency
+        .required = recurring;
 
       if (!recurring) {
-        this.elements.recurringFrequency.value = "";
+        this.elements
+          .recurringFrequency
+          .value = "";
       }
     }
   },
 
   updateCalculatedTotal() {
 
-    const base = Number(this.elements.baseAmount?.value || 0);
-    const tax = Number(this.elements.taxAmount?.value || 0);
+    const base =
+      Number(
+        this.elements.baseAmount
+          ?.value || 0
+      );
+
+    const tax =
+      Number(
+        this.elements.taxAmount
+          ?.value || 0
+      );
 
     this.setText(
       this.elements.totalAmount,
@@ -861,50 +1591,125 @@ const AdminFinanceExpenses = {
   },
 
   collectFormData() {
+
     return {
-      expenseId: this.elements.expenseId.value.trim(),
-      expenseDate: this.elements.expenseDate.value,
-      expenseCategory: this.elements.category.value,
-      expenseSubcategory: this.elements.subcategory.value.trim(),
-      expenseType: this.elements.type.value,
-      costCenter: this.elements.costCenter.value,
-      description: this.elements.description.value.trim(),
-      vendorName: this.elements.vendor.value.trim(),
-      invoiceNumber: this.elements.invoiceNumber.value.trim(),
-      invoiceUrl: this.elements.invoiceUrl.value.trim(),
-      baseAmount: Number(this.elements.baseAmount.value),
-      taxAmount: Number(this.elements.taxAmount.value || 0),
-      districtId: this.elements.districtId.value.trim(),
-      orderId: this.elements.orderId.value.trim(),
-      campaignId: this.elements.campaignId.value.trim(),
-      isRecurring: this.elements.recurring.checked === true,
+      expenseId:
+        this.elements.expenseId
+          .value.trim(),
+
+      expenseDate:
+        this.elements.expenseDate
+          .value,
+
+      expenseCategory:
+        this.elements.category
+          .value,
+
+      expenseSubcategory:
+        this.elements.subcategory
+          .value.trim(),
+
+      expenseType:
+        this.elements.type
+          .value,
+
+      costCenter:
+        this.elements.costCenter
+          .value,
+
+      description:
+        this.elements.description
+          .value.trim(),
+
+      vendorName:
+        this.elements.vendor
+          .value.trim(),
+
+      invoiceNumber:
+        this.elements.invoiceNumber
+          .value.trim(),
+
+      invoiceUrl:
+        this.elements.invoiceUrl
+          .value.trim(),
+
+      baseAmount:
+        Number(
+          this.elements.baseAmount
+            .value
+        ),
+
+      taxAmount:
+        Number(
+          this.elements.taxAmount
+            .value || 0
+        ),
+
+      districtId:
+        this.elements.districtId
+          .value.trim(),
+
+      orderId:
+        this.elements.orderId
+          .value.trim(),
+
+      campaignId:
+        this.elements.campaignId
+          .value.trim(),
+
+      isRecurring:
+        this.elements.recurring
+          .checked === true,
+
       recurringFrequency:
-        this.elements.recurring.checked
-          ? this.elements.recurringFrequency.value
-          : ""
+        this.elements.recurring
+          .checked
+            ? this.elements
+                .recurringFrequency
+                .value
+            : ""
     };
   },
 
   validateExpense(data) {
 
-    if (!data.expenseDate) return "Select the expense date.";
-    if (!data.expenseCategory) return "Select an expense category.";
-    if (!data.expenseType) return "Select an expense type.";
-    if (!data.costCenter) return "Select a cost centre.";
+    if (!data.expenseDate) {
+      return "Select the expense date.";
+    }
 
-    if (data.description.length < 3) {
-      return "Enter a clear expense description.";
+    if (!data.expenseCategory) {
+      return "Select an expense category.";
+    }
+
+    if (!data.expenseType) {
+      return "Select an expense type.";
+    }
+
+    if (!data.costCenter) {
+      return "Select a cost centre.";
     }
 
     if (
-      !Number.isFinite(data.baseAmount) ||
+      data.description.length < 3
+    ) {
+      return (
+        "Enter a clear expense description."
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        data.baseAmount
+      ) ||
       data.baseAmount <= 0
     ) {
       return "Enter a valid base amount.";
     }
 
     if (
-      !Number.isFinite(data.taxAmount) ||
+      !Number.isFinite(
+        data.taxAmount
+      ) ||
       data.taxAmount < 0
     ) {
       return "Enter a valid tax amount.";
@@ -912,13 +1717,22 @@ const AdminFinanceExpenses = {
 
     if (
       data.invoiceUrl &&
-      !/^https:\/\/.+/i.test(data.invoiceUrl)
+      !/^https:\/\/.+/i.test(
+        data.invoiceUrl
+      )
     ) {
-      return "Invoice URL must begin with https://";
+      return (
+        "Invoice URL must begin with https://"
+      );
     }
 
-    if (data.isRecurring && !data.recurringFrequency) {
-      return "Select the recurring frequency.";
+    if (
+      data.isRecurring &&
+      !data.recurringFrequency
+    ) {
+      return (
+        "Select the recurring frequency."
+      );
     }
 
     return "";
@@ -926,35 +1740,58 @@ const AdminFinanceExpenses = {
 
   async saveExpense() {
 
-    if (this.state.saving) return;
+    if (this.state.saving) {
+      return;
+    }
 
-    const data = this.collectFormData();
-    const validation = this.validateExpense(data);
+    const data =
+      this.collectFormData();
+
+    const validation =
+      this.validateExpense(data);
 
     if (validation) {
-      this.showInlineError(this.elements.formError, validation);
+
+      this.showInlineError(
+        this.elements.formError,
+        validation
+      );
+
       return;
     }
 
     this.state.saving = true;
-    this.elements.saveDraft.disabled = true;
-    this.elements.saveDraft.textContent = "Saving...";
-    this.clearInlineError(this.elements.formError);
+
+    this.elements.saveDraft.disabled =
+      true;
+
+    this.elements.saveDraft.textContent =
+      "Saving...";
+
+    this.clearInlineError(
+      this.elements.formError
+    );
 
     try {
-      await API.request(
+
+      await this.requestWithTimeout(
         "admin_save_finance_expense",
         {
-          sessionId: this.sessionId(),
-          expense: data
-        },
-        {
-          timeoutMs: this.REQUEST_TIMEOUT_MS
+          sessionId:
+            this.sessionId(),
+
+          expense:
+            data
         }
       );
 
       this.closeForm(true);
       this.clearCache();
+
+      await this.wait(
+        this.REQUEST_GAP_MS
+      );
+
       await this.load(true);
 
       this.showToast(
@@ -964,16 +1801,24 @@ const AdminFinanceExpenses = {
       );
 
     } catch (error) {
+
       this.showInlineError(
         this.elements.formError,
-        error.message || "Expense could not be saved."
+        error.message ||
+        "Expense could not be saved."
       );
 
     } finally {
+
       this.state.saving = false;
-      this.elements.saveDraft.disabled = false;
+
+      this.elements.saveDraft.disabled =
+        false;
+
       this.elements.saveDraft.textContent =
-        data.expenseId ? "Save Changes" : "Save Draft";
+        data.expenseId
+          ? "Save Changes"
+          : "Save Draft";
     }
   },
 
@@ -986,82 +1831,205 @@ const AdminFinanceExpenses = {
 
   async openReview(expenseId) {
 
-    const localExpense = this.state.expenses.find((expense) => {
-      return String(expense.expenseId) === String(expenseId);
-    });
+    const localExpense =
+      this.state.expenses.find(
+        (expense) => {
 
-    if (!localExpense) return;
-
-    this.state.selectedExpense = localExpense;
-    this.renderReview(localExpense);
-    this.showDialog(this.elements.reviewDialog);
-
-    try {
-      const response = await API.request(
-        "admin_get_finance_expense",
-        {
-          sessionId: this.sessionId(),
-          expenseId: expenseId
-        },
-        {
-          timeoutMs: this.REQUEST_TIMEOUT_MS
+          return (
+            String(
+              expense.expenseId
+            ) ===
+            String(expenseId)
+          );
         }
       );
 
-      const data = response.data || {};
-      const expense = data.expense || localExpense;
+    if (!localExpense) return;
 
-      this.state.selectedExpense = expense;
+    this.state.selectedExpense =
+      localExpense;
+
+    this.renderReview(
+      localExpense
+    );
+
+    this.showDialog(
+      this.elements.reviewDialog
+    );
+
+    try {
+
+      const response =
+        await this.requestWithTimeout(
+          "admin_get_finance_expense",
+          {
+            sessionId:
+              this.sessionId(),
+
+            expenseId:
+              expenseId
+          }
+        );
+
+      const data =
+        response.data || {};
+
+      const expense =
+        data.expense ||
+        localExpense;
+
+      this.state.selectedExpense =
+        expense;
+
       this.renderReview(expense);
 
     } catch (error) {
+
       this.showInlineError(
         this.elements.reviewError,
-        error.message || "Latest expense details could not be loaded."
+        error.message ||
+        "Latest expense details could not be loaded."
       );
     }
   },
 
   renderReview(expense) {
 
-    this.clearInlineError(this.elements.reviewError);
+    this.clearInlineError(
+      this.elements.reviewError
+    );
 
     this.elements.reviewContent.innerHTML =
-      this.reviewRow("Expense ID", expense.expenseId) +
-      this.reviewRow("Expense date", expense.expenseDate) +
-      this.reviewRow("Category", this.pretty(expense.expenseCategory)) +
-      this.reviewRow("Subcategory", expense.expenseSubcategory) +
-      this.reviewRow("Expense type", this.pretty(expense.expenseType)) +
-      this.reviewRow("Cost centre", this.pretty(expense.costCenter)) +
-      this.reviewRow("Description", expense.description) +
-      this.reviewRow("Vendor", expense.vendorName) +
-      this.reviewRow("Invoice number", expense.invoiceNumber) +
-      this.reviewRow("Base amount", this.money(expense.baseAmount)) +
-      this.reviewRow("Tax amount", this.money(expense.taxAmount)) +
-      this.reviewRow("Total amount", this.money(expense.totalAmount), true) +
-      this.reviewRow("Approval", this.pretty(expense.approvalStatus)) +
-      this.reviewRow("Payment", this.pretty(expense.paymentStatus)) +
-      this.reviewRow("Submitted by", expense.submittedBy) +
-      this.reviewRow("Approved by", expense.approvedBy) +
-      this.reviewRow("Payment reference", expense.paymentReference) +
-      this.reviewRow("Rejection reason", expense.rejectionReason);
 
-    const approval = String(
-      expense.approvalStatus || "DRAFT"
-    ).toUpperCase();
+      this.reviewRow(
+        "Expense ID",
+        expense.expenseId
+      ) +
 
-    const payment = String(
-      expense.paymentStatus || "UNPAID"
-    ).toUpperCase();
+      this.reviewRow(
+        "Expense date",
+        expense.expenseDate
+      ) +
+
+      this.reviewRow(
+        "Category",
+        this.pretty(
+          expense.expenseCategory
+        )
+      ) +
+
+      this.reviewRow(
+        "Subcategory",
+        expense.expenseSubcategory
+      ) +
+
+      this.reviewRow(
+        "Expense type",
+        this.pretty(
+          expense.expenseType
+        )
+      ) +
+
+      this.reviewRow(
+        "Cost centre",
+        this.pretty(
+          expense.costCenter
+        )
+      ) +
+
+      this.reviewRow(
+        "Description",
+        expense.description
+      ) +
+
+      this.reviewRow(
+        "Vendor",
+        expense.vendorName
+      ) +
+
+      this.reviewRow(
+        "Invoice number",
+        expense.invoiceNumber
+      ) +
+
+      this.reviewRow(
+        "Base amount",
+        this.money(
+          expense.baseAmount
+        )
+      ) +
+
+      this.reviewRow(
+        "Tax amount",
+        this.money(
+          expense.taxAmount
+        )
+      ) +
+
+      this.reviewRow(
+        "Total amount",
+        this.money(
+          expense.totalAmount
+        ),
+        true
+      ) +
+
+      this.reviewRow(
+        "Approval",
+        this.pretty(
+          expense.approvalStatus
+        )
+      ) +
+
+      this.reviewRow(
+        "Payment",
+        this.pretty(
+          expense.paymentStatus
+        )
+      ) +
+
+      this.reviewRow(
+        "Submitted by",
+        expense.submittedBy
+      ) +
+
+      this.reviewRow(
+        "Approved by",
+        expense.approvedBy
+      ) +
+
+      this.reviewRow(
+        "Payment reference",
+        expense.paymentReference
+      ) +
+
+      this.reviewRow(
+        "Rejection reason",
+        expense.rejectionReason
+      );
+
+    const approval =
+      String(
+        expense.approvalStatus ||
+        "DRAFT"
+      ).toUpperCase();
+
+    const payment =
+      String(
+        expense.paymentStatus ||
+        "UNPAID"
+      ).toUpperCase();
 
     this.toggleButton(
       this.elements.editReview,
-      approval === "DRAFT" || approval === "REJECTED"
+      approval === "DRAFT" ||
+      approval === "REJECTED"
     );
 
     this.toggleButton(
       this.elements.submitReview,
-      approval === "DRAFT" || approval === "REJECTED"
+      approval === "DRAFT" ||
+      approval === "REJECTED"
     );
 
     this.toggleButton(
@@ -1076,11 +2044,16 @@ const AdminFinanceExpenses = {
 
     this.toggleButton(
       this.elements.paidReview,
-      approval === "APPROVED" && payment !== "PAID"
+      approval === "APPROVED" &&
+      payment !== "PAID"
     );
   },
 
-  reviewRow(label, value, important = false) {
+  reviewRow(
+    label,
+    value,
+    important = false
+  ) {
 
     const safeValue =
       value === undefined ||
@@ -1089,11 +2062,21 @@ const AdminFinanceExpenses = {
         ? "—"
         : String(value);
 
-    return '<div class="expense-review-row' +
+    return (
+      '<div class="expense-review-row' +
       (important ? " important" : "") +
-      '"><span>' + this.escape(label) +
-      "</span><strong>" + this.escape(safeValue) +
-      "</strong></div>";
+      '">' +
+
+        "<span>" +
+          this.escape(label) +
+        "</span>" +
+
+        "<strong>" +
+          this.escape(safeValue) +
+        "</strong>" +
+
+      "</div>"
+    );
   },
 
 
@@ -1105,14 +2088,21 @@ const AdminFinanceExpenses = {
 
   async submitSelectedExpense() {
 
-    const expense = this.state.selectedExpense;
+    const expense =
+      this.state.selectedExpense;
 
-    if (!expense || this.state.actionRunning) return;
+    if (
+      !expense ||
+      this.state.actionRunning
+    ) {
+      return;
+    }
 
     await this.runAction(
       "admin_submit_finance_expense",
       {
-        expenseId: expense.expenseId
+        expenseId:
+          expense.expenseId
       },
       "Expense submitted for approval."
     );
@@ -1120,16 +2110,27 @@ const AdminFinanceExpenses = {
 
   async approveSelectedExpense() {
 
-    const expense = this.state.selectedExpense;
+    const expense =
+      this.state.selectedExpense;
 
-    if (!expense || this.state.actionRunning) return;
+    if (
+      !expense ||
+      this.state.actionRunning
+    ) {
+      return;
+    }
 
     await this.runAction(
       "admin_decide_finance_expense",
       {
-        expenseId: expense.expenseId,
-        decision: "APPROVE",
-        rejectionReason: ""
+        expenseId:
+          expense.expenseId,
+
+        decision:
+          "APPROVE",
+
+        rejectionReason:
+          ""
       },
       "Expense approved successfully."
     );
@@ -1137,38 +2138,67 @@ const AdminFinanceExpenses = {
 
   openRejectDialog() {
 
-    if (!this.state.selectedExpense) return;
+    if (
+      !this.state.selectedExpense
+    ) {
+      return;
+    }
 
-    this.elements.rejectReason.value = "";
-    this.clearInlineError(this.elements.rejectError);
-    this.showDialog(this.elements.rejectDialog);
+    this.elements.rejectReason.value =
+      "";
+
+    this.clearInlineError(
+      this.elements.rejectError
+    );
+
+    this.showDialog(
+      this.elements.rejectDialog
+    );
+
     this.elements.rejectReason.focus();
   },
 
   async rejectSelectedExpense() {
 
-    const expense = this.state.selectedExpense;
-    const reason = this.elements.rejectReason.value.trim();
+    const expense =
+      this.state.selectedExpense;
 
-    if (!expense || this.state.actionRunning) return;
+    const reason =
+      this.elements.rejectReason
+        .value.trim();
+
+    if (
+      !expense ||
+      this.state.actionRunning
+    ) {
+      return;
+    }
 
     if (reason.length < 3) {
+
       this.showInlineError(
         this.elements.rejectError,
         "Enter a clear rejection reason."
       );
+
       return;
     }
 
-    const success = await this.runAction(
-      "admin_decide_finance_expense",
-      {
-        expenseId: expense.expenseId,
-        decision: "REJECT",
-        rejectionReason: reason
-      },
-      "Expense rejected."
-    );
+    const success =
+      await this.runAction(
+        "admin_decide_finance_expense",
+        {
+          expenseId:
+            expense.expenseId,
+
+          decision:
+            "REJECT",
+
+          rejectionReason:
+            reason
+        },
+        "Expense rejected."
+      );
 
     if (success) {
       this.closeRejectDialog();
@@ -1177,114 +2207,190 @@ const AdminFinanceExpenses = {
 
   openPaymentDialog() {
 
-    if (!this.state.selectedExpense) return;
+    if (
+      !this.state.selectedExpense
+    ) {
+      return;
+    }
 
-    this.elements.paymentMethod.value = "";
-    this.elements.paymentReference.value = "";
-    this.clearInlineError(this.elements.paymentError);
+    this.elements.paymentMethod.value =
+      "";
+
+    this.elements.paymentReference.value =
+      "";
+
+    this.clearInlineError(
+      this.elements.paymentError
+    );
+
     this.updatePaymentReferenceState();
-    this.showDialog(this.elements.paymentDialog);
+
+    this.showDialog(
+      this.elements.paymentDialog
+    );
   },
 
   updatePaymentReferenceState() {
 
-    if (!this.elements.paymentMethod) return;
+    if (
+      !this.elements.paymentMethod
+    ) {
+      return;
+    }
 
     const isCash =
-      this.elements.paymentMethod.value === "CASH";
+      this.elements.paymentMethod
+        .value === "CASH";
 
-    this.elements.paymentReference.required = !isCash;
+    this.elements.paymentReference
+      .required = !isCash;
 
-    this.elements.paymentReference.placeholder = isCash
-      ? "Optional for cash"
-      : "Transaction or payment reference";
+    this.elements.paymentReference
+      .placeholder =
+        isCash
+          ? "Optional for cash"
+          : "Transaction or payment reference";
   },
 
   async markSelectedExpensePaid() {
 
-    const expense = this.state.selectedExpense;
-    const method = this.elements.paymentMethod.value;
-    const reference = this.elements.paymentReference.value.trim();
+    const expense =
+      this.state.selectedExpense;
 
-    if (!expense || this.state.actionRunning) return;
+    const method =
+      this.elements.paymentMethod
+        .value;
+
+    const reference =
+      this.elements.paymentReference
+        .value.trim();
+
+    if (
+      !expense ||
+      this.state.actionRunning
+    ) {
+      return;
+    }
 
     if (!method) {
+
       this.showInlineError(
         this.elements.paymentError,
         "Select the payment method."
       );
+
       return;
     }
 
-    if (method !== "CASH" && reference.length < 3) {
+    if (
+      method !== "CASH" &&
+      reference.length < 3
+    ) {
+
       this.showInlineError(
         this.elements.paymentError,
         "Enter the payment reference."
       );
+
       return;
     }
 
-    const success = await this.runAction(
-      "admin_mark_finance_expense_paid",
-      {
-        expenseId: expense.expenseId,
-        payment: {
-          paymentMethod: method,
-          paymentReference: reference
-        }
-      },
-      "Expense marked as paid."
-    );
+    const success =
+      await this.runAction(
+        "admin_mark_finance_expense_paid",
+        {
+          expenseId:
+            expense.expenseId,
+
+          payment: {
+            paymentMethod:
+              method,
+
+            paymentReference:
+              reference
+          }
+        },
+        "Expense marked as paid."
+      );
 
     if (success) {
       this.closePaymentDialog();
     }
   },
 
-  async runAction(action, payload, successMessage) {
+  async runAction(
+    action,
+    payload,
+    successMessage
+  ) {
 
-    if (this.state.actionRunning) return false;
+    if (
+      this.state.actionRunning
+    ) {
+      return false;
+    }
 
     this.state.actionRunning = true;
-    this.setActionButtonsDisabled(true);
-    this.clearInlineError(this.elements.reviewError);
+
+    this.setActionButtonsDisabled(
+      true
+    );
+
+    this.clearInlineError(
+      this.elements.reviewError
+    );
 
     try {
-      await API.request(
+
+      await this.requestWithTimeout(
         action,
         Object.assign(
           {
-            sessionId: this.sessionId()
+            sessionId:
+              this.sessionId()
           },
           payload
-        ),
-        {
-          timeoutMs: this.REQUEST_TIMEOUT_MS
-        }
+        )
       );
 
       this.closeReview(true);
       this.clearCache();
+
+      await this.wait(
+        this.REQUEST_GAP_MS
+      );
+
       await this.load(true);
-      this.showToast(successMessage);
+
+      this.showToast(
+        successMessage
+      );
 
       return true;
 
     } catch (error) {
+
       this.showInlineError(
         this.elements.reviewError,
-        error.message || "Expense action could not be completed."
+        error.message ||
+        "Expense action could not be completed."
       );
 
       return false;
 
     } finally {
+
       this.state.actionRunning = false;
-      this.setActionButtonsDisabled(false);
+
+      this.setActionButtonsDisabled(
+        false
+      );
     }
   },
 
-  setActionButtonsDisabled(disabled) {
+  setActionButtonsDisabled(
+    disabled
+  ) {
 
     [
       this.elements.editReview,
@@ -1295,7 +2401,10 @@ const AdminFinanceExpenses = {
       this.elements.confirmReject,
       this.elements.confirmPayment
     ].forEach((button) => {
-      if (button) button.disabled = disabled;
+
+      if (button) {
+        button.disabled = disabled;
+      }
     });
   },
 
@@ -1307,122 +2416,288 @@ const AdminFinanceExpenses = {
    */
 
   showDialog(dialog) {
+
     if (!dialog) return;
 
-    dialog.classList.remove("hidden");
-    dialog.setAttribute("aria-hidden", "false");
-    document.body.classList.add("dialog-open");
+    dialog.classList.remove(
+      "hidden"
+    );
+
+    dialog.setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+    document.body.classList.add(
+      "dialog-open"
+    );
   },
 
   hideDialog(dialog) {
+
     if (!dialog) return;
 
-    dialog.classList.add("hidden");
-    dialog.setAttribute("aria-hidden", "true");
+    dialog.classList.add(
+      "hidden"
+    );
+
+    dialog.setAttribute(
+      "aria-hidden",
+      "true"
+    );
 
     const anyOpen = [
       this.elements.formDialog,
       this.elements.reviewDialog,
       this.elements.rejectDialog,
       this.elements.paymentDialog
-    ].some((item) => item && !item.classList.contains("hidden"));
+    ].some((item) => {
+
+      return (
+        item &&
+        !item.classList.contains(
+          "hidden"
+        )
+      );
+    });
 
     if (!anyOpen) {
-      document.body.classList.remove("dialog-open");
+      document.body.classList.remove(
+        "dialog-open"
+      );
     }
   },
 
   closeForm(force = false) {
-    if (this.state.saving && !force) return;
-    this.hideDialog(this.elements.formDialog);
+
+    if (
+      this.state.saving &&
+      !force
+    ) {
+      return;
+    }
+
+    this.hideDialog(
+      this.elements.formDialog
+    );
   },
 
   closeReview(force = false) {
-    if (this.state.actionRunning && !force) return;
-    this.hideDialog(this.elements.reviewDialog);
-    this.state.selectedExpense = null;
+
+    if (
+      this.state.actionRunning &&
+      !force
+    ) {
+      return;
+    }
+
+    this.hideDialog(
+      this.elements.reviewDialog
+    );
+
+    this.state.selectedExpense =
+      null;
   },
 
   closeRejectDialog() {
-    this.hideDialog(this.elements.rejectDialog);
+
+    this.hideDialog(
+      this.elements.rejectDialog
+    );
   },
 
   closePaymentDialog() {
-    this.hideDialog(this.elements.paymentDialog);
+
+    this.hideDialog(
+      this.elements.paymentDialog
+    );
   },
 
 
   /*
    * ----------------------------------------------------------
-   * PAGE STATE
+   * PAGE STATES
    * ----------------------------------------------------------
    */
 
   showLoading() {
-    this.elements.loading?.classList.remove("hidden");
-    this.elements.content?.classList.add("hidden");
+
+    this.elements.loading
+      ?.classList.remove(
+        "hidden"
+      );
+
+    this.elements.content
+      ?.classList.add(
+        "hidden"
+      );
   },
 
   showContent() {
-    this.elements.loading?.classList.add("hidden");
-    this.elements.content?.classList.remove("hidden");
+
+    this.elements.loading
+      ?.classList.add(
+        "hidden"
+      );
+
+    this.elements.content
+      ?.classList.remove(
+        "hidden"
+      );
   },
 
   showPageError(message) {
 
-    if (!this.elements.pageError) return;
+    if (
+      this.elements.pageError
+    ) {
+      this.elements.pageError.textContent =
+        message ||
+        "Finance request failed.";
+
+      this.elements.pageError
+        .classList.remove(
+          "hidden"
+        );
+    }
+
+    this.showContent();
+  },
+
+  showNonBlockingError(message) {
+
+    if (
+      !this.elements.pageError
+    ) {
+      return;
+    }
 
     this.elements.pageError.textContent =
-      message || "Finance request failed.";
+      message;
 
-    this.elements.pageError.classList.remove("hidden");
-
-    if (this.state.expenses.length) {
-      this.showContent();
-    }
+    this.elements.pageError
+      .classList.remove(
+        "hidden"
+      );
   },
 
   clearPageError() {
-    if (!this.elements.pageError) return;
 
-    this.elements.pageError.textContent = "";
-    this.elements.pageError.classList.add("hidden");
+    if (
+      !this.elements.pageError
+    ) {
+      return;
+    }
+
+    this.elements.pageError.textContent =
+      "";
+
+    this.elements.pageError
+      .classList.add(
+        "hidden"
+      );
   },
 
-  showInlineError(element, message) {
+  showFatalError(message) {
+
+    document
+      .getElementById(
+        "financeLoading"
+      )
+      ?.classList.add(
+        "hidden"
+      );
+
+    const error =
+      document.getElementById(
+        "financePageError"
+      );
+
+    if (error) {
+
+      error.textContent = message;
+
+      error.classList.remove(
+        "hidden"
+      );
+    }
+  },
+
+  showInlineError(
+    element,
+    message
+  ) {
+
     if (!element) return;
 
     element.textContent = message;
-    element.classList.remove("hidden");
+
+    element.classList.remove(
+      "hidden"
+    );
   },
 
   clearInlineError(element) {
+
     if (!element) return;
 
     element.textContent = "";
-    element.classList.add("hidden");
+
+    element.classList.add(
+      "hidden"
+    );
   },
 
   showToast(message) {
 
-    let toast = document.getElementById("financeToast");
+    let toast =
+      document.getElementById(
+        "financeToast"
+      );
 
     if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "financeToast";
-      toast.className = "finance-toast";
-      toast.setAttribute("role", "status");
-      document.body.appendChild(toast);
+
+      toast =
+        document.createElement(
+          "div"
+        );
+
+      toast.id =
+        "financeToast";
+
+      toast.className =
+        "finance-toast";
+
+      toast.setAttribute(
+        "role",
+        "status"
+      );
+
+      document.body.appendChild(
+        toast
+      );
     }
 
     toast.textContent = message;
-    toast.classList.add("show");
 
-    clearTimeout(this.toastTimer);
+    toast.classList.add(
+      "show"
+    );
 
-    this.toastTimer = setTimeout(() => {
-      toast.classList.remove("show");
-    }, 3000);
+    clearTimeout(
+      this.toastTimer
+    );
+
+    this.toastTimer =
+      setTimeout(
+        () => {
+
+          toast.classList.remove(
+            "show"
+          );
+        },
+        3000
+      );
   },
 
 
@@ -1433,162 +2708,367 @@ const AdminFinanceExpenses = {
    */
 
   setText(element, value) {
+
     if (element) {
-      element.textContent = String(value);
+      element.textContent =
+        String(value);
     }
   },
 
-  toggleButton(button, visible) {
-    button?.classList.toggle("hidden", !visible);
+  toggleButton(
+    button,
+    visible
+  ) {
+
+    button?.classList.toggle(
+      "hidden",
+      !visible
+    );
   },
 
   isHidden(element) {
-    return !element || element.classList.contains("hidden");
+
+    return (
+      !element ||
+      element.classList.contains(
+        "hidden"
+      )
+    );
   },
 
   pretty(value) {
-    return String(value || "")
+
+    return String(
+      value || ""
+    )
       .replace(/_/g, " ")
       .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(
+        /\b\w/g,
+        (letter) =>
+          letter.toUpperCase()
+      );
   },
 
   money(value) {
 
-    const amount = Number(value || 0);
+    const amount =
+      Number(value || 0);
 
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2
-    }).format(Number.isFinite(amount) ? amount : 0);
+    return new Intl.NumberFormat(
+      "en-IN",
+      {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 2
+      }
+    ).format(
+      Number.isFinite(amount)
+        ? amount
+        : 0
+    );
   },
 
   escape(value) {
-    const element = document.createElement("div");
-    element.textContent = String(value || "");
+
+    const element =
+      document.createElement(
+        "div"
+      );
+
+    element.textContent =
+      String(value || "");
+
     return element.innerHTML;
   },
 
 
   /*
    * ----------------------------------------------------------
-   * READ-ONLY INTEGRATION TEST
+   * READ-ONLY TEST
    * ----------------------------------------------------------
    */
 
   async test() {
 
-    console.log("========================================");
-    console.log("APNABITE ADMIN FINANCE INTEGRATION TEST");
-    console.log("========================================");
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "APNABITE ADMIN FINANCE INTEGRATION TEST"
+    );
+
+    console.log(
+      "========================================"
+    );
 
     let listData = null;
     let summaryData = null;
+    let testError = null;
     let duplicateProtected = false;
 
     try {
-      const firstPromise = this.fetchList();
-      const secondPromise = this.fetchList();
 
-      duplicateProtected = firstPromise === secondPromise;
+      /*
+       * Do not test while initial page load
+       * is still running.
+       */
 
-      listData = await firstPromise;
-      summaryData = await this.fetchSummary();
+      let waitCount = 0;
+
+      while (
+        this.state.loading &&
+        waitCount < 40
+      ) {
+        await this.wait(250);
+        waitCount++;
+      }
+
+      const firstPromise =
+        this.fetchList();
+
+      const secondPromise =
+        this.fetchList();
+
+      duplicateProtected =
+        firstPromise === secondPromise;
+
+      listData =
+        await firstPromise;
+
+      await this.wait(
+        this.REQUEST_GAP_MS
+      );
+
+      summaryData =
+        await this.fetchSummary();
 
     } catch (error) {
-      console.error("Finance integration test request failed:", error);
+
+      testError = error;
+
+      console.error(
+        "Finance integration test failed:",
+        error
+      );
     }
 
     const results = [
       {
         test: "Required role",
         expected: "Admin",
-        actual: document.body.dataset.requiredRole,
-        passed: document.body.dataset.requiredRole === "Admin"
+        actual:
+          document.body.dataset.requiredRole,
+        passed:
+          document.body.dataset.requiredRole ===
+          "Admin"
       },
       {
         test: "Live expense list API",
         expected: true,
-        actual: Boolean(listData && listData.success),
-        passed: Boolean(listData && listData.success)
+        actual:
+          Boolean(
+            listData &&
+            listData.success
+          ),
+        passed:
+          Boolean(
+            listData &&
+            listData.success
+          )
       },
       {
         test: "Expense array",
         expected: true,
-        actual: Boolean(listData && Array.isArray(listData.expenses)),
-        passed: Boolean(listData && Array.isArray(listData.expenses))
+        actual:
+          Boolean(
+            listData &&
+            Array.isArray(
+              listData.expenses
+            )
+          ),
+        passed:
+          Boolean(
+            listData &&
+            Array.isArray(
+              listData.expenses
+            )
+          )
       },
       {
         test: "Live summary API",
         expected: true,
-        actual: Boolean(summaryData && summaryData.success),
-        passed: Boolean(summaryData && summaryData.success)
+        actual:
+          Boolean(
+            summaryData &&
+            summaryData.success
+          ),
+        passed:
+          Boolean(
+            summaryData &&
+            summaryData.success
+          )
       },
       {
         test: "Summary structure",
         expected: true,
-        actual: Boolean(summaryData && summaryData.summary),
-        passed: Boolean(summaryData && summaryData.summary)
+        actual:
+          Boolean(
+            summaryData &&
+            summaryData.summary
+          ),
+        passed:
+          Boolean(
+            summaryData &&
+            summaryData.summary
+          )
       },
       {
-        test: "Duplicate request protection",
+        test:
+          "Duplicate request protection",
         expected: true,
-        actual: duplicateProtected,
-        passed: duplicateProtected
+        actual:
+          duplicateProtected,
+        passed:
+          duplicateProtected
       },
       {
-        test: "Finance cache support",
+        test: "Page visible",
         expected: true,
-        actual: typeof localStorage !== "undefined",
-        passed: typeof localStorage !== "undefined"
+        actual:
+          Boolean(
+            this.elements.content &&
+            !this.elements.content
+              .classList.contains(
+                "hidden"
+              )
+          ),
+        passed:
+          Boolean(
+            this.elements.content &&
+            !this.elements.content
+              .classList.contains(
+                "hidden"
+              )
+          )
+      },
+      {
+        test: "Skeleton hidden",
+        expected: true,
+        actual:
+          Boolean(
+            this.elements.loading &&
+            this.elements.loading
+              .classList.contains(
+                "hidden"
+              )
+          ),
+        passed:
+          Boolean(
+            this.elements.loading &&
+            this.elements.loading
+              .classList.contains(
+                "hidden"
+              )
+          )
       },
       {
         test: "Desktop expense table",
         expected: true,
-        actual: Boolean(this.elements.tableBody),
-        passed: Boolean(this.elements.tableBody)
+        actual:
+          Boolean(
+            this.elements.tableBody
+          ),
+        passed:
+          Boolean(
+            this.elements.tableBody
+          )
       },
       {
         test: "Mobile expense list",
         expected: true,
-        actual: Boolean(this.elements.mobileList),
-        passed: Boolean(this.elements.mobileList)
+        actual:
+          Boolean(
+            this.elements.mobileList
+          ),
+        passed:
+          Boolean(
+            this.elements.mobileList
+          )
       },
       {
         test: "Expense form workflow",
         expected: true,
-        actual: Boolean(this.elements.form && this.elements.saveDraft),
-        passed: Boolean(this.elements.form && this.elements.saveDraft)
+        actual:
+          Boolean(
+            this.elements.form &&
+            this.elements.saveDraft
+          ),
+        passed:
+          Boolean(
+            this.elements.form &&
+            this.elements.saveDraft
+          )
       },
       {
         test: "Approval workflow",
         expected: true,
-        actual: Boolean(
-          this.elements.approveReview &&
-          this.elements.rejectReview &&
-          this.elements.paidReview
-        ),
-        passed: Boolean(
-          this.elements.approveReview &&
-          this.elements.rejectReview &&
-          this.elements.paidReview
-        )
+        actual:
+          Boolean(
+            this.elements.approveReview &&
+            this.elements.rejectReview &&
+            this.elements.paidReview
+          ),
+        passed:
+          Boolean(
+            this.elements.approveReview &&
+            this.elements.rejectReview &&
+            this.elements.paidReview
+          )
       },
       {
-        test: "No expense modified by test",
+        test: "Request completed",
+        expected: true,
+        actual:
+          testError === null,
+        passed:
+          testError === null
+      },
+      {
+        test:
+          "No expense modified by test",
         expected: true,
         actual: true,
         passed: true
       }
     ];
 
-    const passed = results.every((result) => result.passed);
+    const passed =
+      results.every(
+        (result) =>
+          result.passed
+      );
 
     console.table(results);
 
-    console.log("Finance Expense List:", listData);
-    console.log("Finance Expense Summary:", summaryData);
+    console.log(
+      "Finance Expense List:",
+      listData
+    );
+
+    console.log(
+      "Finance Expense Summary:",
+      summaryData
+    );
+
+    if (testError) {
+
+      console.log(
+        "Finance Test Error:",
+        testError
+      );
+    }
 
     console.log(
       passed
@@ -1598,9 +3078,16 @@ const AdminFinanceExpenses = {
 
     return {
       success: passed,
-      status: passed ? "PASS" : "FAIL",
+      status:
+        passed
+          ? "PASS"
+          : "FAIL",
       list: listData,
       summary: summaryData,
+      error:
+        testError
+          ? testError.message
+          : "",
       results: results
     };
   }
@@ -1608,11 +3095,55 @@ const AdminFinanceExpenses = {
 
 
 /*
- * ------------------------------------------------------------
- * INITIALIZE
- * ------------------------------------------------------------
+ * ============================================================
+ * SAFE INITIALIZE
+ * ============================================================
  */
 
-document.addEventListener("DOMContentLoaded", () => {
-  AdminFinanceExpenses.init();
-});
+document.addEventListener(
+  "DOMContentLoaded",
+  async () => {
+
+    /*
+     * Allow RoleHome initialization
+     * to start first.
+     */
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 150);
+    });
+
+    const startedAt =
+      Date.now();
+
+    const maximumWaitMs =
+      12000;
+
+    /*
+     * Wait for background validation
+     * before starting Finance API calls.
+     */
+
+    while (
+      typeof RoleHome !== "undefined" &&
+      RoleHome.validationRunning === true &&
+      Date.now() - startedAt <
+        maximumWaitMs
+    ) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 200);
+      });
+    }
+
+    /*
+     * Extra safe gap after session
+     * validation request.
+     */
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 700);
+    });
+
+    AdminFinanceExpenses.init();
+  }
+);
