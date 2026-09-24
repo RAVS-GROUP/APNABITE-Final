@@ -3,17 +3,17 @@
  * APNABITE SERVICE WORKER
  * FILE: sw.js
  * PURPOSE: Version-safe caching and offline support
- * VERSION: 9.0.0
+ * VERSION: 10.0.0
  * ============================================================
  */
 
 const CACHE_NAME =
-  "apnabite-static-v9";
+  "apnabite-static-v10";
 
 
 /*
  * ------------------------------------------------------------
- * MINIMUM OFFLINE SHELL
+ * OFFLINE APPLICATION SHELL
  * ------------------------------------------------------------
  */
 
@@ -23,7 +23,15 @@ const STATIC_ASSETS = [
   "./index.html",
   "./manifest.json",
 
+  /*
+   * Shared image
+   */
+
   "./shared/assets/images/apnabite-logo.webp",
+
+  /*
+   * Shared CSS
+   */
 
   "./shared/css/reset.css",
   "./shared/css/variables.css",
@@ -32,10 +40,52 @@ const STATIC_ASSETS = [
   "./shared/css/launch.css",
   "./shared/css/responsive.css",
 
+  /*
+   * Shared JavaScript
+   */
+
   "./shared/js/storage.js",
+  "./shared/js/cache.js",
+  "./shared/js/api.js",
   "./shared/js/session.js",
+  "./shared/js/auth.js",
+  "./shared/js/location.js",
+  "./shared/js/service-location.js",
   "./shared/js/app-router.js",
-  "./shared/js/launch.js"
+  "./shared/js/role-home.js",
+  "./shared/js/launch.js",
+
+  /*
+   * Customer pages
+   */
+
+  "./customer/html/home.html",
+  "./customer/html/addresses.html",
+  "./customer/html/orders.html",
+  "./customer/html/dine-in.html",
+  "./customer/html/account.html",
+
+  /*
+   * Customer CSS
+   */
+
+  "./customer/css/customer-common.css",
+  "./customer/css/home.css",
+  "./customer/css/addresses.css",
+  "./customer/css/orders.css",
+  "./customer/css/dine-in.css",
+  "./customer/css/account.css",
+
+  /*
+   * Customer JavaScript
+   */
+
+  "./customer/js/serviceability-guard.js",
+  "./customer/js/home.js",
+  "./customer/js/addresses.js",
+  "./customer/js/orders.js",
+  "./customer/js/dine-in.js",
+  "./customer/js/account.js"
 
 ];
 
@@ -81,8 +131,8 @@ self.addEventListener(
  * ------------------------------------------------------------
  * ACTIVATE
  *
- * Delete every older ApnaBite cache so different JavaScript
- * versions can never run together.
+ * Delete older ApnaBite caches so different frontend versions
+ * cannot run together.
  * ------------------------------------------------------------
  */
 
@@ -101,6 +151,7 @@ self.addEventListener(
             return Promise.all(
 
               cacheNames
+
                 .filter(
                   function(cacheName) {
 
@@ -152,9 +203,9 @@ self.addEventListener(
 
 
     if (
-      request.method !== "GET"
+      request.method !==
+      "GET"
     ) {
-
       return;
     }
 
@@ -166,25 +217,25 @@ self.addEventListener(
 
 
     /*
-     * Google Apps Script API and all external services
-     * bypass the Service Worker completely.
+     * Google Apps Script API and all external services bypass
+     * the Service Worker.
      */
 
     if (
       requestUrl.origin !==
       self.location.origin
     ) {
-
       return;
     }
 
 
     /*
-     * HTML navigation always checks latest deployment first.
+     * HTML navigation always checks the latest deployment.
      */
 
     if (
-      request.mode === "navigate"
+      request.mode ===
+      "navigate"
     ) {
 
       event.respondWith(
@@ -203,8 +254,8 @@ self.addEventListener(
 
 
     /*
-     * JavaScript and CSS must always check the network first.
-     * This prevents old/new frontend file combinations.
+     * JavaScript and CSS use network-first to prevent mixed
+     * frontend versions.
      */
 
     if (
@@ -224,8 +275,7 @@ self.addEventListener(
 
 
     /*
-     * Images and fonts rarely change and can safely use
-     * cached copies for faster rendering.
+     * Images and fonts use cache-first.
      */
 
     if (
@@ -346,7 +396,7 @@ async function networkFirst(
 
 /*
  * ------------------------------------------------------------
- * CACHE-FIRST FOR IMAGES AND FONTS
+ * CACHE-FIRST
  * ------------------------------------------------------------
  */
 
@@ -425,8 +475,11 @@ function getCacheKey(request) {
     );
 
 
-  url.search = "";
-  url.hash = "";
+  url.search =
+    "";
+
+  url.hash =
+    "";
 
 
   return url.href;
