@@ -4636,15 +4636,10 @@ document.addEventListener(
         }
       );
 
-      this.elements.viewCartButton.addEventListener(
-        "click",
-        () => {
-          this.showCartStatus(
-            "Your cart is ready. Cart page integration is the next step."
-          );
-        }
-      );
-
+this.elements.viewCartButton.addEventListener("click", () => {
+  window.location.href = "cart.html";
+});
+      
       this.elements.keepCurrentCartButton.addEventListener(
         "click",
         () => {
