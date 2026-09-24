@@ -1997,8 +1997,7 @@ const CustomerHome = {
 
       success:
         restored.success,
-
-      reason:
+     reason:
         "LOCATION_PERMISSION_DENIED",
 
       location:
@@ -4116,6 +4115,7 @@ const CustomerHome = {
 
 
   /*
+/*
    * ----------------------------------------------------------
    * PAGE MESSAGE
    * ----------------------------------------------------------
@@ -5888,511 +5888,381 @@ document.addEventListener(
 })();
 
 /**
+/**
  * ============================================================
- * CUSTOMER CART OPTIMISTIC UI
- * VERSION: 1.0.0
+ * CUSTOMER CART INSTANT UI + BACKGROUND SYNC
+ * VERSION: 2.0.0
  * ============================================================
  */
 (() => {
-  const serverAddCartItem =
-    CustomerHome.addCustomerCartItem.bind(CustomerHome);
-
-  const serverUpdateCartItem =
-    CustomerHome.updateCustomerCartItem.bind(CustomerHome);
-
-  const serverRemoveCartItem =
-    CustomerHome.removeCustomerCartItem.bind(CustomerHome);
-
   Object.assign(CustomerHome, {
-    snapshotCartState_() {
+    CART_SYNC_DELAY_MS: 450,
+    cartSyncEntries_: {},
+    cartSyncTimers_: {},
+    cartSyncSequence_: 0,
+    cartItemKey_(productId, variantId) {
+      return String(productId || "") + "|" + String(variantId || "");
+    },
+    cloneCartState_() {
       return {
-        cart:
-          this.cart
-            ? JSON.parse(
-                JSON.stringify(this.cart)
-              )
-            : null,
-        items:
-          JSON.parse(
-            JSON.stringify(
-              this.cartItems || []
-            )
-          ),
-        summary:
-          JSON.parse(
-            JSON.stringify(
-              this.cartSummary || {
-                distinctItems: 0,
-                totalQuantity: 0,
-                subtotal: 0
-              }
-            )
-          )
+        cart: this.cart ? JSON.parse(JSON.stringify(this.cart)) : null,
+        items: JSON.parse(JSON.stringify(this.cartItems || [])),
+        summary: JSON.parse(JSON.stringify(this.cartSummary || {}))
       };
     },
-
-    restoreCartState_(snapshot) {
-      this.cart =
-        snapshot.cart;
-
-      this.cartItems =
-        snapshot.items;
-
-      this.cartSummary =
-        snapshot.summary;
-
-      this.renderCartSummary();
-      this.syncProductCartControls();
+    setCartOperationLoading() {
+      this.cartOperationRunning = false;
+      return false;
     },
-
-    recalculateOptimisticCart_() {
+    recalculateCart_() {
       let totalQuantity = 0;
       let subtotal = 0;
-
-      this.cartItems.forEach(
-        (item) => {
-          const quantity =
-            Number(item.quantity || 0);
-
-          const price =
-            Number(
-              item.priceSnapshot ||
-              item.currentPrice ||
-              0
-            );
-
-          item.itemTotal =
-            Math.round(
-              price *
-              quantity *
-              100
-            ) / 100;
-
-          totalQuantity +=
-            quantity;
-
-          subtotal +=
-            item.itemTotal;
-        }
-      );
-
+      this.cartItems = (this.cartItems || []).filter((item) => Number(item.quantity || 0) > 0);
+      this.cartItems.forEach((item) => {
+        const quantity = Number(item.quantity || 0);
+        const price = Number(item.priceSnapshot || item.currentPrice || 0);
+        item.itemTotal = Math.round(price * quantity * 100) / 100;
+        totalQuantity += quantity;
+        subtotal += item.itemTotal;
+      });
       this.cartSummary = {
-        distinctItems:
-          this.cartItems.length,
-        totalQuantity:
-          totalQuantity,
-        subtotal:
-          Math.round(
-            subtotal * 100
-          ) / 100
+        distinctItems: this.cartItems.length,
+        totalQuantity: totalQuantity,
+        subtotal: Math.round(subtotal * 100) / 100
       };
-
-      if (
-        this.cartItems.length === 0
-      ) {
+      if (!this.cartItems.length) {
         this.cart = null;
       }
-
       this.renderCartSummary();
       this.syncProductCartControls();
     },
-
-    getOptimisticProduct_(
-      product
-    ) {
-      const kitchen =
-        this.kitchens.find(
-          (item) =>
-            String(item.chefId || "") ===
-            String(product.chefId || "")
-        );
-
-      const discoveredProduct =
-        kitchen &&
-        Array.isArray(kitchen.products)
-          ? kitchen.products.find(
-              (item) =>
-                String(item.productId || "") ===
-                  String(product.productId || "") &&
-                String(
-                  item.variantId ||
-                  item.defaultVariantId ||
-                  ""
-                ) ===
-                  String(product.variantId || "")
-            )
-          : null;
-
+    findCartItemByProduct_(productId, variantId) {
+      return (this.cartItems || []).find((item) =>
+        String(item.productId || "") === String(productId || "") &&
+        String(item.variantId || "") === String(variantId || "")
+      ) || null;
+    },
+    getDiscoveredProduct_(chefId, productId, variantId) {
+      const kitchen = (this.kitchens || []).find((item) =>
+        String(item.chefId || "") === String(chefId || "")
+      );
+      const product = kitchen && Array.isArray(kitchen.products)
+        ? kitchen.products.find((item) =>
+            String(item.productId || "") === String(productId || "") &&
+            String(item.variantId || item.defaultVariantId || "") === String(variantId || "")
+          )
+        : null;
+      return { kitchen: kitchen || null, product: product || null };
+    },
+    makeOptimisticItem_(product, quantity) {
+      const resolved = this.getDiscoveredProduct_(
+        product.chefId,
+        product.productId,
+        product.variantId
+      );
+      const discovered = resolved.product || {};
       return {
-        kitchen:
-          kitchen || null,
-        product:
-          discoveredProduct || null
+        cartItemId: "LOCAL_" + (++this.cartSyncSequence_),
+        cartId: this.cart ? this.cart.cartId : "LOCAL_CART",
+        productId: product.productId,
+        variantId: product.variantId,
+        chefId: product.chefId,
+        productName: product.productName || discovered.productName || "Dish",
+        variantName: discovered.variantName || "",
+        quantityLabel: discovered.quantityLabel || discovered.portion || "",
+        imageUrl: discovered.imageUrl || "",
+        foodType: discovered.foodType || "",
+        quantity: quantity,
+        priceSnapshot: Number(product.price || discovered.price || 0),
+        currentPrice: Number(product.price || discovered.price || 0),
+        priceChanged: false,
+        productAvailable: true,
+        pendingSync: true
       };
     },
-
-    async addCustomerCartItem(
-      product,
-      replaceCart = false
-    ) {
+    getOrCreateSyncEntry_(product, currentItem) {
+      const key = this.cartItemKey_(product.productId, product.variantId);
+      if (!this.cartSyncEntries_[key]) {
+        this.cartSyncEntries_[key] = {
+          key: key,
+          chefId: String(product.chefId || currentItem && currentItem.chefId || ""),
+          businessName: product.businessName || "Selected kitchen",
+          productId: String(product.productId || currentItem && currentItem.productId || ""),
+          productName: product.productName || currentItem && currentItem.productName || "Dish",
+          variantId: String(product.variantId || currentItem && currentItem.variantId || ""),
+          price: Number(product.price || currentItem && (currentItem.currentPrice || currentItem.priceSnapshot) || 0),
+          cartItemId: currentItem ? String(currentItem.cartItemId || "") : "",
+          confirmedQuantity: currentItem ? Number(currentItem.quantity || 0) : 0,
+          targetQuantity: currentItem ? Number(currentItem.quantity || 0) : 0,
+          replaceCart: false,
+          running: false
+        };
+      }
+      return this.cartSyncEntries_[key];
+    },
+    scheduleCartSync_(entry, immediate = false) {
+      window.clearTimeout(this.cartSyncTimers_[entry.key]);
+      this.cartSyncTimers_[entry.key] = window.setTimeout(
+        () => this.flushCartEntry_(entry.key),
+        immediate ? 0 : this.CART_SYNC_DELAY_MS
+      );
+    },
+    applyOptimisticQuantity_(entry) {
+      let item = this.findCartItemByProduct_(entry.productId, entry.variantId);
+      if (entry.targetQuantity <= 0) {
+        this.cartItems = (this.cartItems || []).filter((cartItem) =>
+          this.cartItemKey_(cartItem.productId, cartItem.variantId) !== entry.key
+        );
+      } else if (item) {
+        item.quantity = entry.targetQuantity;
+        item.pendingSync = true;
+      } else {
+        item = this.makeOptimisticItem_(entry, entry.targetQuantity);
+        this.cartItems.push(item);
+      }
+      if (entry.targetQuantity > 0 && !this.cart) {
+        this.cart = {
+          cartId: "LOCAL_CART",
+          chefId: entry.chefId,
+          businessName: entry.businessName,
+          cartStatus: "ACTIVE"
+        };
+      }
+      this.recalculateCart_();
+    },
+    async addCustomerCartItem(product, replaceCart = false) {
+      if (!product.chefId || !product.productId || !product.variantId) {
+        this.showCartStatus("This product is not available for ordering yet.");
+        return { success: false, reason: "PRODUCT_DATA_INCOMPLETE" };
+      }
       if (
-        this.cart &&
-        this.cart.chefId &&
-        String(this.cart.chefId) !==
-          String(product.chefId) &&
+        this.cart && this.cart.chefId &&
+        String(this.cart.chefId) !== String(product.chefId) &&
         replaceCart !== true
       ) {
-        this.openCartReplacementDialog(
-          product
-        );
-
-        return {
-          success: false,
-          replacementRequired: true,
-          code:
-            "CART_KITCHEN_CONFLICT"
-        };
+        this.openCartReplacementDialog(product);
+        return { success: false, replacementRequired: true, code: "CART_KITCHEN_CONFLICT" };
       }
-
-      const snapshot =
-        this.snapshotCartState_();
-
-      const resolved =
-        this.getOptimisticProduct_(
-          product
-        );
-
       if (replaceCart === true) {
+        Object.keys(this.cartSyncTimers_).forEach((key) => window.clearTimeout(this.cartSyncTimers_[key]));
+        this.cartSyncEntries_ = {};
+        this.cartSyncTimers_ = {};
         this.cartItems = [];
+        this.cart = null;
       }
-
-      if (!this.cart) {
-        this.cart = {
-          cartId:
-            "OPTIMISTIC_CART",
-          chefId:
-            product.chefId,
-          businessName:
-            product.businessName ||
-            "Selected kitchen",
-          cartStatus:
-            "ACTIVE"
-        };
+      const current = this.findCartItemByProduct_(product.productId, product.variantId);
+      const entry = this.getOrCreateSyncEntry_(product, current);
+      entry.replaceCart = replaceCart === true;
+      entry.targetQuantity = Number(entry.targetQuantity || 0) + 1;
+      this.applyOptimisticQuantity_(entry);
+      this.pendingCartProduct = null;
+      this.closeCartReplacementDialog();
+      this.scheduleCartSync_(entry);
+      return { success: true, optimistic: true, quantity: entry.targetQuantity };
+    },
+    async updateCustomerCartItem(item, quantity) {
+      const target = Math.max(0, Math.min(20, Number(quantity || 0)));
+      const entry = this.getOrCreateSyncEntry_({
+        chefId: item.chefId,
+        productId: item.productId,
+        productName: item.productName,
+        variantId: item.variantId,
+        price: item.currentPrice || item.priceSnapshot
+      }, item);
+      entry.targetQuantity = target;
+      this.applyOptimisticQuantity_(entry);
+      this.scheduleCartSync_(entry);
+      return { success: true, optimistic: true, quantity: target };
+    },
+    async removeCustomerCartItem(item) {
+      return this.updateCustomerCartItem(item, 0);
+    },
+    async handleCartAction(button) {
+      if (button.disabled) {
+        return;
       }
-
-      const existingItem =
-        this.cartItems.find(
-          (item) =>
-            String(item.productId || "") ===
-              String(product.productId || "") &&
-            String(item.variantId || "") ===
-              String(product.variantId || "")
-        );
-
-      if (existingItem) {
-        existingItem.quantity =
-          Number(
-            existingItem.quantity || 0
-          ) + 1;
-      } else {
-        this.cartItems.push({
-          cartItemId:
-            "OPTIMISTIC_" +
-            String(product.productId) +
-            "_" +
-            String(product.variantId),
-          cartId:
-            this.cart.cartId,
-          productId:
-            product.productId,
-          variantId:
-            product.variantId,
-          chefId:
-            product.chefId,
-          productName:
-            product.productName ||
-            (
-              resolved.product
-                ? resolved.product.productName
-                : "Dish"
-            ),
-          variantName:
-            resolved.product
-              ? resolved.product.variantName || ""
-              : "",
-          quantityLabel:
-            resolved.product
-              ? resolved.product.quantityLabel || ""
-              : "",
-          imageUrl:
-            resolved.product
-              ? resolved.product.imageUrl || ""
-              : "",
-          foodType:
-            resolved.product
-              ? resolved.product.foodType || ""
-              : "",
-          quantity:
-            1,
-          priceSnapshot:
-            Number(
-              product.price ||
-              (
-                resolved.product
-                  ? resolved.product.price
-                  : 0
-              )
-            ),
-          currentPrice:
-            Number(
-              product.price ||
-              (
-                resolved.product
-                  ? resolved.product.price
-                  : 0
-              )
-            ),
-          priceChanged:
-            false,
-          productAvailable:
-            true
+      const action = String(button.dataset.cartAction || "").toUpperCase();
+      if (action === "ADD") {
+        return this.addCustomerCartItem({
+          chefId: button.dataset.chefId || "",
+          businessName: button.dataset.businessName || "Selected kitchen",
+          productId: button.dataset.productId || "",
+          productName: button.dataset.productName || "Dish",
+          variantId: button.dataset.variantId || "",
+          price: Number(button.dataset.price || 0)
         });
       }
-
-      this.recalculateOptimisticCart_();
-
-      try {
-        const result =
-          await serverAddCartItem(
-            product,
-            replaceCart
-          );
-
-        if (
-          !result ||
-          result.success !== true
-        ) {
-          if (
-            result &&
-            result.replacementRequired
-          ) {
-            this.restoreCartState_(
-              snapshot
-            );
-            return result;
-          }
-
-          throw new Error(
-            result &&
-            result.error
-              ? result.error
-              : "Cart item could not be saved."
-          );
-        }
-
-        return result;
-
-      } catch (error) {
-        this.restoreCartState_(
-          snapshot
-        );
-
-        this.showCartStatus(
-          "Cart was restored because the item could not be saved."
-        );
-
-        throw error;
+      const cartItemId = String(button.dataset.cartItemId || "");
+      const item = (this.cartItems || []).find((cartItem) =>
+        String(cartItem.cartItemId || "") === cartItemId
+      );
+      if (!item) {
+        this.showCartStatus("Cart changed. Please tap again.");
+        return { success: false, reason: "CART_ITEM_NOT_FOUND" };
+      }
+      const quantity = Number(item.quantity || 0);
+      if (action === "INCREASE") {
+        return this.updateCustomerCartItem(item, quantity + 1);
+      }
+      if (action === "DECREASE") {
+        return this.updateCustomerCartItem(item, quantity - 1);
+      }
+      if (action === "REMOVE") {
+        return this.removeCustomerCartItem(item);
       }
     },
-
-    async updateCustomerCartItem(
-      item,
-      quantity
-    ) {
-      if (quantity <= 0) {
-        return this.removeCustomerCartItem(
-          item
-        );
+    findResponseItem_(result, entry) {
+      const items = result && Array.isArray(result.items) ? result.items : [];
+      return items.find((item) =>
+        String(item.productId || "") === entry.productId &&
+        String(item.variantId || "") === entry.variantId
+      ) || null;
+    },
+    mergeServerResult_(result, entry) {
+      const responseItem = this.findResponseItem_(result, entry);
+      entry.confirmedQuantity = responseItem ? Number(responseItem.quantity || 0) : 0;
+      entry.cartItemId = responseItem ? String(responseItem.cartItemId || "") : "";
+      if (result && result.cart) {
+        this.cart = Object.assign({}, result.cart, {
+          businessName: this.cart && this.cart.businessName
+            ? this.cart.businessName
+            : entry.businessName
+        });
       }
-
-      const snapshot =
-        this.snapshotCartState_();
-
-      const serverItem =
-        JSON.parse(
-          JSON.stringify(item)
-        );
-
-      const optimisticItem =
-        this.cartItems.find(
-          (cartItem) =>
-            String(cartItem.cartItemId || "") ===
-            String(item.cartItemId || "")
-        );
-
-      if (!optimisticItem) {
-        return serverUpdateCartItem(
-          item,
-          quantity
-        );
+      const localItem = this.findCartItemByProduct_(entry.productId, entry.variantId);
+      if (localItem && responseItem) {
+        localItem.cartItemId = responseItem.cartItemId;
+        localItem.cartId = responseItem.cartId;
+        localItem.priceSnapshot = responseItem.priceSnapshot;
+        localItem.currentPrice = responseItem.currentPrice;
+        localItem.productAvailable = responseItem.productAvailable;
+        localItem.pendingSync = entry.targetQuantity !== entry.confirmedQuantity;
       }
-
-      optimisticItem.quantity =
-        quantity;
-
-      this.recalculateOptimisticCart_();
-
+      this.recalculateCart_();
+    },
+    rollbackCartEntry_(entry) {
+      let item = this.findCartItemByProduct_(entry.productId, entry.variantId);
+      if (entry.confirmedQuantity <= 0) {
+        this.cartItems = (this.cartItems || []).filter((cartItem) =>
+          this.cartItemKey_(cartItem.productId, cartItem.variantId) !== entry.key
+        );
+      } else if (item) {
+        item.quantity = entry.confirmedQuantity;
+        item.cartItemId = entry.cartItemId;
+        item.pendingSync = false;
+      } else {
+        item = this.makeOptimisticItem_(entry, entry.confirmedQuantity);
+        item.cartItemId = entry.cartItemId;
+        item.pendingSync = false;
+        this.cartItems.push(item);
+      }
+      entry.targetQuantity = entry.confirmedQuantity;
+      this.recalculateCart_();
+    },
+    async flushCartEntry_(key) {
+      const entry = this.cartSyncEntries_[key];
+      if (!entry || entry.running) {
+        return;
+      }
+      if (entry.targetQuantity === entry.confirmedQuantity && !entry.replaceCart) {
+        return;
+      }
+      entry.running = true;
+      const sentTarget = entry.targetQuantity;
+      const sentReplace = entry.replaceCart;
+      entry.replaceCart = false;
       try {
-        const result =
-          await serverUpdateCartItem(
-            serverItem,
-            quantity
-          );
-
-        if (
-          !result ||
-          result.success !== true
-        ) {
-          throw new Error(
-            result &&
-            result.error
-              ? result.error
-              : "Cart quantity could not be saved."
-          );
+        let response;
+        if (entry.confirmedQuantity <= 0 && sentTarget > 0) {
+          response = await API.request("add_customer_cart_item", {
+            sessionId: this.getSessionId(),
+            chefId: entry.chefId,
+            productId: entry.productId,
+            variantId: entry.variantId,
+            quantity: sentTarget,
+            replaceCart: sentReplace
+          }, { timeoutMs: 90000 });
+        } else if (entry.confirmedQuantity > 0 && sentTarget <= 0) {
+          response = await API.request("remove_customer_cart_item", {
+            sessionId: this.getSessionId(),
+            cartItemId: entry.cartItemId
+          }, { timeoutMs: 90000 });
+        } else {
+          response = await API.request("update_customer_cart_item", {
+            sessionId: this.getSessionId(),
+            cartItemId: entry.cartItemId,
+            quantity: sentTarget
+          }, { timeoutMs: 90000 });
         }
-
-        return result;
-
+        this.mergeServerResult_(response.data || {}, entry);
       } catch (error) {
-        this.restoreCartState_(
-          snapshot
-        );
-
-        this.showCartStatus(
-          "Previous quantity restored because saving failed."
-        );
-
-        throw error;
+        const code = String(error.code || "").toUpperCase();
+        if ([
+          "CART_KITCHEN_CONFLICT",
+          "CART_KITCHEN_MISMATCH",
+          "DIFFERENT_KITCHEN_CART",
+          "ONE_KITCHEN_PER_CART",
+          "CART_REPLACEMENT_REQUIRED"
+        ].includes(code) && !sentReplace) {
+          this.rollbackCartEntry_(entry);
+          this.openCartReplacementDialog(entry);
+        } else {
+          console.error("Cart background sync failed:", error);
+          this.rollbackCartEntry_(entry);
+          this.showCartStatus("Cart update could not be saved. Please try again.");
+        }
+      } finally {
+        entry.running = false;
+        if (entry.targetQuantity !== entry.confirmedQuantity || entry.replaceCart) {
+          this.scheduleCartSync_(entry, true);
+        } else if (entry.confirmedQuantity <= 0) {
+          delete this.cartSyncEntries_[key];
+          delete this.cartSyncTimers_[key];
+        }
       }
     },
-
-    async removeCustomerCartItem(
-      item
-    ) {
-      const snapshot =
-        this.snapshotCartState_();
-
-      const serverItem =
-        JSON.parse(
-          JSON.stringify(item)
-        );
-
-      this.cartItems =
-        this.cartItems.filter(
-          (cartItem) =>
-            String(cartItem.cartItemId || "") !==
-            String(item.cartItemId || "")
-        );
-
-      this.recalculateOptimisticCart_();
-
-      try {
-        const result =
-          await serverRemoveCartItem(
-            serverItem
-          );
-
-        if (
-          !result ||
-          result.success !== true
-        ) {
-          throw new Error(
-            result &&
-            result.error
-              ? result.error
-              : "Cart item could not be removed."
-          );
-        }
-
-        return result;
-
-      } catch (error) {
-        this.restoreCartState_(
-          snapshot
-        );
-
-        this.showCartStatus(
-          "Item restored because removal could not be saved."
-        );
-
-        throw error;
-      }
-    },
-
-    async testOptimisticCartUI() {
-      const results = [
-        {
-          test:
-            "Cart snapshot",
-          expected:
-            "Function",
-          actual:
-            typeof this.snapshotCartState_,
-          passed:
-            typeof this.snapshotCartState_ ===
-            "function"
-        },
-        {
-          test:
-            "Cart rollback",
-          expected:
-            "Function",
-          actual:
-            typeof this.restoreCartState_,
-          passed:
-            typeof this.restoreCartState_ ===
-            "function"
-        },
-        {
-          test:
-            "Optimistic recalculation",
-          expected:
-            "Function",
-          actual:
-            typeof this.recalculateOptimisticCart_,
-          passed:
-            typeof this.recalculateOptimisticCart_ ===
-            "function"
-        },
-        {
-          test:
-            "Existing cart preserved",
-          expected:
-            true,
-          actual:
-            Array.isArray(this.cartItems),
-          passed:
-            Array.isArray(this.cartItems)
-        }
-      ];
-
-      const passed =
-        results.every(
-          (result) => result.passed
-        );
-
-      console.table(results);
-
-      return {
-        success:
-          passed,
-        status:
-          passed
-            ? "PASS"
-            : "FAIL",
-        results:
-          results
+    applyCartResponse(result) {
+      const status = String(result.status || result.cartStatus || "").toUpperCase();
+      this.cart = result.cart || null;
+      this.cartItems = Array.isArray(result.items) ? result.items : [];
+      const summary = result.summary || {};
+      this.cartSummary = {
+        distinctItems: Number(summary.distinctItems || this.cartItems.length || 0),
+        totalQuantity: Number(summary.totalQuantity || this.cartItems.reduce((total, item) => total + Number(item.quantity || 0), 0)),
+        subtotal: Number(summary.subtotal || this.cartItems.reduce((total, item) => total + Number(item.itemTotal || 0), 0))
       };
+      if (status === "EMPTY" || !this.cartItems.length) {
+        this.cart = null;
+        this.cartItems = [];
+        this.cartSummary = { distinctItems: 0, totalQuantity: 0, subtotal: 0 };
+      }
+      this.cartSyncEntries_ = {};
+      Object.keys(this.cartSyncTimers_).forEach((key) => window.clearTimeout(this.cartSyncTimers_[key]));
+      this.cartSyncTimers_ = {};
+      this.renderCartSummary();
+      this.syncProductCartControls();
+    },
+    async confirmCartReplacement() {
+      const product = this.pendingCartProduct;
+      if (!product) {
+        this.closeCartReplacementDialog();
+        return;
+      }
+      this.pendingCartProduct = null;
+      this.closeCartReplacementDialog();
+      return this.addCustomerCartItem(product, true);
+    },
+    async testInstantCartUI() {
+      const results = [
+        { test: "Spinner removed", expected: false, actual: this.cartOperationRunning, passed: this.cartOperationRunning === false },
+        { test: "Background queue", expected: "Function", actual: typeof this.flushCartEntry_, passed: typeof this.flushCartEntry_ === "function" },
+        { test: "Rapid-click debounce", expected: 450, actual: this.CART_SYNC_DELAY_MS, passed: this.CART_SYNC_DELAY_MS === 450 },
+        { test: "Conflict support", expected: true, actual: typeof this.openCartReplacementDialog === "function", passed: typeof this.openCartReplacementDialog === "function" }
+      ];
+      const passed = results.every((result) => result.passed);
+      console.table(results);
+      console.log(passed ? "Customer Instant Cart UI Test: PASS" : "Customer Instant Cart UI Test: FAIL");
+      return { success: passed, status: passed ? "PASS" : "FAIL", results: results };
     }
   });
 })();
