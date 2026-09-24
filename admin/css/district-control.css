@@ -3,570 +3,356 @@
  * APNABITE ADMIN
  * FILE: admin/css/district-control.css
  * PURPOSE: Pan-India State and District Service Control
- * VERSION: 2.0.0
- * ============================================================
- *
- * ARCHITECTURE:
- *
- * - Runs inside admin/html/dashboard.html
- * - Uses dashboard.css design tokens
- * - State-first lightweight loading
- * - Lazy district loading
- * - Responsive state directory
- * - District control drawer
- * - Confirmation and service-rule dialogs
+ * VERSION: 2.1.1
  * ============================================================
  */
 
-
-/* ============================================================
-   MODULE FOUNDATION
-   ============================================================ */
+/* PAGE */
 
 [data-admin-panel="districts"] {
   min-width: 0;
-  max-width: 100%;
 }
 
 [data-admin-panel="districts"] *,
 [data-admin-panel="districts"] *::before,
-[data-admin-panel="districts"] *::after,
-.geography-drawer-dialog *,
-.geography-drawer-dialog *::before,
-.geography-drawer-dialog *::after,
-.geography-confirm-dialog *,
-.geography-confirm-dialog *::before,
-.geography-confirm-dialog *::after {
+[data-admin-panel="districts"] *::after {
   box-sizing: border-box;
 }
 
-.geography-page {
+.geography-page-content {
+  display: block;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
 }
 
-#geographyPageMessage {
-  margin: 0 0 15px;
-}
-
-.geography-page button,
-.geography-drawer-dialog button,
-.geography-confirm-dialog button {
-  font: inherit;
-}
-
-
-/* ============================================================
-   PAGE HEADING
-   ============================================================ */
-
-.geography-page-heading {
-  display: flex;
-  margin-bottom: 20px;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.geography-page-heading > div:first-child {
-  min-width: 0;
-}
-
-.geography-page-heading h2 {
-  margin: 5px 0 0;
-  color: var(--admin-text);
-  font-size: 24px;
-  line-height: 1.18;
-  letter-spacing: -0.4px;
-}
-
-.geography-page-heading p {
-  margin: 6px 0 0;
-  color: var(--admin-muted);
+.geography-page-message {
+  margin-bottom: 16px;
+  padding: 13px 15px;
+  color: #8b5200;
+  background: #fff7df;
+  border: 1px solid #efd99d;
+  border-radius: 12px;
   font-size: 11px;
   line-height: 1.45;
 }
 
-.geography-page-heading-actions {
-  display: flex;
-  flex: 0 0 auto;
+.geography-page-message.error {
+  color: #9d2921;
+  background: #fff0ef;
+  border-color: #efbbb6;
+}
+
+.geography-page-heading {
   align-items: center;
-  gap: 12px;
 }
 
-.geography-last-updated {
+.geography-heading-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  color: var(--admin-muted);
-  text-align: right;
+  align-items: center;
+  gap: 13px;
 }
 
-.geography-last-updated span {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.geography-last-updated strong {
-  margin-top: 4px;
-  color: var(--admin-text);
+.geography-refresh-button {
+  display: inline-flex;
+  min-height: 40px;
+  padding: 0 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--admin-orange-dark, #c94700);
+  background: #ffffff;
+  border: 1px solid #f1b68f;
+  border-radius: 10px;
   font-size: 10px;
+  font-weight: 800;
 }
 
+.geography-refresh-button:hover {
+  background: var(--admin-orange-soft, #fff1e8);
+}
 
-/* ============================================================
-   GEOGRAPHY LOADING SKELETON
-   ============================================================ */
+.geography-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
 
-.geography-skeleton {
+.geography-refresh-button.loading > span {
+  animation: geography-spin 700ms linear infinite;
+}
+
+/* SKELETON */
+
+.geography-page-skeleton {
   display: grid;
-  width: 100%;
-  gap: 18px;
+  gap: 15px;
 }
 
 .geography-skeleton-heading,
-.geography-skeleton-cards > div,
-.geography-skeleton-toolbar,
+.geography-skeleton-summary > div,
 .geography-skeleton-list > div {
   position: relative;
   overflow: hidden;
-  background: #e7e9ed;
+  background: #e6e9ed;
   border-radius: 15px;
 }
 
 .geography-skeleton-heading::after,
-.geography-skeleton-cards > div::after,
-.geography-skeleton-toolbar::after,
+.geography-skeleton-summary > div::after,
 .geography-skeleton-list > div::after {
   position: absolute;
   inset: 0;
   content: "";
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.72),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
   transform: translateX(-100%);
-  animation: geography-skeleton-animation 1.25s infinite;
+  animation: geography-skeleton 1.25s infinite;
 }
 
 .geography-skeleton-heading {
-  width: min(100%, 340px);
-  height: 58px;
+  width: 320px;
+  max-width: 75%;
+  height: 65px;
 }
 
-.geography-skeleton-cards {
+.geography-skeleton-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
-.geography-skeleton-cards > div {
-  min-width: 0;
-  height: 150px;
-}
-
-.geography-skeleton-toolbar {
-  height: 66px;
+.geography-skeleton-summary > div {
+  height: 112px;
 }
 
 .geography-skeleton-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .geography-skeleton-list > div {
-  min-width: 0;
-  height: 126px;
+  height: 90px;
 }
 
-
-/* ============================================================
-   PRIMARY SUMMARY CARDS
-   ============================================================ */
+/* SUMMARY */
 
 .geography-summary-grid {
   display: grid;
-  width: 100%;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  width: 100%;
+  gap: 12px;
 }
 
-.geography-summary-card {
-  position: relative;
+.geography-summary-grid article {
   min-width: 0;
-  min-height: 152px;
-  padding: 17px;
-  overflow: hidden;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  box-shadow: var(--admin-shadow-small);
+  min-height: 108px;
+  padding: 15px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
+  border-radius: 15px;
+  box-shadow: var(--admin-shadow-small, 0 3px 12px rgba(16,24,40,.05));
 }
 
-.geography-summary-card::after {
-  position: absolute;
-  right: -28px;
-  bottom: -36px;
-  width: 100px;
-  height: 100px;
-  content: "";
-  background: rgba(37, 99, 235, 0.04);
-  border-radius: 50%;
+.geography-summary-grid article.active,
+.geography-summary-grid article.live {
+  background: var(--admin-green-soft, #eaf8f0);
+  border-color: #c5e9d4;
 }
 
-.geography-summary-card > div {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
+.geography-summary-grid article.coming-soon {
+  background: var(--admin-yellow-soft, #fff7df);
+  border-color: #eddba7;
 }
 
-.geography-summary-card > div > span {
+.geography-summary-grid article > span {
   display: block;
-  max-width: calc(100% - 44px);
   overflow: hidden;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #667085);
   font-size: 8px;
   font-weight: 900;
-  letter-spacing: 0.7px;
+  letter-spacing: .65px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.geography-summary-card > div > strong {
+.geography-summary-grid article > strong {
   display: block;
-  margin-top: 20px;
-  color: var(--admin-text);
-  font-size: 27px;
-  line-height: 1;
-  letter-spacing: -0.6px;
-}
-
-.geography-summary-card > b {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 1;
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  color: var(--admin-blue);
-  background: var(--admin-blue-soft);
-  border-radius: 10px;
-  font-size: 14px;
-}
-
-.geography-summary-card > p {
-  position: relative;
-  z-index: 1;
-  margin: 12px 0 0;
-  color: var(--admin-muted);
-  font-size: 9px;
-  line-height: 1.4;
-}
-
-.geography-summary-card.total {
-  color: #ffffff;
-  background:
-    radial-gradient(
-      circle at 90% 15%,
-      rgba(255, 255, 255, 0.19),
-      transparent 34%
-    ),
-    linear-gradient(135deg, #db4b00, #ff6a0b);
-  border-color: transparent;
-  box-shadow: 0 12px 28px rgba(239, 91, 0, 0.2);
-}
-
-.geography-summary-card.total::after {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.geography-summary-card.total > div > span,
-.geography-summary-card.total > p {
-  color: rgba(255, 255, 255, 0.84);
-}
-
-.geography-summary-card.total > div > strong {
-  color: #ffffff;
-}
-
-.geography-summary-card.total > b {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.17);
-}
-
-.geography-summary-card.active > b,
-.geography-summary-card.live > b {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
-}
-
-.geography-summary-card.districts > b {
-  color: var(--admin-purple);
-  background: var(--admin-purple-soft);
-}
-
-
-/* ============================================================
-   SECONDARY STATUS STRIP
-   ============================================================ */
-
-.geography-status-strip {
-  display: grid;
   margin-top: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  overflow: hidden;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 15px;
-  box-shadow: var(--admin-shadow-small);
+  color: var(--admin-text, #111827);
+  font-size: 25px;
+  line-height: 1;
 }
 
-.geography-status-strip > div {
-  min-width: 0;
-  min-height: 67px;
-  padding: 14px;
-  border-right: 1px solid var(--admin-border);
+.geography-summary-grid article.active > strong,
+.geography-summary-grid article.live > strong {
+  color: var(--admin-green, #078447);
 }
 
-.geography-status-strip > div:last-child {
-  border-right: 0;
+.geography-summary-grid article.coming-soon > strong {
+  color: #9b6200;
 }
 
-.geography-status-strip span {
-  display: block;
-  overflow: hidden;
-  color: var(--admin-muted);
-  font-size: 7px;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: uppercase;
+.geography-summary-grid article > p {
+  margin: 8px 0 0;
+  color: var(--admin-muted, #667085);
+  font-size: 9px;
+  line-height: 1.35;
 }
 
-.geography-status-strip strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--admin-text);
+/* STATE DIRECTORY */
+
+.geography-state-section {
+  margin-top: 15px;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
+  border-radius: var(--admin-radius, 18px);
+  box-shadow: var(--admin-shadow-small, 0 3px 12px rgba(16,24,40,.05));
+}
+
+.geography-section-heading {
+  display: flex;
+  margin-bottom: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.geography-section-heading h3 {
+  margin: 4px 0 0;
+  color: var(--admin-text, #111827);
   font-size: 17px;
 }
 
-
-/* ============================================================
-   STATE FILTERS
-   ============================================================ */
-
-.geography-filter-panel {
-  display: grid;
-  margin-top: 15px;
-  padding: 13px;
-  grid-template-columns:
-    minmax(230px, 1fr)
-    minmax(180px, 0.42fr)
-    auto;
-  align-items: center;
-  gap: 10px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 15px;
-  box-shadow: var(--admin-shadow-small);
+.geography-section-heading p {
+  margin: 4px 0 0;
+  color: var(--admin-muted, #667085);
+  font-size: 9px;
 }
 
-.geography-search-box {
+.geography-section-heading > strong {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  color: var(--admin-orange-dark, #c94700);
+  background: var(--admin-orange-soft, #fff1e8);
+  border-radius: 999px;
+  font-size: 9px;
+}
+
+.geography-state-filters {
+  display: grid;
+  margin-bottom: 14px;
+  grid-template-columns: minmax(230px, 1fr) minmax(170px, .45fr) auto;
+  gap: 9px;
+}
+
+.geography-search-field {
   position: relative;
   display: flex;
   min-width: 0;
   align-items: center;
 }
 
-.geography-search-box > span {
+.geography-search-field > span {
   position: absolute;
-  left: 13px;
-  z-index: 2;
-  color: var(--admin-muted);
+  left: 12px;
+  z-index: 1;
+  color: var(--admin-muted, #667085);
   font-size: 16px;
-  pointer-events: none;
 }
 
-.geography-search-box input {
-  padding-left: 38px !important;
-}
-
-.geography-filter-panel input,
-.geography-filter-panel select,
-.district-filter-panel input,
-.district-filter-panel select {
+.geography-search-field input,
+.geography-state-filters select,
+.district-filter-bar select {
   width: 100%;
   min-width: 0;
   min-height: 43px;
-  padding: 9px 12px;
-  color: var(--admin-text);
+  padding: 9px 11px;
+  color: var(--admin-text, #111827);
   background: #ffffff;
-  border: 1px solid #d8dde4;
+  border: 1px solid #d6dae1;
   border-radius: 10px;
   outline: 0;
   font-size: 10px;
 }
 
-.geography-filter-panel input:focus,
-.geography-filter-panel select:focus,
-.district-filter-panel input:focus,
-.district-filter-panel select:focus {
-  border-color: var(--admin-orange);
-  box-shadow: 0 0 0 3px rgba(239, 91, 0, 0.1);
+.geography-search-field input {
+  padding-left: 37px;
 }
 
-.geography-clear-filter {
+.geography-search-field input:focus,
+.geography-state-filters select:focus,
+.district-filter-bar select:focus {
+  border-color: var(--admin-orange, #ef5b00);
+  box-shadow: 0 0 0 3px rgba(239,91,0,.1);
+}
+
+#clearStateFiltersButton {
   min-height: 43px;
-  padding: 0 14px;
-  color: var(--admin-orange-dark);
-  background: var(--admin-orange-soft);
-  border: 1px solid #f1bea0;
+  padding: 0 15px;
+  color: var(--admin-orange-dark, #c94700);
+  background: var(--admin-orange-soft, #fff1e8);
+  border: 1px solid #efc2a5;
   border-radius: 10px;
   font-size: 9px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.geography-clear-filter:hover {
-  color: #ffffff;
-  background: var(--admin-orange);
-  border-color: var(--admin-orange);
-}
-
-
-/* ============================================================
-   STATE DIRECTORY
-   ============================================================ */
-
-.geography-directory-card {
-  margin-top: 15px;
-  overflow: hidden;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  box-shadow: var(--admin-shadow-small);
-}
-
-.geography-directory-heading {
-  display: flex;
-  min-height: 79px;
-  padding: 16px 18px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.geography-directory-heading h3 {
-  margin: 4px 0 0;
-  color: var(--admin-text);
-  font-size: 16px;
-}
-
-.geography-directory-heading p {
-  margin: 5px 0 0;
-  color: var(--admin-muted);
-  font-size: 9px;
-}
-
-.geography-directory-heading p strong {
-  color: var(--admin-text);
+  font-weight: 850;
 }
 
 .geography-state-list {
   display: grid;
-  padding: 15px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
+  gap: 10px;
 }
-
-
-/* ============================================================
-   DYNAMIC STATE CARDS
-   ============================================================ */
 
 .geography-state-card {
-  position: relative;
   display: flex;
   min-width: 0;
-  min-height: 124px;
-  padding: 15px;
+  min-height: 93px;
+  padding: 13px;
   align-items: center;
   justify-content: space-between;
-  gap: 13px;
-  overflow: hidden;
-  color: var(--admin-text);
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
+  border-radius: 13px;
   cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.geography-state-card:hover {
-  border-color: #f0b58f;
-  box-shadow: var(--admin-shadow);
-  transform: translateY(-2px);
-}
-
+.geography-state-card:hover,
 .geography-state-card:focus-visible {
-  outline: 3px solid rgba(239, 91, 0, 0.18);
-  outline-offset: 2px;
+  border-color: #efb68f;
+  box-shadow: 0 7px 20px rgba(16,24,40,.08);
+  outline: 0;
+  transform: translateY(-1px);
 }
 
 .geography-state-card.active {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(234, 248, 240, 0.72),
-      #ffffff 57%
-    );
-  border-color: #c6e8d5;
-}
-
-.geography-state-card.inactive {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(248, 250, 252, 0.92),
-      #ffffff 57%
-    );
+  background: linear-gradient(135deg, #ffffff, #f1fbf5);
+  border-color: #bfe4ce;
 }
 
 .geography-state-main {
   display: flex;
   min-width: 0;
-  align-items: flex-start;
+  align-items: center;
   gap: 11px;
 }
 
 .geography-state-icon {
   display: grid;
-  width: 39px;
-  height: 39px;
-  flex: 0 0 39px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   place-items: center;
-  color: var(--admin-orange-dark);
-  background: var(--admin-orange-soft);
+  color: #9b6200;
+  background: var(--admin-yellow-soft, #fff7df);
   border-radius: 11px;
   font-size: 15px;
   font-weight: 900;
 }
 
 .geography-state-card.active .geography-state-icon {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
+  color: var(--admin-green, #078447);
+  background: var(--admin-green-soft, #eaf8f0);
 }
 
 .geography-state-information {
@@ -576,41 +362,45 @@
 .geography-state-information h4 {
   margin: 0;
   overflow: hidden;
-  color: var(--admin-text);
-  font-size: 12px;
-  line-height: 1.4;
+  color: var(--admin-text, #111827);
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.geography-state-information > p {
+.geography-state-information p {
   margin: 4px 0 0;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #667085);
   font-size: 8px;
 }
 
-.geography-state-counts {
+.geography-state-counts,
+.district-card-metrics {
   display: flex;
-  margin-top: 10px;
+  margin-top: 8px;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
-.geography-state-counts span {
-  display: inline-flex;
-  min-height: 23px;
-  padding: 0 7px;
-  align-items: center;
-  color: #475467;
-  background: #f2f4f7;
+.geography-state-counts > span,
+.district-card-metrics > span {
+  padding: 4px 7px;
+  color: #596273;
+  background: #eef1f4;
   border-radius: 999px;
   font-size: 7px;
   font-weight: 800;
 }
 
-.geography-state-counts span.live {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
+.geography-state-counts > span.live,
+.district-card-metrics > span.live {
+  color: var(--admin-green, #078447);
+  background: var(--admin-green-soft, #eaf8f0);
+}
+
+.district-card-metrics > span.inactive {
+  color: var(--admin-red, #c83228);
+  background: var(--admin-red-soft, #fff0ef);
 }
 
 .geography-state-action {
@@ -618,519 +408,324 @@
   flex: 0 0 auto;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: 9px;
 }
 
 .geography-status-badge {
   display: inline-flex;
-  min-height: 24px;
+  min-height: 23px;
   padding: 0 8px;
   align-items: center;
-  justify-content: center;
   border-radius: 999px;
   font-size: 7px;
   font-weight: 900;
-  letter-spacing: 0.35px;
-  text-transform: uppercase;
 }
 
 .geography-status-badge.active {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
-  border: 1px solid #bfe5cf;
+  color: var(--admin-green, #078447);
+  background: var(--admin-green-soft, #eaf8f0);
 }
 
 .geography-status-badge.inactive {
-  color: #667085;
-  background: #f1f3f5;
-  border: 1px solid #dfe3e8;
+  color: var(--admin-red, #c83228);
+  background: var(--admin-red-soft, #fff0ef);
 }
 
 .geography-state-open {
-  color: var(--admin-orange-dark);
+  color: var(--admin-orange-dark, #c94700);
   font-size: 8px;
-  font-weight: 900;
-  white-space: nowrap;
+  font-weight: 850;
 }
-
-.geography-state-open::after {
-  margin-left: 5px;
-  content: "→";
-}
-
-
-/* ============================================================
-   EMPTY STATES
-   ============================================================ */
 
 .geography-empty-state {
   display: flex;
-  min-height: 245px;
+  min-height: 190px;
   padding: 25px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #667085);
   text-align: center;
 }
 
 .geography-empty-state > span {
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   place-items: center;
-  color: var(--admin-orange);
-  background: var(--admin-orange-soft);
-  border-radius: 14px;
-  font-size: 19px;
-  font-weight: 900;
+  color: var(--admin-orange-dark, #c94700);
+  background: var(--admin-orange-soft, #fff1e8);
+  border-radius: 13px;
+  font-size: 18px;
 }
 
 .geography-empty-state > strong {
-  margin-top: 12px;
-  color: var(--admin-text);
-  font-size: 13px;
+  margin-top: 11px;
+  color: var(--admin-text, #111827);
+  font-size: 12px;
 }
 
 .geography-empty-state > p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   font-size: 9px;
-  line-height: 1.5;
 }
 
+/* DISTRICT DRAWER */
 
-/* ============================================================
-   OPERATIONAL SAFETY NOTE
-   ============================================================ */
-
-.geography-safety-note {
-  display: flex;
-  margin-top: 15px;
-  padding: 14px 15px;
-  align-items: flex-start;
-  gap: 11px;
-  color: #764b00;
-  background: var(--admin-yellow-soft);
-  border: 1px solid #ebd79e;
-  border-radius: 13px;
-}
-
-.geography-safety-note > span {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  place-items: center;
-  color: #ffffff;
-  background: #d68a00;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.geography-safety-note strong {
-  display: block;
-  font-size: 10px;
-}
-
-.geography-safety-note p {
-  margin: 3px 0 0;
-  color: #846737;
-  font-size: 9px;
-  line-height: 1.5;
-}
-
-
-/* ============================================================
-   DISTRICT DRAWER FOUNDATION
-   ============================================================ */
-
-.geography-drawer-dialog {
+.geography-district-panel {
   position: fixed;
   inset: 0;
-  z-index: 350;
+  z-index: 300;
 }
 
-.geography-dialog-backdrop {
+.geography-district-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   padding: 0;
-  background: rgba(15, 23, 42, 0.62);
+  background: rgba(15,23,42,.6);
   border: 0;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
-.geography-drawer {
+.geography-district-drawer {
   position: absolute;
   top: 0;
   right: 0;
   display: flex;
-  width: min(100%, 720px);
-  height: 100%;
+  width: min(100%, 760px);
+  height: 100vh;
   height: 100dvh;
   flex-direction: column;
-  background: var(--admin-bg);
-  box-shadow: -18px 0 55px rgba(16, 24, 40, 0.24);
-  animation: geography-drawer-enter 220ms ease;
+  background: #f5f7f9;
+  box-shadow: -15px 0 45px rgba(16,24,40,.22);
+  animation: geography-drawer-in 220ms ease;
 }
 
-.geography-drawer-header {
+.geography-district-header {
   display: flex;
   min-height: 82px;
-  padding:
-    calc(14px + env(safe-area-inset-top))
-    19px
-    14px;
+  padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  background: var(--admin-surface);
-  border-bottom: 1px solid var(--admin-border);
+  background: #ffffff;
+  border-bottom: 1px solid var(--admin-border, #e4e7ec);
 }
 
-.geography-drawer-header > div {
-  min-width: 0;
-}
-
-.geography-drawer-header small {
-  display: block;
-  color: var(--admin-orange);
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-}
-
-.geography-drawer-header h2 {
+.geography-district-header h2 {
   margin: 4px 0 0;
-  overflow: hidden;
-  color: var(--admin-text);
+  color: var(--admin-text, #111827);
   font-size: 20px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.geography-drawer-header p {
+.geography-district-header p {
   margin: 4px 0 0;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #667085);
   font-size: 9px;
 }
 
-.geography-drawer-header > button {
+#closeDistrictPanelButton {
   display: grid;
-  width: 39px;
-  height: 39px;
-  flex: 0 0 39px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   place-items: center;
   color: #344054;
-  background: #f2f4f7;
+  background: #f1f3f5;
   border: 0;
   border-radius: 50%;
-  font-size: 24px;
-  line-height: 1;
+  font-size: 22px;
 }
 
-.geography-drawer-header > button:hover {
-  color: #ffffff;
-  background: var(--admin-orange);
-}
-
-.geography-drawer-content {
+.geography-district-content {
   flex: 1;
-  min-height: 0;
   padding: 16px;
   overflow-y: auto;
 }
 
-
-/* ============================================================
-   SELECTED STATE CONTROL
-   ============================================================ */
-
-.selected-state-card {
+.selected-state-control {
   display: flex;
-  min-width: 0;
-  padding: 16px;
+  padding: 15px;
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  background:
-    radial-gradient(
-      circle at 95% 5%,
-      rgba(255, 255, 255, 0.17),
-      transparent 34%
-    ),
-    linear-gradient(135deg, #111827, #273449);
-  border-radius: 15px;
-  box-shadow: 0 9px 22px rgba(16, 24, 40, 0.16);
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
+  border-radius: 14px;
+  box-shadow: var(--admin-shadow-small, 0 3px 12px rgba(16,24,40,.05));
 }
 
-.selected-state-card > div {
-  min-width: 0;
+.selected-state-control h3 {
+  margin: 8px 0 0;
+  color: var(--admin-text, #111827);
+  font-size: 15px;
 }
 
-.selected-state-card > div > strong {
-  display: block;
-  margin-top: 10px;
-  overflow: hidden;
-  color: #ffffff;
-  font-size: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.selected-state-card > div > small {
-  display: block;
-  margin-top: 4px;
-  color: #bdc6d3;
+.selected-state-control p {
+  margin: 4px 0 0;
+  color: var(--admin-muted, #667085);
   font-size: 8px;
 }
 
-.geography-state-status-button {
-  min-height: 39px;
-  padding: 0 13px;
-  flex: 0 0 auto;
+.state-status-button {
+  min-height: 40px;
+  padding: 0 14px;
   color: #ffffff;
-  background: var(--admin-orange);
-  border: 1px solid var(--admin-orange);
+  background: var(--admin-green, #078447);
+  border: 0;
   border-radius: 10px;
   font-size: 9px;
   font-weight: 900;
-  white-space: nowrap;
 }
 
-.geography-state-status-button:hover {
-  background: var(--admin-orange-dark);
-  border-color: var(--admin-orange-dark);
+.state-status-button.deactivate {
+  color: var(--admin-red, #c83228);
+  background: var(--admin-red-soft, #fff0ef);
+  border: 1px solid #efbbb6;
 }
 
-.geography-state-status-button.deactivate {
-  color: #ffd2cf;
-  background: rgba(200, 50, 40, 0.15);
-  border-color: rgba(255, 132, 124, 0.5);
-}
-
-
-/* ============================================================
-   SELECTED STATE DISTRICT SUMMARY
-   ============================================================ */
-
-.geography-drawer .district-summary-grid {
+.selected-state-summary {
   display: grid;
-  margin-top: 12px;
+  margin-top: 11px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 9px;
 }
 
-.geography-drawer .district-summary-grid article {
+.selected-state-summary article {
   min-width: 0;
-  min-height: 72px;
   padding: 12px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
   border-radius: 11px;
-  box-shadow: var(--admin-shadow-small);
 }
 
-.geography-drawer .district-summary-grid span {
+.selected-state-summary span {
   display: block;
-  overflow: hidden;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #667085);
   font-size: 7px;
   font-weight: 900;
-  letter-spacing: 0.4px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: uppercase;
 }
 
-.geography-drawer .district-summary-grid strong {
+.selected-state-summary strong {
   display: block;
   margin-top: 7px;
-  color: var(--admin-text);
-  font-size: 17px;
+  font-size: 18px;
 }
 
-
-/* ============================================================
-   DISTRICT FILTERS
-   ============================================================ */
-
-.district-filter-panel {
+.district-filter-bar {
   display: grid;
-  margin-top: 12px;
-  padding: 11px;
-  grid-template-columns:
-    minmax(180px, 1fr)
-    minmax(150px, 0.45fr);
-  gap: 8px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
-  box-shadow: var(--admin-shadow-small);
+  margin-top: 11px;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, .42fr);
+  gap: 9px;
 }
 
-
-/* ============================================================
-   BULK DISTRICT TOOLBAR
-   ============================================================ */
-
-.district-bulk-toolbar {
+.district-bulk-bar {
   display: flex;
   margin-top: 9px;
-  padding: 10px 11px;
+  padding: 10px 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 11px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
   border-radius: 11px;
 }
 
-.district-bulk-toolbar > label {
+.district-bulk-bar > label {
   display: flex;
-  min-width: 0;
   align-items: center;
-  gap: 7px;
-  cursor: pointer;
-}
-
-.district-bulk-toolbar input {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  accent-color: var(--admin-orange);
-}
-
-.district-bulk-toolbar label span {
+  gap: 8px;
   color: #344054;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
 }
 
-.district-bulk-toolbar > div {
+.district-bulk-bar input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--admin-orange, #ef5b00);
+}
+
+.district-bulk-bar > div {
   display: flex;
-  flex: 0 0 auto;
   gap: 7px;
 }
 
-.geography-bulk-activate,
-.geography-bulk-deactivate {
-  min-height: 33px;
+.district-bulk-bar button {
+  min-height: 34px;
   padding: 0 10px;
   border-radius: 8px;
   font-size: 8px;
   font-weight: 900;
 }
 
-.geography-bulk-activate {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
-  border: 1px solid #bde5ce;
+#bulkActivateDistrictsButton {
+  color: var(--admin-green, #078447);
+  background: var(--admin-green-soft, #eaf8f0);
+  border: 1px solid #bfe4ce;
 }
 
-.geography-bulk-deactivate {
-  color: var(--admin-red);
-  background: var(--admin-red-soft);
+#bulkDeactivateDistrictsButton {
+  color: var(--admin-red, #c83228);
+  background: var(--admin-red-soft, #fff0ef);
   border: 1px solid #efbbb6;
 }
 
-.geography-bulk-activate:disabled,
-.geography-bulk-deactivate:disabled {
+.district-bulk-bar button:disabled {
   cursor: not-allowed;
-  opacity: 0.44;
+  opacity: .45;
 }
-
-
-/* ============================================================
-   DISTRICT LOADING
-   ============================================================ */
 
 .district-loading {
   display: flex;
-  min-height: 220px;
-  margin-top: 12px;
-  padding: 24px;
-  flex-direction: column;
+  min-height: 190px;
   align-items: center;
   justify-content: center;
-  color: var(--admin-muted);
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 13px;
-  text-align: center;
+  flex-direction: column;
+  gap: 9px;
+  color: var(--admin-muted, #667085);
+  font-size: 10px;
 }
 
-.district-loading > span {
-  width: 33px;
-  height: 33px;
-  border: 4px solid #f2d3c1;
-  border-top-color: var(--admin-orange);
-  border-radius: 50%;
-  animation: geography-spinner 700ms linear infinite;
-}
-
-.district-loading > strong {
-  margin-top: 12px;
-  color: var(--admin-text);
-  font-size: 11px;
-}
-
-.district-loading > p {
-  margin: 5px 0 0;
+.district-error {
+  margin-top: 10px;
+  padding: 11px 12px;
+  color: #9d2921;
+  background: var(--admin-red-soft, #fff0ef);
+  border: 1px solid #efbbb6;
+  border-radius: 10px;
   font-size: 9px;
 }
 
-#districtError {
-  margin: 10px 0 0;
-}
-
-
-/* ============================================================
-   DISTRICT LIST
-   ============================================================ */
-
 .district-list {
   display: grid;
-  margin-top: 11px;
+  margin-top: 10px;
   gap: 8px;
 }
 
 .district-card {
   display: grid;
   min-width: 0;
-  padding: 13px;
-  grid-template-columns:
-    auto
-    minmax(0, 1fr)
-    auto;
+  padding: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
+  gap: 11px;
+  background: #ffffff;
+  border: 1px solid var(--admin-border, #e4e7ec);
   border-radius: 12px;
-  box-shadow: var(--admin-shadow-small);
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.district-card:hover {
-  border-color: #efb58f;
-  box-shadow: var(--admin-shadow);
 }
 
 .district-card.selected {
   background: #fff9f5;
-  border-color: #efad82;
+  border-color: #efb68f;
 }
 
-.district-card > input {
+.district-select-checkbox {
   width: 17px;
   height: 17px;
-  accent-color: var(--admin-orange);
+  accent-color: var(--admin-orange, #ef5b00);
 }
 
 .district-card-information {
@@ -1140,154 +735,107 @@
 .district-card-information h4 {
   margin: 0;
   overflow: hidden;
-  color: var(--admin-text);
+  color: var(--admin-text, #111827);
   font-size: 11px;
-  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.district-card-information > p {
+.district-card-information p {
   margin: 4px 0 0;
-  overflow: hidden;
-  color: var(--admin-muted);
-  font-size: 7px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.district-card-metrics {
-  display: flex;
-  margin-top: 7px;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.district-card-metrics span {
-  display: inline-flex;
-  min-height: 21px;
-  padding: 0 7px;
-  align-items: center;
-  color: #536071;
-  background: #f2f4f7;
-  border-radius: 999px;
-  font-size: 7px;
-  font-weight: 750;
-}
-
-.district-card-metrics span.live {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
-}
-
-.district-card-metrics span.inactive {
-  color: var(--admin-red);
-  background: var(--admin-red-soft);
+  color: var(--admin-muted, #667085);
+  font-size: 8px;
 }
 
 .district-card-actions {
   display: flex;
   flex: 0 0 auto;
-  align-items: center;
   gap: 6px;
 }
 
-.district-rules-button,
-.district-status-button {
-  min-height: 31px;
+.district-card-actions button {
+  min-height: 32px;
   padding: 0 9px;
   border-radius: 8px;
-  font-size: 7px;
-  font-weight: 900;
-  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 850;
 }
 
 .district-rules-button {
   color: #344054;
   background: #ffffff;
-  border: 1px solid #d8dde4;
-}
-
-.district-rules-button:hover {
-  color: var(--admin-orange-dark);
-  background: var(--admin-orange-soft);
-  border-color: #efbea0;
+  border: 1px solid #d6dae1;
 }
 
 .district-status-button {
-  color: var(--admin-green);
-  background: var(--admin-green-soft);
-  border: 1px solid #bee6ce;
+  color: #ffffff;
+  background: var(--admin-green, #078447);
+  border: 1px solid var(--admin-green, #078447);
 }
 
 .district-status-button.deactivate {
-  color: var(--admin-red);
-  background: var(--admin-red-soft);
+  color: var(--admin-red, #c83228);
+  background: var(--admin-red-soft, #fff0ef);
   border-color: #efbbb6;
 }
 
-.district-status-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-
-/* ============================================================
-   CONFIRMATION DIALOG FOUNDATION
-   ============================================================ */
+/* DIALOGS */
 
 .geography-confirm-dialog {
   position: fixed;
   inset: 0;
-  z-index: 450;
+  z-index: 410;
   display: grid;
   padding: 18px;
   place-items: center;
-  overflow-y: auto;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15,23,42,.64);
   backdrop-filter: blur(4px);
 }
 
 .geography-confirm-dialog > section {
   width: min(100%, 460px);
+  max-height: calc(100vh - 36px);
   max-height: calc(100dvh - 36px);
-  padding: 22px;
+  padding: 21px;
   overflow-y: auto;
-  background: var(--admin-surface);
+  background: #ffffff;
   border-radius: 17px;
-  box-shadow: 0 25px 75px rgba(16, 24, 40, 0.32);
-  animation: geography-confirm-enter 180ms ease;
+  box-shadow: 0 25px 70px rgba(16,24,40,.3);
+  animation: geography-dialog-in 180ms ease;
 }
 
-.geography-confirm-icon {
+.geography-dialog-icon {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   place-items: center;
-  color: #9b6200;
-  background: var(--admin-yellow-soft);
-  border-radius: 13px;
-  font-size: 19px;
+  color: #ffffff;
+  background: var(--admin-orange, #ef5b00);
+  border-radius: 11px;
+  font-size: 17px;
   font-weight: 900;
 }
 
 .geography-confirm-dialog h2 {
-  margin: 15px 0 0;
-  color: var(--admin-text);
+  margin: 13px 0 0;
+  color: var(--admin-text, #111827);
   font-size: 18px;
-  line-height: 1.3;
 }
 
 .geography-confirm-dialog p {
-  margin: 7px 0 0;
-  color: var(--admin-muted);
+  margin: 6px 0 15px;
+  color: var(--admin-muted, #667085);
   font-size: 10px;
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
-.geography-confirm-dialog label {
-  display: block;
-  margin-top: 16px;
+.geography-confirm-dialog label,
+.district-rules-grid label,
+.district-rules-reason {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
   color: #344054;
   font-size: 9px;
   font-weight: 800;
@@ -1299,577 +847,275 @@
   width: 100%;
   min-width: 0;
   min-height: 43px;
-  margin-top: 6px;
-  padding: 9px 11px;
-  color: var(--admin-text);
+  padding: 10px 11px;
+  color: var(--admin-text, #111827);
   background: #ffffff;
-  border: 1px solid #d5dae1;
+  border: 1px solid #d6dae1;
   border-radius: 10px;
   outline: 0;
+  font: inherit;
   font-size: 10px;
 }
 
 .geography-confirm-dialog textarea {
-  min-height: 92px;
+  min-height: 82px;
   resize: vertical;
-  line-height: 1.5;
 }
 
 .geography-confirm-dialog textarea:focus,
 .geography-confirm-dialog input:focus,
 .geography-confirm-dialog select:focus {
-  border-color: var(--admin-orange);
-  box-shadow: 0 0 0 3px rgba(239, 91, 0, 0.1);
+  border-color: var(--admin-orange, #ef5b00);
+  box-shadow: 0 0 0 3px rgba(239,91,0,.1);
 }
 
-.geography-form-error {
+.geography-dialog-error {
   margin-top: 10px;
   padding: 10px 11px;
-  color: #a12b23;
-  background: var(--admin-red-soft);
+  color: #9d2921;
+  background: var(--admin-red-soft, #fff0ef);
   border: 1px solid #efbbb6;
   border-radius: 9px;
   font-size: 9px;
-  line-height: 1.45;
 }
 
-.geography-confirm-actions {
+.geography-dialog-actions {
   display: grid;
-  margin-top: 17px;
+  margin-top: 15px;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.geography-primary-button,
-.geography-secondary-button {
-  min-height: 43px;
-  padding: 0 13px;
+.geography-dialog-actions button {
+  min-height: 42px;
   border-radius: 10px;
   font-size: 9px;
   font-weight: 900;
 }
 
-.geography-primary-button {
-  color: #ffffff;
-  background: var(--admin-orange);
-  border: 1px solid var(--admin-orange);
-}
-
-.geography-primary-button:hover {
-  background: var(--admin-orange-dark);
-  border-color: var(--admin-orange-dark);
-}
-
-.geography-secondary-button {
+.geography-dialog-actions button:first-child {
   color: #344054;
   background: #ffffff;
-  border: 1px solid #d5dae1;
+  border: 1px solid #d6dae1;
 }
 
-.geography-secondary-button:hover {
-  background: #f8fafc;
+.geography-dialog-actions button:last-child {
+  color: #ffffff;
+  background: var(--admin-orange, #ef5b00);
+  border: 1px solid var(--admin-orange, #ef5b00);
 }
 
-.geography-primary-button:disabled,
-.geography-secondary-button:disabled {
+.geography-dialog-actions button:disabled {
   cursor: wait;
-  opacity: 0.58;
+  opacity: .58;
 }
 
-
-/* ============================================================
-   DISTRICT RULES DIALOG
-   ============================================================ */
-
-.geography-confirm-dialog > .district-rules-dialog {
-  width: min(100%, 590px);
+.district-rules-dialog-card {
+  width: min(100%, 560px) !important;
 }
 
-.district-rules-dialog > header {
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.district-rules-dialog > header small {
-  display: block;
-  color: var(--admin-orange);
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-}
-
-.district-rules-dialog > header h2 {
+.district-rules-dialog-card > h2 {
   margin-top: 5px;
-}
-
-.district-rules-dialog > header p {
-  margin-top: 4px;
-  font-size: 8px;
 }
 
 .district-rules-grid {
   display: grid;
-  margin-top: 5px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 11px;
+  gap: 10px;
 }
 
-.district-rules-grid label {
-  min-width: 0;
+.district-rules-reason {
+  margin-top: 11px;
 }
 
-.district-rules-grid label > span {
-  display: block;
-  color: #344054;
+/* ANIMATIONS */
+
+@keyframes geography-spin {
+  to { transform: rotate(360deg); }
 }
 
-.district-rules-full-field {
-  grid-column: 1 / -1;
+@keyframes geography-skeleton {
+  to { transform: translateX(100%); }
 }
 
-
-/* ============================================================
-   ACCESSIBILITY
-   ============================================================ */
-
-.geography-page button:focus-visible,
-.geography-drawer-dialog button:focus-visible,
-.geography-confirm-dialog button:focus-visible,
-.geography-page input:focus-visible,
-.geography-page select:focus-visible,
-.geography-drawer-dialog input:focus-visible,
-.geography-drawer-dialog select:focus-visible,
-.geography-confirm-dialog input:focus-visible,
-.geography-confirm-dialog select:focus-visible,
-.geography-confirm-dialog textarea:focus-visible {
-  outline: 3px solid rgba(239, 91, 0, 0.18);
-  outline-offset: 2px;
+@keyframes geography-drawer-in {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-
-@keyframes geography-skeleton-animation {
-  to {
-    transform: translateX(100%);
-  }
+@keyframes geography-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes geography-drawer-enter {
-  from {
-    opacity: 0;
-    transform: translateX(28px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes geography-confirm-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes geography-spinner {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-/* ============================================================
-   MEDIUM DESKTOP
-   ============================================================ */
+/* RESPONSIVE */
 
 @media (max-width: 1180px) {
-
-  .geography-summary-grid,
-  .geography-skeleton-cards {
+  .geography-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .geography-page-heading {
+    align-items: flex-start;
+  }
+
+  .geography-heading-actions .admin-updated-time {
+    display: none;
+  }
+
+  .geography-refresh-button {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .geography-refresh-button strong {
+    display: none;
   }
 
   .geography-state-list {
     grid-template-columns: 1fr;
   }
 
+  .geography-district-drawer {
+    width: min(100%, 680px);
+  }
 }
-
-
-/* ============================================================
-   TABLET
-   ============================================================ */
-
-@media (max-width: 820px) {
-
-  .geography-page-heading {
-    align-items: flex-start;
-  }
-
-  .geography-page-heading-actions {
-    gap: 8px;
-  }
-
-  .geography-page-heading-actions .admin-refresh-button {
-    display: flex;
-  }
-
-  .geography-page-heading-actions .admin-refresh-button strong {
-    display: none;
-  }
-
-  .geography-status-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .geography-status-strip > div:nth-child(2) {
-    border-right: 0;
-  }
-
-  .geography-status-strip > div:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--admin-border);
-  }
-
-  .geography-filter-panel {
-    grid-template-columns:
-      minmax(0, 1fr)
-      minmax(160px, 0.55fr);
-  }
-
-  .geography-clear-filter {
-    grid-column: 1 / -1;
-  }
-
-}
-
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
 
 @media (max-width: 600px) {
-
-  .geography-page-heading {
-    margin-bottom: 15px;
-  }
-
-  .geography-page-heading h2 {
-    font-size: 21px;
-  }
-
-  .geography-page-heading p {
-    font-size: 10px;
-  }
-
-  .geography-last-updated {
-    display: none;
-  }
-
   .geography-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
   }
 
-  .geography-summary-card {
-    min-height: 137px;
-    padding: 14px;
-    border-radius: 15px;
+  .geography-summary-grid article {
+    min-height: 100px;
+    padding: 13px;
   }
 
-  .geography-summary-card > div > span {
-    max-width: calc(100% - 36px);
+  .geography-summary-grid article > span {
     font-size: 7px;
   }
 
-  .geography-summary-card > div > strong {
-    margin-top: 17px;
-    font-size: 22px;
+  .geography-summary-grid article > strong {
+    margin-top: 12px;
+    font-size: 21px;
   }
 
-  .geography-summary-card > b {
-    top: 12px;
-    right: 12px;
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
-  }
-
-  .geography-summary-card > p {
-    margin-top: 10px;
+  .geography-summary-grid article > p {
     font-size: 8px;
   }
 
-  .geography-status-strip > div {
-    min-height: 62px;
-    padding: 12px;
+  .geography-state-section {
+    padding: 13px;
+    border-radius: 15px;
   }
 
-  .geography-filter-panel {
+  .geography-section-heading {
+    align-items: flex-start;
+  }
+
+  .geography-section-heading > strong {
+    font-size: 8px;
+  }
+
+  .geography-state-filters {
     grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .geography-clear-filter {
-    grid-column: auto;
-  }
-
-  .geography-directory-heading {
-    min-height: 72px;
-    padding: 14px;
-  }
-
-  .geography-directory-heading h3 {
-    font-size: 15px;
-  }
-
-  .geography-state-list {
-    padding: 9px;
-    gap: 8px;
   }
 
   .geography-state-card {
-    min-height: 116px;
-    padding: 12px;
+    min-height: 88px;
+    padding: 11px;
   }
 
-  .geography-state-icon {
-    width: 35px;
-    height: 35px;
-    flex-basis: 35px;
-    font-size: 13px;
-  }
-
-  .geography-state-information h4 {
-    font-size: 11px;
-  }
-
-  .geography-state-counts {
-    margin-top: 8px;
-  }
-
-  .geography-safety-note {
-    padding: 12px;
-  }
-
-  .geography-safety-note p {
-    font-size: 8px;
-  }
-
-  .geography-drawer {
+  .geography-district-drawer {
     width: 100%;
   }
 
-  .geography-drawer-header {
-    min-height: 75px;
-    padding-right: 14px;
-    padding-left: 14px;
-  }
-
-  .geography-drawer-header h2 {
-    font-size: 17px;
-  }
-
-  .geography-drawer-content {
+  .geography-district-content {
     padding: 12px;
   }
 
-  .selected-state-card {
-    padding: 14px;
-  }
-
-  .selected-state-card > div > strong {
-    font-size: 14px;
-  }
-
-  .geography-state-status-button {
-    min-height: 37px;
-    padding: 0 10px;
-    font-size: 8px;
-  }
-
-  .geography-drawer .district-summary-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-  }
-
-  .geography-drawer .district-summary-grid article {
-    min-height: 66px;
-    padding: 9px;
-  }
-
-  .geography-drawer .district-summary-grid strong {
-    font-size: 15px;
-  }
-
-  .district-filter-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .district-bulk-toolbar {
+  .selected-state-control {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .district-bulk-toolbar > div {
+  .state-status-button {
     width: 100%;
   }
 
-  .district-bulk-toolbar > div button {
+  .district-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .district-bulk-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .district-bulk-bar > div {
+    width: 100%;
+  }
+
+  .district-bulk-bar button {
     flex: 1;
   }
 
   .district-card {
-    grid-template-columns:
-      auto
-      minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .district-card-actions {
     grid-column: 2;
-    justify-content: flex-start;
+    width: 100%;
   }
 
   .district-card-actions button {
     flex: 1;
   }
 
-  .geography-confirm-dialog {
-    padding: 11px;
-  }
-
-  .geography-confirm-dialog > section {
-    max-height: calc(100dvh - 22px);
-    padding: 18px;
-  }
-
   .district-rules-grid {
     grid-template-columns: 1fr;
   }
 
-  .district-rules-full-field {
-    grid-column: auto;
-  }
-
-  .geography-skeleton-cards {
+  .geography-skeleton-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
   }
-
-  .geography-skeleton-cards > div {
-    height: 132px;
-  }
-
-  .geography-skeleton-list {
-    grid-template-columns: 1fr;
-  }
-
 }
 
-
-/* ============================================================
-   SMALL MOBILE
-   ============================================================ */
-
 @media (max-width: 390px) {
-
-  .geography-page-heading-actions {
-    align-self: flex-start;
-  }
-
-  .geography-summary-card {
-    min-height: 132px;
-    padding: 12px;
-  }
-
-  .geography-summary-card > div > strong {
-    font-size: 19px;
-  }
-
-  .geography-summary-card > p {
-    font-size: 7px;
-  }
-
-  .geography-status-strip span {
-    font-size: 6px;
-  }
-
-  .geography-status-strip strong {
-    font-size: 15px;
-  }
-
-  .geography-state-main {
-    gap: 8px;
-  }
-
-  .geography-state-icon {
-    width: 32px;
-    height: 32px;
-    flex-basis: 32px;
+  .geography-summary-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .geography-state-action {
-    align-self: stretch;
-    justify-content: space-between;
+    gap: 7px;
   }
 
   .geography-state-open {
-    font-size: 0;
+    display: none;
   }
 
-  .geography-state-open::after {
-    margin: 0;
+  .selected-state-summary {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .selected-state-summary article {
+    padding: 9px;
+  }
+
+  .selected-state-summary strong {
     font-size: 15px;
   }
 
-  .selected-state-card {
-    align-items: stretch;
-    flex-direction: column;
+  .geography-confirm-dialog {
+    padding: 10px;
   }
 
-  .geography-state-status-button {
-    width: 100%;
-  }
-
-  .geography-drawer .district-summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .district-card-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .geography-confirm-actions {
-    grid-template-columns: 1fr;
-  }
-
-}
-
-
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
-
-@media (prefers-reduced-motion: reduce) {
-
-  .geography-skeleton-heading::after,
-  .geography-skeleton-cards > div::after,
-  .geography-skeleton-toolbar::after,
-  .geography-skeleton-list > div::after,
-  .district-loading > span,
-  .geography-drawer,
   .geography-confirm-dialog > section {
-    animation: none;
+    padding: 17px;
   }
-
 }
