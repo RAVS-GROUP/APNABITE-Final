@@ -2,11 +2,26 @@
  * ============================================================
  * APNABITE ADMIN
  * FILE: admin/js/district-control.js
- * PURPOSE: Pan-India state and district service management
- * VERSION: 1.0.0
+ * PURPOSE: Lazy Pan-India State and District Service Control
+ * VERSION: 2.1.0
+ * ============================================================
+ *
+ * FEATURES:
+ *
+ * - Runs inside admin/html/dashboard.html
+ * - Loads only when ?view=districts is opened
+ * - Loads 36 State/UT summaries first
+ * - Loads districts only for the selected state
+ * - Never loads all 784 districts into the browser together
+ * - State Active/Inactive control
+ * - District Active/Inactive control
+ * - Bulk district control
+ * - District delivery-rule management
+ * - Confirmation reasons for every write
+ * - Duplicate-request protection
+ * - Responsive drawer interface
  * ============================================================
  */
-
 
 const AdminDistrictControl = {
 
@@ -19,9 +34,11 @@ const AdminDistrictControl = {
 
   CONFIG: {
 
-    API_TIMEOUT_MS: 30000,
+    API_TIMEOUT_MS:
+      30000,
 
-    SEARCH_DELAY_MS: 300,
+    SEARCH_DELAY_MS:
+      300,
 
     ACTIONS: {
 
@@ -53,89 +70,185 @@ const AdminDistrictControl = {
 
   state: {
 
-    initialized: false,
+    initialized:
+      false,
 
-    loading: false,
+    activated:
+      false,
 
-    districtLoading: false,
+    loaded:
+      false,
 
-    summary: {},
+    loading:
+      false,
 
-    states: [],
+    districtLoading:
+      false,
 
-    filteredStates: [],
+    requestPromise:
+      null,
 
-    selectedState: null,
+    districtRequestPromise:
+      null,
 
-    districts: [],
+    summary:
+      {},
 
-    filteredDistricts: [],
+    states:
+      [],
 
-    selectedDistrictIds: new Set(),
+    filteredStates:
+      [],
 
-    selectedDistrict: null,
+    selectedState:
+      null,
 
-    pendingAction: null,
+    districts:
+      [],
 
-    stateSearchTimer: null,
+    filteredDistricts:
+      [],
 
-    districtSearchTimer: null
+    selectedDistrictIds:
+      new Set(),
+
+    selectedDistrict:
+      null,
+
+    pendingAction:
+      null,
+
+    stateSearchTimer:
+      null,
+
+    districtSearchTimer:
+      null
 
   },
 
-
-  /*
-   * ==========================================================
-   * CACHED PAGE ELEMENTS
-   * ==========================================================
-   */
 
   elements: {},
 
 
   /*
    * ==========================================================
-   * INITIALIZATION
+   * LAZY MODULE ACTIVATION
    * ==========================================================
    */
 
-  init: async function() {
+  async activate() {
 
-    if (this.state.initialized) {
-      return;
+    if (!this.state.initialized) {
+
+      const initialized =
+        this.init();
+
+
+      if (!initialized) {
+        return false;
+      }
+
     }
 
-    this.cacheElements();
 
-    if (!this.elements.pageContent) {
-      console.error(
-        "District Control page elements are unavailable."
-      );
+    this.state.activated =
+      true;
 
-      return;
-    }
-
-    this.state.initialized = true;
-
-    this.bindEvents();
-
-    const session = this.getSession();
 
     if (
-      !session ||
-      !session.sessionId
+      this.state.loaded &&
+      this.state.states.length > 0
     ) {
-
-      this.showPageError(
-        "Your Admin session is unavailable. Please login again."
-      );
 
       this.showContent();
 
-      return;
+      this.renderSummary();
+
+      this.applyStateFilters();
+
+      return true;
+
     }
 
-    await this.loadGeography();
+
+    await this.loadGeography(
+      false
+    );
+
+
+    return this.state.loaded;
+
+  },
+
+
+  /*
+   * ==========================================================
+   * INITIALIZATION
+   *
+   * This only prepares elements and events.
+   * It does not call the API.
+   * ==========================================================
+   */
+
+  init() {
+
+    if (this.state.initialized) {
+      return true;
+    }
+
+
+    this.cacheElements();
+
+
+    const required = [
+      "pageSkeleton",
+      "pageContent",
+      "pageMessage",
+      "refreshButton",
+      "stateSearchInput",
+      "stateStatusFilter",
+      "stateList",
+      "stateEmptyState",
+      "districtPanel",
+      "districtList",
+      "serviceStatusDialog",
+      "districtRulesDialog"
+    ];
+
+
+    const missing =
+      required.filter(
+        (key) =>
+          !this.elements[key]
+      );
+
+
+    if (missing.length > 0) {
+
+      console.error(
+        "Admin District Control elements are missing:",
+        missing
+      );
+
+
+      return false;
+
+    }
+
+
+    this.bindEvents();
+
+
+    this.state.initialized =
+      true;
+
+
+    console.log(
+      "Admin District Control module ready."
+    );
+
+
+    return true;
 
   },
 
@@ -146,196 +259,310 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  cacheElements: function() {
+  cacheElements() {
 
-    const byId = (id) =>
-      document.getElementById(id);
+    const byId =
+      (id) =>
+        document.getElementById(id);
 
 
     this.elements = {
 
       pageSkeleton:
-        byId("geographyPageSkeleton"),
+        byId(
+          "geographyPageSkeleton"
+        ),
 
       pageContent:
-        byId("geographyPageContent"),
+        byId(
+          "geographyPageContent"
+        ),
 
       pageMessage:
-        byId("geographyPageMessage"),
+        byId(
+          "geographyPageMessage"
+        ),
 
       refreshButton:
-        byId("refreshGeographyButton"),
-
-      mobileLogoutButton:
-        byId("geographyMobileLogoutButton"),
+        byId(
+          "refreshGeographyButton"
+        ),
 
       lastUpdated:
-        byId("geographyLastUpdated"),
+        byId(
+          "geographyLastUpdated"
+        ),
 
 
       totalStates:
-        byId("totalStatesValue"),
+        byId(
+          "totalStatesValue"
+        ),
 
       activeStates:
-        byId("activeStatesValue"),
+        byId(
+          "activeStatesValue"
+        ),
 
       inactiveStates:
-        byId("inactiveStatesValue"),
+        byId(
+          "inactiveStatesValue"
+        ),
 
       totalDistricts:
-        byId("totalDistrictsValue"),
+        byId(
+          "totalDistrictsValue"
+        ),
 
       activeDistricts:
-        byId("activeDistrictsValue"),
+        byId(
+          "activeDistrictsValue"
+        ),
 
       inactiveDistricts:
-        byId("inactiveDistrictsValue"),
+        byId(
+          "inactiveDistrictsValue"
+        ),
 
       effectiveActiveDistricts:
-        byId("effectiveActiveDistrictsValue"),
+        byId(
+          "effectiveActiveDistrictsValue"
+        ),
 
       comingSoonDistricts:
-        byId("comingSoonDistrictsValue"),
+        byId(
+          "comingSoonDistrictsValue"
+        ),
 
 
       stateSearchInput:
-        byId("stateSearchInput"),
+        byId(
+          "stateSearchInput"
+        ),
 
       stateStatusFilter:
-        byId("stateStatusFilter"),
+        byId(
+          "stateStatusFilter"
+        ),
 
       clearStateFiltersButton:
-        byId("clearStateFiltersButton"),
+        byId(
+          "clearStateFiltersButton"
+        ),
 
       visibleStatesCount:
-        byId("visibleStatesCount"),
+        byId(
+          "visibleStatesCount"
+        ),
 
       stateList:
-        byId("stateList"),
+        byId(
+          "stateList"
+        ),
 
       stateEmptyState:
-        byId("stateEmptyState"),
+        byId(
+          "stateEmptyState"
+        ),
 
 
       districtPanel:
-        byId("districtPanel"),
+        byId(
+          "districtPanel"
+        ),
 
       districtPanelBackdrop:
-        byId("districtPanelBackdrop"),
+        byId(
+          "districtPanelBackdrop"
+        ),
 
       closeDistrictPanelButton:
-        byId("closeDistrictPanelButton"),
+        byId(
+          "closeDistrictPanelButton"
+        ),
 
       selectedStateName:
-        byId("selectedStateName"),
+        byId(
+          "selectedStateName"
+        ),
 
       selectedStateMeta:
-        byId("selectedStateMeta"),
+        byId(
+          "selectedStateMeta"
+        ),
 
       selectedStateStatusBadge:
-        byId("selectedStateStatusBadge"),
+        byId(
+          "selectedStateStatusBadge"
+        ),
 
       selectedStateControlName:
-        byId("selectedStateControlName"),
+        byId(
+          "selectedStateControlName"
+        ),
 
       selectedStateControlCode:
-        byId("selectedStateControlCode"),
+        byId(
+          "selectedStateControlCode"
+        ),
 
       stateStatusButton:
-        byId("stateStatusButton"),
+        byId(
+          "stateStatusButton"
+        ),
 
       selectedStateDistrictCount:
-        byId("selectedStateDistrictCount"),
+        byId(
+          "selectedStateDistrictCount"
+        ),
 
       selectedStateActiveCount:
-        byId("selectedStateActiveCount"),
+        byId(
+          "selectedStateActiveCount"
+        ),
 
       selectedStateEffectiveCount:
-        byId("selectedStateEffectiveCount"),
+        byId(
+          "selectedStateEffectiveCount"
+        ),
 
 
       districtSearchInput:
-        byId("districtSearchInput"),
+        byId(
+          "districtSearchInput"
+        ),
 
       districtStatusFilter:
-        byId("districtStatusFilter"),
+        byId(
+          "districtStatusFilter"
+        ),
 
       selectAllDistrictsCheckbox:
-        byId("selectAllDistrictsCheckbox"),
+        byId(
+          "selectAllDistrictsCheckbox"
+        ),
 
       bulkActivateButton:
-        byId("bulkActivateDistrictsButton"),
+        byId(
+          "bulkActivateDistrictsButton"
+        ),
 
       bulkDeactivateButton:
-        byId("bulkDeactivateDistrictsButton"),
+        byId(
+          "bulkDeactivateDistrictsButton"
+        ),
 
       districtLoading:
-        byId("districtLoading"),
+        byId(
+          "districtLoading"
+        ),
 
       districtError:
-        byId("districtError"),
+        byId(
+          "districtError"
+        ),
 
       districtList:
-        byId("districtList"),
+        byId(
+          "districtList"
+        ),
 
       districtEmptyState:
-        byId("districtEmptyState"),
+        byId(
+          "districtEmptyState"
+        ),
 
 
       serviceStatusDialog:
-        byId("serviceStatusDialog"),
+        byId(
+          "serviceStatusDialog"
+        ),
 
       serviceStatusDialogTitle:
-        byId("serviceStatusDialogTitle"),
+        byId(
+          "serviceStatusDialogTitle"
+        ),
 
       serviceStatusDialogDescription:
-        byId("serviceStatusDialogDescription"),
+        byId(
+          "serviceStatusDialogDescription"
+        ),
 
       serviceStatusReasonInput:
-        byId("serviceStatusReasonInput"),
+        byId(
+          "serviceStatusReasonInput"
+        ),
 
       serviceStatusDialogError:
-        byId("serviceStatusDialogError"),
+        byId(
+          "serviceStatusDialogError"
+        ),
 
       cancelServiceStatusButton:
-        byId("cancelServiceStatusButton"),
+        byId(
+          "cancelServiceStatusButton"
+        ),
 
       confirmServiceStatusButton:
-        byId("confirmServiceStatusButton"),
+        byId(
+          "confirmServiceStatusButton"
+        ),
 
 
       districtRulesDialog:
-        byId("districtRulesDialog"),
+        byId(
+          "districtRulesDialog"
+        ),
 
       districtRulesTitle:
-        byId("districtRulesTitle"),
+        byId(
+          "districtRulesTitle"
+        ),
 
       districtRulesId:
-        byId("districtRulesId"),
+        byId(
+          "districtRulesId"
+        ),
 
       districtServiceRadiusInput:
-        byId("districtServiceRadiusInput"),
+        byId(
+          "districtServiceRadiusInput"
+        ),
 
       districtDeliveryFeeInput:
-        byId("districtDeliveryFeeInput"),
+        byId(
+          "districtDeliveryFeeInput"
+        ),
 
       districtMinimumDeliveryFeeInput:
-        byId("districtMinimumDeliveryFeeInput"),
+        byId(
+          "districtMinimumDeliveryFeeInput"
+        ),
 
       districtLongDistanceInput:
-        byId("districtLongDistanceInput"),
+        byId(
+          "districtLongDistanceInput"
+        ),
 
       districtRulesReasonInput:
-        byId("districtRulesReasonInput"),
+        byId(
+          "districtRulesReasonInput"
+        ),
 
       districtRulesError:
-        byId("districtRulesError"),
+        byId(
+          "districtRulesError"
+        ),
 
       cancelDistrictRulesButton:
-        byId("cancelDistrictRulesButton"),
+        byId(
+          "cancelDistrictRulesButton"
+        ),
 
       saveDistrictRulesButton:
-        byId("saveDistrictRulesButton")
+        byId(
+          "saveDistrictRulesButton"
+        )
 
     };
 
@@ -348,46 +575,27 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  bindEvents: function() {
+  bindEvents() {
 
     const elements =
       this.elements;
 
 
-    if (elements.refreshButton) {
-
-      elements.refreshButton.addEventListener(
-        "click",
-        () => this.loadGeography(true)
-      );
-
-    }
-
-
-    if (elements.mobileLogoutButton) {
-
-      elements.mobileLogoutButton.addEventListener(
+    elements.refreshButton
+      .addEventListener(
         "click",
         () => {
 
-          const desktopLogout =
-            document.getElementById(
-              "roleLogoutButton"
-            );
-
-          if (desktopLogout) {
-            desktopLogout.click();
-          }
+          this.loadGeography(
+            true
+          );
 
         }
       );
 
-    }
 
-
-    if (elements.stateSearchInput) {
-
-      elements.stateSearchInput.addEventListener(
+    elements.stateSearchInput
+      .addEventListener(
         "input",
         () => {
 
@@ -395,203 +603,311 @@ const AdminDistrictControl = {
             this.state.stateSearchTimer
           );
 
+
           this.state.stateSearchTimer =
             setTimeout(
-              () => this.applyStateFilters(),
-              this.CONFIG.SEARCH_DELAY_MS
+              () => {
+
+                this.applyStateFilters();
+
+              },
+              this.CONFIG
+                .SEARCH_DELAY_MS
             );
 
         }
       );
 
-    }
 
-
-    if (elements.stateStatusFilter) {
-
-      elements.stateStatusFilter.addEventListener(
+    elements.stateStatusFilter
+      .addEventListener(
         "change",
-        () => this.applyStateFilters()
-      );
-
-    }
-
-
-    if (elements.clearStateFiltersButton) {
-
-      elements.clearStateFiltersButton.addEventListener(
-        "click",
-        () => this.clearStateFilters()
-      );
-
-    }
-
-
-    if (elements.stateList) {
-
-      elements.stateList.addEventListener(
-        "click",
-        (event) =>
-          this.handleStateListClick(event)
-      );
-
-    }
-
-
-    if (elements.districtPanelBackdrop) {
-
-      elements.districtPanelBackdrop.addEventListener(
-        "click",
-        () => this.closeDistrictPanel()
-      );
-
-    }
-
-
-    if (elements.closeDistrictPanelButton) {
-
-      elements.closeDistrictPanelButton.addEventListener(
-        "click",
-        () => this.closeDistrictPanel()
-      );
-
-    }
-
-
-    if (elements.stateStatusButton) {
-
-      elements.stateStatusButton.addEventListener(
-        "click",
-        () => this.requestStateStatusChange()
-      );
-
-    }
-
-
-    if (elements.districtSearchInput) {
-
-      elements.districtSearchInput.addEventListener(
-        "input",
         () => {
 
-          clearTimeout(
-            this.state.districtSearchTimer
-          );
-
-          this.state.districtSearchTimer =
-            setTimeout(
-              () => this.applyDistrictFilters(),
-              this.CONFIG.SEARCH_DELAY_MS
-            );
+          this.applyStateFilters();
 
         }
       );
 
+
+    if (
+      elements.clearStateFiltersButton
+    ) {
+
+      elements.clearStateFiltersButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.clearStateFilters();
+
+          }
+        );
+
     }
 
 
-    if (elements.districtStatusFilter) {
+    elements.stateList
+      .addEventListener(
+        "click",
+        (event) => {
 
-      elements.districtStatusFilter.addEventListener(
+          this.handleStateListClick(
+            event
+          );
+
+        }
+      );
+
+
+    if (
+      elements.districtPanelBackdrop
+    ) {
+
+      elements.districtPanelBackdrop
+        .addEventListener(
+          "click",
+          () => {
+
+            this.closeDistrictPanel();
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.closeDistrictPanelButton
+    ) {
+
+      elements.closeDistrictPanelButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.closeDistrictPanel();
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.stateStatusButton
+    ) {
+
+      elements.stateStatusButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.requestStateStatusChange();
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.districtSearchInput
+    ) {
+
+      elements.districtSearchInput
+        .addEventListener(
+          "input",
+          () => {
+
+            clearTimeout(
+              this.state
+                .districtSearchTimer
+            );
+
+
+            this.state
+              .districtSearchTimer =
+                setTimeout(
+                  () => {
+
+                    this.applyDistrictFilters();
+
+                  },
+                  this.CONFIG
+                    .SEARCH_DELAY_MS
+                );
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.districtStatusFilter
+    ) {
+
+      elements.districtStatusFilter
+        .addEventListener(
+          "change",
+          () => {
+
+            this.applyDistrictFilters();
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.selectAllDistrictsCheckbox
+    ) {
+
+      elements.selectAllDistrictsCheckbox
+        .addEventListener(
+          "change",
+          (event) => {
+
+            this.toggleAllVisibleDistricts(
+              event.target.checked
+            );
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.bulkActivateButton
+    ) {
+
+      elements.bulkActivateButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.requestBulkDistrictStatusChange(
+              "ACTIVE"
+            );
+
+          }
+        );
+
+    }
+
+
+    if (
+      elements.bulkDeactivateButton
+    ) {
+
+      elements.bulkDeactivateButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.requestBulkDistrictStatusChange(
+              "INACTIVE"
+            );
+
+          }
+        );
+
+    }
+
+
+    elements.districtList
+      .addEventListener(
+        "click",
+        (event) => {
+
+          this.handleDistrictListClick(
+            event
+          );
+
+        }
+      );
+
+
+    elements.districtList
+      .addEventListener(
         "change",
-        () => this.applyDistrictFilters()
+        (event) => {
+
+          this.handleDistrictSelectionChange(
+            event
+          );
+
+        }
       );
+
+
+    if (
+      elements.cancelServiceStatusButton
+    ) {
+
+      elements.cancelServiceStatusButton
+        .addEventListener(
+          "click",
+          () => {
+
+            this.closeStatusDialog();
+
+          }
+        );
 
     }
 
 
-    if (elements.selectAllDistrictsCheckbox) {
+    if (
+      elements.confirmServiceStatusButton
+    ) {
 
-      elements.selectAllDistrictsCheckbox.addEventListener(
-        "change",
-        (event) =>
-          this.toggleAllVisibleDistricts(
-            event.target.checked
-          )
-      );
+      elements.confirmServiceStatusButton
+        .addEventListener(
+          "click",
+          () => {
 
-    }
+            this.confirmStatusAction();
 
-
-    if (elements.bulkActivateButton) {
-
-      elements.bulkActivateButton.addEventListener(
-        "click",
-        () =>
-          this.requestBulkDistrictStatusChange(
-            "ACTIVE"
-          )
-      );
+          }
+        );
 
     }
 
 
-    if (elements.bulkDeactivateButton) {
+    if (
+      elements.cancelDistrictRulesButton
+    ) {
 
-      elements.bulkDeactivateButton.addEventListener(
-        "click",
-        () =>
-          this.requestBulkDistrictStatusChange(
-            "INACTIVE"
-          )
-      );
+      elements.cancelDistrictRulesButton
+        .addEventListener(
+          "click",
+          () => {
 
-    }
+            this.closeRulesDialog();
 
-
-    if (elements.districtList) {
-
-      elements.districtList.addEventListener(
-        "click",
-        (event) =>
-          this.handleDistrictListClick(event)
-      );
-
-      elements.districtList.addEventListener(
-        "change",
-        (event) =>
-          this.handleDistrictSelectionChange(event)
-      );
+          }
+        );
 
     }
 
 
-    if (elements.cancelServiceStatusButton) {
+    if (
+      elements.saveDistrictRulesButton
+    ) {
 
-      elements.cancelServiceStatusButton.addEventListener(
-        "click",
-        () => this.closeStatusDialog()
-      );
+      elements.saveDistrictRulesButton
+        .addEventListener(
+          "click",
+          () => {
 
-    }
+            this.saveDistrictRules();
 
-
-    if (elements.confirmServiceStatusButton) {
-
-      elements.confirmServiceStatusButton.addEventListener(
-        "click",
-        () => this.confirmStatusAction()
-      );
-
-    }
-
-
-    if (elements.cancelDistrictRulesButton) {
-
-      elements.cancelDistrictRulesButton.addEventListener(
-        "click",
-        () => this.closeRulesDialog()
-      );
-
-    }
-
-
-    if (elements.saveDistrictRulesButton) {
-
-      elements.saveDistrictRulesButton.addEventListener(
-        "click",
-        () => this.saveDistrictRules()
-      );
+          }
+        );
 
     }
 
@@ -604,32 +920,43 @@ const AdminDistrictControl = {
           return;
         }
 
+
         if (
           elements.serviceStatusDialog &&
-          !elements.serviceStatusDialog.classList
-            .contains("hidden")
+          !elements.serviceStatusDialog
+            .classList.contains(
+              "hidden"
+            )
         ) {
 
           this.closeStatusDialog();
 
           return;
+
         }
+
 
         if (
           elements.districtRulesDialog &&
-          !elements.districtRulesDialog.classList
-            .contains("hidden")
+          !elements.districtRulesDialog
+            .classList.contains(
+              "hidden"
+            )
         ) {
 
           this.closeRulesDialog();
 
           return;
+
         }
+
 
         if (
           elements.districtPanel &&
-          !elements.districtPanel.classList
-            .contains("hidden")
+          !elements.districtPanel
+            .classList.contains(
+              "hidden"
+            )
         ) {
 
           this.closeDistrictPanel();
@@ -648,25 +975,30 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  getSession: function() {
+  getSession() {
 
     if (
-      typeof SessionManager === "undefined" ||
-      typeof SessionManager.get !== "function"
+      typeof SessionManager ===
+        "undefined" ||
+      typeof SessionManager.get !==
+        "function"
     ) {
 
       return null;
+
     }
+
 
     return SessionManager.get();
 
   },
 
 
-  getSessionId: function() {
+  getSessionId() {
 
     const session =
       this.getSession();
+
 
     return session &&
       session.sessionId
@@ -682,14 +1014,15 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  request: async function(
+  async request(
     action,
     payload
   ) {
 
     if (
       typeof API === "undefined" ||
-      typeof API.request !== "function"
+      typeof API.request !==
+        "function"
     ) {
 
       throw new Error(
@@ -698,15 +1031,18 @@ const AdminDistrictControl = {
 
     }
 
+
     const response =
       await API.request(
         action,
         payload,
         {
           timeoutMs:
-            this.CONFIG.API_TIMEOUT_MS
+            this.CONFIG
+              .API_TIMEOUT_MS
         }
       );
+
 
     if (
       !response ||
@@ -721,8 +1057,10 @@ const AdminDistrictControl = {
 
     }
 
+
     const data =
       response.data || {};
+
 
     if (data.success === false) {
 
@@ -734,19 +1072,26 @@ const AdminDistrictControl = {
 
     }
 
+
     return {
-      response: response,
-      data: data
+      response:
+        response,
+
+      data:
+        data
     };
 
   },
 
 
-  extractErrorMessage: function(result) {
+  extractErrorMessage(result) {
 
     if (!result) {
+
       return "The request could not be completed.";
+
     }
+
 
     if (
       result.error &&
@@ -759,20 +1104,27 @@ const AdminDistrictControl = {
 
     }
 
+
     if (
       result.error &&
       result.error.code
     ) {
 
-      return String(
+      return this.getReasonMessage(
         result.error.code
       );
 
     }
 
+
     if (result.message) {
-      return String(result.message);
+
+      return String(
+        result.message
+      );
+
     }
+
 
     if (result.reason) {
 
@@ -782,12 +1134,13 @@ const AdminDistrictControl = {
 
     }
 
+
     return "The request could not be completed.";
 
   },
 
 
-  getReasonMessage: function(reason) {
+  getReasonMessage(reason) {
 
     const messages = {
 
@@ -847,9 +1200,16 @@ const AdminDistrictControl = {
 
     };
 
+
     return messages[reason] ||
-      String(reason || "Request failed.")
-        .replace(/_/g, " ")
+      String(
+        reason ||
+        "Request failed."
+      )
+        .replace(
+          /_/g,
+          " "
+        )
         .toLowerCase()
         .replace(
           /\b\w/g,
@@ -862,27 +1222,64 @@ const AdminDistrictControl = {
 
   /*
    * ==========================================================
-   * INITIAL GEOGRAPHY LOAD
+   * STATE SUMMARY LOAD
    * ==========================================================
    */
 
-  loadGeography: async function(
+  loadGeography(forceRefresh = false) {
+
+    if (
+      this.state.requestPromise
+    ) {
+
+      return this.state
+        .requestPromise;
+
+    }
+
+
+    this.state.requestPromise =
+      this.performGeographyLoad(
+        forceRefresh
+      )
+        .finally(
+          () => {
+
+            this.state.requestPromise =
+              null;
+
+          }
+        );
+
+
+    return this.state
+      .requestPromise;
+
+  },
+
+
+  async performGeographyLoad(
     forceRefresh
   ) {
 
-    if (this.state.loading) {
-      return;
-    }
+    this.state.loading =
+      true;
 
-    this.state.loading = true;
 
-    this.setRefreshLoading(true);
+    this.setRefreshLoading(
+      true
+    );
+
 
     this.clearPageMessage();
 
-    if (!forceRefresh) {
+
+    if (!this.state.loaded) {
+
       this.showSkeleton();
+
     }
+
 
     try {
 
@@ -896,7 +1293,8 @@ const AdminDistrictControl = {
 
             filters: {
 
-              query: "",
+              query:
+                "",
 
               serviceStatus:
                 "ALL",
@@ -911,28 +1309,40 @@ const AdminDistrictControl = {
           }
         );
 
+
       const data =
         requestResult.data || {};
+
 
       this.state.summary =
         this.normalizeSummary(
           data.summary || {}
         );
 
+
       this.state.states =
         this.normalizeStates(
           data.states || []
         );
 
+
+      this.state.loaded =
+        true;
+
+
       this.renderSummary();
 
+
       this.applyStateFilters();
+
 
       this.updateLastUpdated(
         data.generatedAt
       );
 
+
       this.showContent();
+
 
       if (forceRefresh) {
 
@@ -942,6 +1352,9 @@ const AdminDistrictControl = {
 
       }
 
+
+      return data;
+
     } catch (error) {
 
       console.error(
@@ -949,7 +1362,17 @@ const AdminDistrictControl = {
         error
       );
 
-      this.showContent();
+
+      if (this.state.loaded) {
+
+        this.showContent();
+
+      } else {
+
+        this.hideSkeleton();
+
+      }
+
 
       this.showPageError(
         error &&
@@ -958,18 +1381,31 @@ const AdminDistrictControl = {
           : "Service geography could not be loaded."
       );
 
+
+      return null;
+
     } finally {
 
-      this.state.loading = false;
+      this.state.loading =
+        false;
 
-      this.setRefreshLoading(false);
+
+      this.setRefreshLoading(
+        false
+      );
 
     }
 
   },
 
 
-  normalizeSummary: function(summary) {
+  /*
+   * ==========================================================
+   * NORMALIZATION
+   * ==========================================================
+   */
+
+  normalizeSummary(summary) {
 
     return {
 
@@ -1018,35 +1454,42 @@ const AdminDistrictControl = {
   },
 
 
-  normalizeStates: function(states) {
+  normalizeStates(states) {
 
     if (!Array.isArray(states)) {
       return [];
     }
 
+
     return states
       .map(
         (state) =>
-          this.normalizeState(state)
+          this.normalizeState(
+            state
+          )
       )
       .filter(
         (state) =>
-          Boolean(state.stateCode)
+          Boolean(
+            state.stateCode
+          )
       )
       .sort(
         (first, second) =>
-          first.stateName.localeCompare(
-            second.stateName
-          )
+          first.stateName
+            .localeCompare(
+              second.stateName
+            )
       );
 
   },
 
 
-  normalizeState: function(state) {
+  normalizeState(state) {
 
     const counts =
       state.districtCounts || {};
+
 
     return {
 
@@ -1108,35 +1551,40 @@ const AdminDistrictControl = {
 
         total:
           this.toNumber(
-            counts.total !== undefined
+            counts.total !==
+              undefined
               ? counts.total
               : state.totalDistricts
           ),
 
         active:
           this.toNumber(
-            counts.active !== undefined
+            counts.active !==
+              undefined
               ? counts.active
               : state.activeDistricts
           ),
 
         inactive:
           this.toNumber(
-            counts.inactive !== undefined
+            counts.inactive !==
+              undefined
               ? counts.inactive
               : state.inactiveDistricts
           ),
 
         effectiveActive:
           this.toNumber(
-            counts.effectiveActive !== undefined
+            counts.effectiveActive !==
+              undefined
               ? counts.effectiveActive
               : state.effectiveActiveDistricts
           ),
 
         comingSoon:
           this.toNumber(
-            counts.comingSoon !== undefined
+            counts.comingSoon !==
+              undefined
               ? counts.comingSoon
               : state.comingSoonDistricts
           )
@@ -1148,11 +1596,12 @@ const AdminDistrictControl = {
   },
 
 
-  normalizeDistricts: function(districts) {
+  normalizeDistricts(districts) {
 
     if (!Array.isArray(districts)) {
       return [];
     }
+
 
     return districts
       .map(
@@ -1163,19 +1612,22 @@ const AdminDistrictControl = {
       )
       .filter(
         (district) =>
-          Boolean(district.districtId)
+          Boolean(
+            district.districtId
+          )
       )
       .sort(
         (first, second) =>
-          first.districtName.localeCompare(
-            second.districtName
-          )
+          first.districtName
+            .localeCompare(
+              second.districtName
+            )
       );
 
   },
 
 
-  normalizeDistrict: function(district) {
+  normalizeDistrict(district) {
 
     return {
 
@@ -1244,28 +1696,32 @@ const AdminDistrictControl = {
 
       serviceRadiusKm:
         this.toNumber(
-          district.serviceRadiusKm !== undefined
+          district.serviceRadiusKm !==
+            undefined
             ? district.serviceRadiusKm
             : district.ServiceRadiusKm
         ),
 
       deliveryFeePerKm:
         this.toNumber(
-          district.deliveryFeePerKm !== undefined
+          district.deliveryFeePerKm !==
+            undefined
             ? district.deliveryFeePerKm
             : district.DeliveryFeePerKm
         ),
 
       minimumDeliveryFee:
         this.toNumber(
-          district.minimumDeliveryFee !== undefined
+          district.minimumDeliveryFee !==
+            undefined
             ? district.minimumDeliveryFee
             : district.MinimumDeliveryFee
         ),
 
       longDistanceEnabled:
         this.toBoolean(
-          district.longDistanceEnabled !== undefined
+          district.longDistanceEnabled !==
+            undefined
             ? district.longDistanceEnabled
             : district.LongDistanceEnabled
         ),
@@ -1288,50 +1744,74 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  renderSummary: function() {
+  renderSummary() {
 
     const summary =
       this.state.summary;
 
+
     this.setText(
       this.elements.totalStates,
-      summary.totalStates
+      this.formatNumber(
+        summary.totalStates
+      )
     );
+
 
     this.setText(
       this.elements.activeStates,
-      summary.activeStates
+      this.formatNumber(
+        summary.activeStates
+      )
     );
+
 
     this.setText(
       this.elements.inactiveStates,
-      summary.inactiveStates
+      this.formatNumber(
+        summary.inactiveStates
+      )
     );
+
 
     this.setText(
       this.elements.totalDistricts,
-      summary.totalDistricts
+      this.formatNumber(
+        summary.totalDistricts
+      )
     );
+
 
     this.setText(
       this.elements.activeDistricts,
-      summary.activeDistricts
+      this.formatNumber(
+        summary.activeDistricts
+      )
     );
+
 
     this.setText(
       this.elements.inactiveDistricts,
-      summary.inactiveDistricts
+      this.formatNumber(
+        summary.inactiveDistricts
+      )
     );
+
 
     this.setText(
       this.elements
         .effectiveActiveDistricts,
-      summary.effectiveActiveDistricts
+      this.formatNumber(
+        summary.effectiveActiveDistricts
+      )
     );
+
 
     this.setText(
       this.elements.comingSoonDistricts,
-      summary.comingSoonDistricts
+      this.formatNumber(
+        summary.comingSoonDistricts
+      )
     );
 
   },
@@ -1343,17 +1823,19 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  applyStateFilters: function() {
+  applyStateFilters() {
 
     const query =
       this.elements.stateSearchInput
         ? String(
             this.elements
-              .stateSearchInput.value || ""
+              .stateSearchInput.value ||
+            ""
           )
             .trim()
             .toLowerCase()
         : "";
+
 
     const status =
       this.elements.stateStatusFilter
@@ -1362,6 +1844,7 @@ const AdminDistrictControl = {
               .stateStatusFilter.value
           )
         : "ALL";
+
 
     this.state.filteredStates =
       this.state.states.filter(
@@ -1376,9 +1859,12 @@ const AdminDistrictControl = {
               .toLowerCase()
               .includes(query);
 
+
           const matchesStatus =
             status === "ALL" ||
-            state.serviceStatus === status;
+            state.serviceStatus ===
+              status;
+
 
           return (
             matchesQuery &&
@@ -1388,26 +1874,35 @@ const AdminDistrictControl = {
         }
       );
 
+
     this.renderStates();
 
   },
 
 
-  clearStateFilters: function() {
+  clearStateFilters() {
 
-    if (this.elements.stateSearchInput) {
+    if (
+      this.elements.stateSearchInput
+    ) {
 
       this.elements
-        .stateSearchInput.value = "";
+        .stateSearchInput.value =
+          "";
 
     }
 
-    if (this.elements.stateStatusFilter) {
+
+    if (
+      this.elements.stateStatusFilter
+    ) {
 
       this.elements
-        .stateStatusFilter.value = "ALL";
+        .stateStatusFilter.value =
+          "ALL";
 
     }
+
 
     this.applyStateFilters();
 
@@ -1416,28 +1911,32 @@ const AdminDistrictControl = {
 
   /*
    * ==========================================================
-   * STATE RENDERING
+   * STATE DIRECTORY RENDERING
    * ==========================================================
    */
 
-  renderStates: function() {
+  renderStates() {
 
     const container =
       this.elements.stateList;
 
-    if (!container) {
-      return;
-    }
 
-    container.innerHTML = "";
+    container.innerHTML =
+      "";
+
 
     this.setText(
       this.elements.visibleStatesCount,
-      this.state.filteredStates.length
+      this.formatNumber(
+        this.state.filteredStates
+          .length
+      )
     );
 
+
     if (
-      this.state.filteredStates.length === 0
+      this.state.filteredStates
+        .length === 0
     ) {
 
       this.show(
@@ -1445,37 +1944,52 @@ const AdminDistrictControl = {
       );
 
       return;
+
     }
+
 
     this.hide(
       this.elements.stateEmptyState
     );
 
+
     const fragment =
       document.createDocumentFragment();
 
-    this.state.filteredStates.forEach(
-      (state) => {
 
-        fragment.appendChild(
-          this.createStateCard(state)
-        );
+    this.state.filteredStates
+      .forEach(
+        (state) => {
 
-      }
+          fragment.appendChild(
+            this.createStateCard(
+              state
+            )
+          );
+
+        }
+      );
+
+
+    container.appendChild(
+      fragment
     );
-
-    container.appendChild(fragment);
 
   },
 
 
-  createStateCard: function(state) {
-
-    const card =
-      document.createElement("article");
+  createStateCard(state) {
 
     const active =
-      state.serviceStatus === "ACTIVE";
+      state.serviceStatus ===
+      "ACTIVE";
+
+
+    const card =
+      document.createElement(
+        "article"
+      );
+
 
     card.className =
       "geography-state-card " +
@@ -1485,15 +1999,20 @@ const AdminDistrictControl = {
           : "inactive"
       );
 
+
     card.dataset.stateCode =
       state.stateCode;
 
-    card.tabIndex = 0;
+
+    card.tabIndex =
+      0;
+
 
     card.setAttribute(
       "role",
       "button"
     );
+
 
     card.setAttribute(
       "aria-label",
@@ -1504,50 +2023,70 @@ const AdminDistrictControl = {
 
 
     const main =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     main.className =
       "geography-state-main";
 
 
     const icon =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     icon.className =
       "geography-state-icon";
 
+
     icon.textContent =
       active
         ? "✓"
-        : "◈";
+        : "⌖";
 
 
     const information =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     information.className =
       "geography-state-information";
 
 
     const title =
-      document.createElement("h4");
+      document.createElement(
+        "h4"
+      );
+
 
     title.textContent =
       state.stateName;
 
 
     const meta =
-      document.createElement("p");
+      document.createElement(
+        "p"
+      );
+
 
     meta.textContent =
       "LGD State Code: " +
       (
-        state.stateCode || "—"
+        state.stateCode ||
+        "—"
       );
 
 
     const counts =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     counts.className =
       "geography-state-counts";
@@ -1555,7 +2094,9 @@ const AdminDistrictControl = {
 
     counts.appendChild(
       this.createTextPill(
-        state.districtCounts.total +
+        this.formatNumber(
+          state.districtCounts.total
+        ) +
         " districts"
       )
     );
@@ -1563,37 +2104,52 @@ const AdminDistrictControl = {
 
     const liveCount =
       this.createTextPill(
-        state.districtCounts
-          .effectiveActive +
+        this.formatNumber(
+          state.districtCounts
+            .effectiveActive
+        ) +
         " live"
       );
 
-    liveCount.classList.add("live");
 
-    counts.appendChild(liveCount);
-
-
-    information.appendChild(title);
-
-    information.appendChild(meta);
-
-    information.appendChild(counts);
+    liveCount.classList.add(
+      "live"
+    );
 
 
-    main.appendChild(icon);
+    counts.appendChild(
+      liveCount
+    );
 
-    main.appendChild(information);
+
+    information.append(
+      title,
+      meta,
+      counts
+    );
+
+
+    main.append(
+      icon,
+      information
+    );
 
 
     const action =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     action.className =
       "geography-state-action";
 
 
     const badge =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     badge.className =
       "geography-status-badge " +
@@ -1603,6 +2159,7 @@ const AdminDistrictControl = {
           : "inactive"
       );
 
+
     badge.textContent =
       active
         ? "ACTIVE"
@@ -1610,23 +2167,29 @@ const AdminDistrictControl = {
 
 
     const open =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     open.className =
       "geography-state-open";
+
 
     open.textContent =
       "Manage";
 
 
-    action.appendChild(badge);
+    action.append(
+      badge,
+      open
+    );
 
-    action.appendChild(open);
 
-
-    card.appendChild(main);
-
-    card.appendChild(action);
+    card.append(
+      main,
+      action
+    );
 
 
     card.addEventListener(
@@ -1639,6 +2202,7 @@ const AdminDistrictControl = {
         ) {
 
           event.preventDefault();
+
 
           this.openStateByCode(
             state.stateCode
@@ -1655,28 +2219,35 @@ const AdminDistrictControl = {
   },
 
 
-  createTextPill: function(text) {
+  createTextPill(text) {
 
     const pill =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
-    pill.textContent = text;
+
+    pill.textContent =
+      text;
+
 
     return pill;
 
   },
 
 
-  handleStateListClick: function(event) {
+  handleStateListClick(event) {
 
     const card =
       event.target.closest(
         "[data-state-code]"
       );
 
+
     if (!card) {
       return;
     }
+
 
     this.openStateByCode(
       card.dataset.stateCode
@@ -1687,20 +2258,25 @@ const AdminDistrictControl = {
 
   /*
    * ==========================================================
-   * OPEN STATE AND LAZY-LOAD DISTRICTS
+   * SELECTED STATE AND LAZY DISTRICT LOAD
    * ==========================================================
    */
 
-  openStateByCode: async function(
+  async openStateByCode(
     stateCode
   ) {
 
     const selectedState =
       this.state.states.find(
         (state) =>
-          String(state.stateCode) ===
-          String(stateCode)
+          String(
+            state.stateCode
+          ) ===
+          String(
+            stateCode
+          )
       );
+
 
     if (!selectedState) {
 
@@ -1709,47 +2285,59 @@ const AdminDistrictControl = {
       );
 
       return;
+
     }
+
 
     this.state.selectedState =
       selectedState;
 
-    this.state.districts = [];
 
-    this.state.filteredDistricts = [];
+    this.state.districts =
+      [];
 
-    this.state.selectedDistrictIds.clear();
+
+    this.state.filteredDistricts =
+      [];
+
+
+    this.state.selectedDistrictIds
+      .clear();
+
 
     this.resetDistrictFilters();
 
+
     this.renderSelectedStateHeader();
+
 
     this.renderDistrictSummary();
 
+
     this.renderDistricts();
 
+
     this.openDistrictPanel();
+
 
     await this.loadSelectedStateDistricts();
 
   },
 
 
-  openDistrictPanel: function() {
+  openDistrictPanel() {
 
     this.show(
       this.elements.districtPanel
     );
 
-    if (this.elements.districtPanel) {
 
-      this.elements.districtPanel
-        .setAttribute(
-          "aria-hidden",
-          "false"
-        );
+    this.elements.districtPanel
+      .setAttribute(
+        "aria-hidden",
+        "false"
+      );
 
-    }
 
     document.body.style.overflow =
       "hidden";
@@ -1757,171 +2345,243 @@ const AdminDistrictControl = {
   },
 
 
-  closeDistrictPanel: function() {
+  closeDistrictPanel() {
 
     this.hide(
       this.elements.districtPanel
     );
 
-    if (this.elements.districtPanel) {
 
-      this.elements.districtPanel
-        .setAttribute(
-          "aria-hidden",
-          "true"
-        );
+    this.elements.districtPanel
+      .setAttribute(
+        "aria-hidden",
+        "true"
+      );
 
-    }
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+      "";
 
-    this.state.selectedDistrictIds.clear();
+
+    this.state.selectedDistrictIds
+      .clear();
+
 
     this.updateBulkControls();
 
   },
 
 
-  loadSelectedStateDistricts:
-    async function() {
+  loadSelectedStateDistricts() {
 
-      const selectedState =
-        this.state.selectedState;
+    if (
+      this.state.districtRequestPromise
+    ) {
+
+      return this.state
+        .districtRequestPromise;
+
+    }
+
+
+    this.state.districtRequestPromise =
+      this.performDistrictLoad()
+        .finally(
+          () => {
+
+            this.state
+              .districtRequestPromise =
+                null;
+
+          }
+        );
+
+
+    return this.state
+      .districtRequestPromise;
+
+  },
+
+
+  async performDistrictLoad() {
+
+    const selectedState =
+      this.state.selectedState;
+
+
+    if (!selectedState) {
+      return null;
+    }
+
+
+    const requestedStateCode =
+      selectedState.stateCode;
+
+
+    this.state.districtLoading =
+      true;
+
+
+    this.showDistrictLoading(
+      true
+    );
+
+
+    this.clearDistrictError();
+
+
+    try {
+
+      const requestResult =
+        await this.request(
+          this.CONFIG.ACTIONS
+            .GET_GEOGRAPHY,
+          {
+            sessionId:
+              this.getSessionId(),
+
+            filters: {
+
+              query:
+                "",
+
+              serviceStatus:
+                "ALL",
+
+              stateCode:
+                requestedStateCode,
+
+              includeDistricts:
+                true
+
+            }
+          }
+        );
+
 
       if (
-        !selectedState ||
-        this.state.districtLoading
+        !this.state.selectedState ||
+        this.state.selectedState
+          .stateCode !==
+          requestedStateCode
       ) {
 
-        return;
+        return requestResult.data;
 
       }
 
-      this.state.districtLoading = true;
 
-      this.showDistrictLoading(true);
+      const data =
+        requestResult.data || {};
 
-      this.clearDistrictError();
 
-      try {
+      const returnedStates =
+        Array.isArray(
+          data.states
+        )
+          ? data.states
+          : [];
 
-        const requestResult =
-          await this.request(
-            this.CONFIG.ACTIONS
-              .GET_GEOGRAPHY,
-            {
-              sessionId:
-                this.getSessionId(),
 
-              filters: {
+      const returnedState =
+        returnedStates.find(
+          (state) =>
+            String(
+              state.stateCode ||
+              state.LGDStateCode ||
+              state.StateCode ||
+              ""
+            ) ===
+            String(
+              requestedStateCode
+            )
+        ) ||
+        returnedStates[0] ||
+        {};
 
-                query: "",
 
-                serviceStatus:
-                  "ALL",
-
-                stateCode:
-                  selectedState.stateCode,
-
-                includeDistricts:
-                  true
-
-              }
-            }
-          );
-
-        const data =
-          requestResult.data || {};
-
-        const returnedStates =
-          Array.isArray(data.states)
-            ? data.states
-            : [];
-
-        const returnedState =
-          returnedStates.find(
-            (state) =>
-              String(
-                state.stateCode ||
-                state.LGDStateCode ||
-                state.StateCode ||
-                ""
-              ) ===
-              String(
-                selectedState.stateCode
+      const rawDistricts =
+        Array.isArray(
+          returnedState.districts
+        )
+          ? returnedState.districts
+          : (
+              Array.isArray(
+                data.districts
               )
-          ) ||
-          returnedStates[0] ||
-          {};
+                ? data.districts
+                : []
+            );
 
-        const rawDistricts =
-          Array.isArray(
-            returnedState.districts
-          )
-            ? returnedState.districts
-            : (
-                Array.isArray(
-                  data.districts
-                )
-                  ? data.districts
-                  : []
-              );
 
-        this.state.districts =
-          this.normalizeDistricts(
-            rawDistricts
-          );
-
-        const normalizedReturnedState =
-          this.normalizeState(
-            returnedState
-          );
-
-        if (
-          normalizedReturnedState
-            .stateCode
-        ) {
-
-          this.mergeSelectedState(
-            normalizedReturnedState
-          );
-
-        }
-
-        this.applyDistrictFilters();
-
-        this.renderSelectedStateHeader();
-
-        this.renderDistrictSummary();
-
-      } catch (error) {
-
-        console.error(
-          "State districts load failed:",
-          error
+      this.state.districts =
+        this.normalizeDistricts(
+          rawDistricts
         );
 
-        this.showDistrictError(
-          error &&
-          error.message
-            ? error.message
-            : "Districts could not be loaded."
+
+      const normalizedState =
+        this.normalizeState(
+          returnedState
         );
 
-      } finally {
 
-        this.state.districtLoading = false;
+      if (
+        normalizedState.stateCode
+      ) {
 
-        this.showDistrictLoading(false);
+        this.mergeSelectedState(
+          normalizedState
+        );
 
       }
 
-    },
+
+      this.applyDistrictFilters();
 
 
-  mergeSelectedState: function(
-    updatedState
-  ) {
+      this.renderSelectedStateHeader();
+
+
+      this.renderDistrictSummary();
+
+
+      return data;
+
+    } catch (error) {
+
+      console.error(
+        "Selected state district load failed:",
+        error
+      );
+
+
+      this.showDistrictError(
+        error &&
+        error.message
+          ? error.message
+          : "Districts could not be loaded."
+      );
+
+
+      return null;
+
+    } finally {
+
+      this.state.districtLoading =
+        false;
+
+
+      this.showDistrictLoading(
+        false
+      );
+
+    }
+
+  },
+
+
+  mergeSelectedState(updatedState) {
 
     const index =
       this.state.states.findIndex(
@@ -1930,22 +2590,32 @@ const AdminDistrictControl = {
           updatedState.stateCode
       );
 
-    if (index >= 0) {
 
-      this.state.states[index] = {
-        ...this.state.states[index],
-        ...updatedState,
-        districtCounts: {
-          ...this.state.states[index]
-            .districtCounts,
-          ...updatedState.districtCounts
-        }
-      };
-
-      this.state.selectedState =
-        this.state.states[index];
-
+    if (index < 0) {
+      return;
     }
+
+
+    this.state.states[index] = {
+
+      ...this.state.states[index],
+
+      ...updatedState,
+
+      districtCounts: {
+
+        ...this.state.states[index]
+          .districtCounts,
+
+        ...updatedState.districtCounts
+
+      }
+
+    };
+
+
+    this.state.selectedState =
+      this.state.states[index];
 
   },
 
@@ -1956,34 +2626,43 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  renderSelectedStateHeader: function() {
+  renderSelectedStateHeader() {
 
     const selectedState =
       this.state.selectedState;
+
 
     if (!selectedState) {
       return;
     }
 
+
     const active =
       selectedState.serviceStatus ===
       "ACTIVE";
+
 
     this.setText(
       this.elements.selectedStateName,
       selectedState.stateName
     );
 
+
     this.setText(
       this.elements.selectedStateMeta,
-      selectedState.districtCounts.total +
+      this.formatNumber(
+        selectedState
+          .districtCounts.total
+      ) +
       " official districts"
     );
+
 
     this.setText(
       this.elements.selectedStateControlName,
       selectedState.stateName
     );
+
 
     this.setText(
       this.elements.selectedStateControlCode,
@@ -1991,84 +2670,84 @@ const AdminDistrictControl = {
       selectedState.stateCode
     );
 
-    if (
-      this.elements
-        .selectedStateStatusBadge
-    ) {
 
-      this.elements
-        .selectedStateStatusBadge
-        .className =
-          "geography-status-badge " +
-          (
-            active
-              ? "active"
-              : "inactive"
-          );
-
-      this.elements
-        .selectedStateStatusBadge
-        .textContent =
+    this.elements
+      .selectedStateStatusBadge
+      .className =
+        "geography-status-badge " +
+        (
           active
-            ? "ACTIVE"
-            : "INACTIVE";
+            ? "active"
+            : "inactive"
+        );
 
-    }
 
-    if (
-      this.elements.stateStatusButton
-    ) {
+    this.elements
+      .selectedStateStatusBadge
+      .textContent =
+        active
+          ? "ACTIVE"
+          : "INACTIVE";
 
-      this.elements
-        .stateStatusButton
-        .textContent =
+
+    this.elements.stateStatusButton
+      .textContent =
+        active
+          ? "Deactivate state"
+          : "Activate state";
+
+
+    this.elements.stateStatusButton
+      .className =
+        "geography-state-status-button" +
+        (
           active
-            ? "Deactivate state"
-            : "Activate state";
-
-      this.elements
-        .stateStatusButton
-        .className =
-          "geography-state-status-button" +
-          (
-            active
-              ? " deactivate"
-              : ""
-          );
-
-    }
+            ? " deactivate"
+            : ""
+        );
 
   },
 
 
-  renderDistrictSummary: function() {
+  renderDistrictSummary() {
 
     const selectedState =
       this.state.selectedState;
+
 
     if (!selectedState) {
       return;
     }
 
+
     const counts =
       selectedState.districtCounts;
+
 
     this.setText(
       this.elements
         .selectedStateDistrictCount,
-      counts.total
+      this.formatNumber(
+        counts.total
+      )
     );
+
 
     this.setText(
       this.elements
         .selectedStateActiveCount,
-      counts.active
+      this.formatNumber(
+        counts.active
+      )
     );
+
 
     this.setText(
       this.elements
         .selectedStateEffectiveCount,
-      counts.effectiveActive
+      this.formatNumber(
+        counts.effectiveActive
+      )
     );
 
   },
@@ -2080,16 +2759,18 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  resetDistrictFilters: function() {
+  resetDistrictFilters() {
 
     if (
       this.elements.districtSearchInput
     ) {
 
       this.elements
-        .districtSearchInput.value = "";
+        .districtSearchInput.value =
+          "";
 
     }
+
 
     if (
       this.elements.districtStatusFilter
@@ -2101,6 +2782,7 @@ const AdminDistrictControl = {
 
     }
 
+
     if (
       this.elements
         .selectAllDistrictsCheckbox
@@ -2108,18 +2790,21 @@ const AdminDistrictControl = {
 
       this.elements
         .selectAllDistrictsCheckbox
-        .checked = false;
+        .checked =
+          false;
+
 
       this.elements
         .selectAllDistrictsCheckbox
-        .indeterminate = false;
+        .indeterminate =
+          false;
 
     }
 
   },
 
 
-  applyDistrictFilters: function() {
+  applyDistrictFilters() {
 
     const query =
       this.elements.districtSearchInput
@@ -2132,6 +2817,7 @@ const AdminDistrictControl = {
             .toLowerCase()
         : "";
 
+
     const status =
       this.elements.districtStatusFilter
         ? this.normalizeFilterStatus(
@@ -2139,6 +2825,7 @@ const AdminDistrictControl = {
               .districtStatusFilter.value
           )
         : "ALL";
+
 
     this.state.filteredDistricts =
       this.state.districts.filter(
@@ -2156,9 +2843,12 @@ const AdminDistrictControl = {
               .toLowerCase()
               .includes(query);
 
+
           const matchesStatus =
             status === "ALL" ||
-            district.serviceStatus === status;
+            district.serviceStatus ===
+              status;
+
 
           return (
             matchesQuery &&
@@ -2167,6 +2857,7 @@ const AdminDistrictControl = {
 
         }
       );
+
 
     this.renderDistricts();
 
@@ -2179,27 +2870,29 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  renderDistricts: function() {
+  renderDistricts() {
 
     const container =
       this.elements.districtList;
 
-    if (!container) {
-      return;
-    }
 
-    container.innerHTML = "";
+    container.innerHTML =
+      "";
+
 
     if (
       this.state.districtLoading
     ) {
 
       this.hide(
-        this.elements.districtEmptyState
+        this.elements
+          .districtEmptyState
       );
 
       return;
+
     }
+
 
     if (
       this.state.filteredDistricts
@@ -2207,77 +2900,114 @@ const AdminDistrictControl = {
     ) {
 
       this.show(
-        this.elements.districtEmptyState
+        this.elements
+          .districtEmptyState
       );
+
 
       this.updateBulkControls();
 
+
       return;
+
     }
 
+
     this.hide(
-      this.elements.districtEmptyState
+      this.elements
+        .districtEmptyState
     );
+
 
     const fragment =
       document.createDocumentFragment();
 
-    this.state.filteredDistricts.forEach(
-      (district) => {
 
-        fragment.appendChild(
-          this.createDistrictCard(
-            district
-          )
-        );
+    this.state.filteredDistricts
+      .forEach(
+        (district) => {
 
-      }
+          fragment.appendChild(
+            this.createDistrictCard(
+              district
+            )
+          );
+
+        }
+      );
+
+
+    container.appendChild(
+      fragment
     );
 
-    container.appendChild(fragment);
 
     this.updateBulkControls();
 
   },
 
 
-  createDistrictCard: function(
-    district
-  ) {
+  createDistrictCard(district) {
+
+    const selected =
+      this.state.selectedDistrictIds
+        .has(
+          district.districtId
+        );
+
+
+    const districtActive =
+      district.serviceStatus ===
+      "ACTIVE";
+
+
+    const stateActive =
+      this.state.selectedState &&
+      this.state.selectedState
+        .serviceStatus ===
+        "ACTIVE";
+
 
     const card =
-      document.createElement("article");
+      document.createElement(
+        "article"
+      );
+
 
     card.className =
-      "district-card";
+      "district-card" +
+      (
+        selected
+          ? " selected"
+          : ""
+      );
+
 
     card.dataset.districtId =
       district.districtId;
 
-    if (
-      this.state.selectedDistrictIds
-        .has(district.districtId)
-    ) {
-
-      card.classList.add("selected");
-
-    }
-
 
     const checkbox =
-      document.createElement("input");
+      document.createElement(
+        "input"
+      );
 
-    checkbox.type = "checkbox";
+
+    checkbox.type =
+      "checkbox";
+
 
     checkbox.className =
       "district-select-checkbox";
 
+
     checkbox.dataset.districtId =
       district.districtId;
 
+
     checkbox.checked =
-      this.state.selectedDistrictIds
-        .has(district.districtId);
+      selected;
+
 
     checkbox.setAttribute(
       "aria-label",
@@ -2287,21 +3017,30 @@ const AdminDistrictControl = {
 
 
     const information =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     information.className =
       "district-card-information";
 
 
     const title =
-      document.createElement("h4");
+      document.createElement(
+        "h4"
+      );
+
 
     title.textContent =
       district.districtName;
 
 
     const meta =
-      document.createElement("p");
+      document.createElement(
+        "p"
+      );
+
 
     meta.textContent =
       "District ID: " +
@@ -2315,7 +3054,10 @@ const AdminDistrictControl = {
 
 
     const metrics =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     metrics.className =
       "district-card-metrics";
@@ -2323,15 +3065,18 @@ const AdminDistrictControl = {
 
     metrics.appendChild(
       this.createTextPill(
-        district.serviceRadiusKm +
+        this.formatNumber(
+          district.serviceRadiusKm
+        ) +
         " KM radius"
       )
     );
 
+
     metrics.appendChild(
       this.createTextPill(
         "₹" +
-        this.formatNumber(
+        this.formatDecimal(
           district.deliveryFeePerKm
         ) +
         "/KM"
@@ -2341,70 +3086,88 @@ const AdminDistrictControl = {
 
     const effectivePill =
       this.createTextPill(
-        district.effectiveServiceStatus ===
+        district
+          .effectiveServiceStatus ===
           "ACTIVE"
           ? "Customer live"
           : "Not live"
       );
 
+
     effectivePill.classList.add(
-      district.effectiveServiceStatus ===
+      district
+        .effectiveServiceStatus ===
         "ACTIVE"
         ? "live"
         : "inactive"
     );
+
 
     metrics.appendChild(
       effectivePill
     );
 
 
-    information.appendChild(title);
-
-    information.appendChild(meta);
-
-    information.appendChild(metrics);
+    information.append(
+      title,
+      meta,
+      metrics
+    );
 
 
     const actions =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     actions.className =
       "district-card-actions";
 
 
     const rulesButton =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
-    rulesButton.type = "button";
+
+    rulesButton.type =
+      "button";
+
 
     rulesButton.className =
       "district-rules-button";
 
+
     rulesButton.dataset.action =
       "rules";
 
+
     rulesButton.dataset.districtId =
       district.districtId;
+
 
     rulesButton.textContent =
       "Rules";
 
 
     const statusButton =
-      document.createElement("button");
+      document.createElement(
+        "button"
+      );
 
-    statusButton.type = "button";
+
+    statusButton.type =
+      "button";
+
 
     statusButton.dataset.action =
       "status";
 
+
     statusButton.dataset.districtId =
       district.districtId;
 
-    const districtActive =
-      district.serviceStatus ===
-      "ACTIVE";
 
     statusButton.className =
       "district-status-button" +
@@ -2414,19 +3177,21 @@ const AdminDistrictControl = {
           : ""
       );
 
+
     statusButton.textContent =
       districtActive
         ? "Deactivate"
         : "Activate";
 
+
     if (
       !districtActive &&
-      this.state.selectedState &&
-      this.state.selectedState
-        .serviceStatus !== "ACTIVE"
+      !stateActive
     ) {
 
-      statusButton.disabled = true;
+      statusButton.disabled =
+        true;
+
 
       statusButton.title =
         "Activate the parent state first.";
@@ -2434,20 +3199,17 @@ const AdminDistrictControl = {
     }
 
 
-    actions.appendChild(
-      rulesButton
-    );
-
-    actions.appendChild(
+    actions.append(
+      rulesButton,
       statusButton
     );
 
 
-    card.appendChild(checkbox);
-
-    card.appendChild(information);
-
-    card.appendChild(actions);
+    card.append(
+      checkbox,
+      information,
+      actions
+    );
 
 
     return card;
@@ -2455,163 +3217,194 @@ const AdminDistrictControl = {
   },
 
 
-  handleDistrictSelectionChange:
-    function(event) {
+  handleDistrictSelectionChange(
+    event
+  ) {
 
-      const checkbox =
-        event.target.closest(
-          ".district-select-checkbox"
+    const checkbox =
+      event.target.closest(
+        ".district-select-checkbox"
+      );
+
+
+    if (!checkbox) {
+      return;
+    }
+
+
+    const districtId =
+      String(
+        checkbox.dataset.districtId ||
+        ""
+      );
+
+
+    if (!districtId) {
+      return;
+    }
+
+
+    if (checkbox.checked) {
+
+      this.state.selectedDistrictIds
+        .add(
+          districtId
         );
 
-      if (!checkbox) {
-        return;
-      }
+    } else {
 
-      const districtId =
-        String(
-          checkbox.dataset.districtId ||
-          ""
+      this.state.selectedDistrictIds
+        .delete(
+          districtId
         );
 
-      if (!districtId) {
-        return;
-      }
-
-      if (checkbox.checked) {
-
-        this.state.selectedDistrictIds
-          .add(districtId);
-
-      } else {
-
-        this.state.selectedDistrictIds
-          .delete(districtId);
-
-      }
-
-      const card =
-        checkbox.closest(
-          ".district-card"
-        );
-
-      if (card) {
-
-        card.classList.toggle(
-          "selected",
-          checkbox.checked
-        );
-
-      }
-
-      this.updateBulkControls();
-
-    },
+    }
 
 
-  handleDistrictListClick:
-    function(event) {
-
-      const button =
-        event.target.closest(
-          "button[data-action]"
-        );
-
-      if (!button) {
-        return;
-      }
-
-      const districtId =
-        String(
-          button.dataset.districtId ||
-          ""
-        );
-
-      const district =
-        this.state.districts.find(
-          (item) =>
-            item.districtId ===
-            districtId
-        );
-
-      if (!district) {
-
-        this.showDistrictError(
-          "The selected district was not found."
-        );
-
-        return;
-      }
-
-      if (
-        button.dataset.action ===
-        "rules"
-      ) {
-
-        this.openRulesDialog(
-          district
-        );
-
-        return;
-      }
-
-      if (
-        button.dataset.action ===
-        "status"
-      ) {
-
-        this.requestDistrictStatusChange(
-          district
-        );
-
-      }
-
-    },
+    const card =
+      checkbox.closest(
+        ".district-card"
+      );
 
 
-  /*
-   * ==========================================================
-   * DISTRICT SELECTION
-   * ==========================================================
-   */
+    if (card) {
 
-  toggleAllVisibleDistricts:
-    function(checked) {
+      card.classList.toggle(
+        "selected",
+        checkbox.checked
+      );
 
-      this.state.filteredDistricts
-        .forEach(
-          (district) => {
+    }
 
-            if (checked) {
 
-              this.state
-                .selectedDistrictIds
-                .add(
-                  district.districtId
-                );
-
-            } else {
-
-              this.state
-                .selectedDistrictIds
-                .delete(
-                  district.districtId
-                );
-
-            }
-
-          }
-        );
-
-      this.renderDistricts();
+    this.updateBulkControls();
 
   },
 
 
-  updateBulkControls: function() {
+  handleDistrictListClick(event) {
+
+    const button =
+      event.target.closest(
+        "button[data-action]"
+      );
+
+
+    if (!button) {
+      return;
+    }
+
+
+    const districtId =
+      String(
+        button.dataset.districtId ||
+        ""
+      );
+
+
+    const district =
+      this.state.districts.find(
+        (item) =>
+          item.districtId ===
+          districtId
+      );
+
+
+    if (!district) {
+
+      this.showDistrictError(
+        "The selected district was not found."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      button.dataset.action ===
+      "rules"
+    ) {
+
+      this.openRulesDialog(
+        district
+      );
+
+      return;
+
+    }
+
+
+    if (
+      button.dataset.action ===
+      "status"
+    ) {
+
+      this.requestDistrictStatusChange(
+        district
+      );
+
+    }
+
+  },
+
+
+  /*
+   * ==========================================================
+   * BULK SELECTION
+   * ==========================================================
+   */
+
+  toggleAllVisibleDistricts(
+    checked
+  ) {
+
+    this.state.filteredDistricts
+      .forEach(
+        (district) => {
+
+          if (checked) {
+
+            this.state
+              .selectedDistrictIds
+              .add(
+                district.districtId
+              );
+
+          } else {
+
+            this.state
+              .selectedDistrictIds
+              .delete(
+                district.districtId
+              );
+
+          }
+
+        }
+      );
+
+
+    this.renderDistricts();
+
+  },
+
+
+  updateBulkControls() {
 
     const selectedCount =
       this.state.selectedDistrictIds
         .size;
+
+
+    const stateActive =
+      Boolean(
+        this.state.selectedState &&
+        this.state.selectedState
+          .serviceStatus ===
+          "ACTIVE"
+      );
+
 
     if (
       this.elements.bulkActivateButton
@@ -2620,11 +3413,10 @@ const AdminDistrictControl = {
       this.elements
         .bulkActivateButton.disabled =
           selectedCount === 0 ||
-          !this.state.selectedState ||
-          this.state.selectedState
-            .serviceStatus !== "ACTIVE";
+          !stateActive;
 
     }
+
 
     if (
       this.elements.bulkDeactivateButton
@@ -2636,31 +3428,40 @@ const AdminDistrictControl = {
 
     }
 
+
     const checkbox =
       this.elements
         .selectAllDistrictsCheckbox;
+
 
     if (!checkbox) {
       return;
     }
 
+
     const visibleIds =
-      this.state.filteredDistricts.map(
-        (district) =>
-          district.districtId
-      );
+      this.state.filteredDistricts
+        .map(
+          (district) =>
+            district.districtId
+        );
+
 
     const selectedVisible =
       visibleIds.filter(
         (districtId) =>
           this.state.selectedDistrictIds
-            .has(districtId)
+            .has(
+              districtId
+            )
       ).length;
+
 
     checkbox.checked =
       visibleIds.length > 0 &&
       selectedVisible ===
         visibleIds.length;
+
 
     checkbox.indeterminate =
       selectedVisible > 0 &&
@@ -2676,169 +3477,176 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  requestStateStatusChange:
-    function() {
+  requestStateStatusChange() {
 
-      const selectedState =
-        this.state.selectedState;
+    const selectedState =
+      this.state.selectedState;
 
-      if (!selectedState) {
-        return;
-      }
 
-      const nextStatus =
-        selectedState.serviceStatus ===
-          "ACTIVE"
-          ? "INACTIVE"
-          : "ACTIVE";
+    if (!selectedState) {
+      return;
+    }
 
-      this.state.pendingAction = {
 
-        type:
-          "STATE_STATUS",
+    const nextStatus =
+      selectedState.serviceStatus ===
+        "ACTIVE"
+        ? "INACTIVE"
+        : "ACTIVE";
 
-        stateCode:
-          selectedState.stateCode,
 
-        stateName:
-          selectedState.stateName,
+    this.state.pendingAction = {
 
-        serviceStatus:
-          nextStatus
+      type:
+        "STATE_STATUS",
 
-      };
+      stateCode:
+        selectedState.stateCode,
 
-      const actionText =
-        nextStatus === "ACTIVE"
-          ? "activate"
-          : "deactivate";
-
-      this.openStatusDialog(
-        (
-          nextStatus === "ACTIVE"
-            ? "Activate "
-            : "Deactivate "
-        ) +
+      stateName:
         selectedState.stateName,
-        "This will " +
-        actionText +
-        " service for the entire state. " +
-        (
-          nextStatus === "INACTIVE"
-            ? "All districts will immediately become unavailable to customers."
-            : "Previously active districts can become available again."
-        )
-      );
+
+      serviceStatus:
+        nextStatus
+
+    };
+
+
+    this.openStatusDialog(
+      (
+        nextStatus === "ACTIVE"
+          ? "Activate "
+          : "Deactivate "
+      ) +
+      selectedState.stateName,
+      nextStatus === "ACTIVE"
+        ? "Previously active districts can become available again after the state is activated."
+        : "All districts in this state will immediately become unavailable to customers. District settings will remain preserved."
+    );
 
   },
 
 
-  requestDistrictStatusChange:
-    function(district) {
+  requestDistrictStatusChange(
+    district
+  ) {
 
-      const nextStatus =
-        district.serviceStatus ===
-          "ACTIVE"
-          ? "INACTIVE"
-          : "ACTIVE";
+    const nextStatus =
+      district.serviceStatus ===
+        "ACTIVE"
+        ? "INACTIVE"
+        : "ACTIVE";
 
-      if (
-        nextStatus === "ACTIVE" &&
-        this.state.selectedState &&
-        this.state.selectedState
-          .serviceStatus !== "ACTIVE"
-      ) {
 
-        this.showDistrictError(
-          "Activate the parent state before activating this district."
-        );
+    if (
+      nextStatus === "ACTIVE" &&
+      this.state.selectedState &&
+      this.state.selectedState
+        .serviceStatus !==
+        "ACTIVE"
+    ) {
 
-        return;
-      }
+      this.showDistrictError(
+        "Activate the parent state before activating this district."
+      );
 
-      this.state.pendingAction = {
+      return;
 
-        type:
-          "DISTRICT_STATUS",
+    }
 
-        districtId:
-          district.districtId,
 
-        districtName:
-          district.districtName,
+    this.state.pendingAction = {
 
-        serviceStatus:
-          nextStatus
+      type:
+        "DISTRICT_STATUS",
 
-      };
+      districtId:
+        district.districtId,
 
-      this.openStatusDialog(
-        (
-          nextStatus === "ACTIVE"
-            ? "Activate "
-            : "Deactivate "
-        ) +
+      districtName:
         district.districtName,
-        "Confirm the district service-status change. Customer availability will be updated immediately."
-      );
+
+      serviceStatus:
+        nextStatus
+
+    };
+
+
+    this.openStatusDialog(
+      (
+        nextStatus === "ACTIVE"
+          ? "Activate "
+          : "Deactivate "
+      ) +
+      district.districtName,
+      "Confirm this district service-status change. Customer availability will be updated immediately."
+    );
 
   },
 
 
-  requestBulkDistrictStatusChange:
-    function(serviceStatus) {
+  requestBulkDistrictStatusChange(
+    serviceStatus
+  ) {
 
-      const districtIds =
-        Array.from(
-          this.state.selectedDistrictIds
-        );
-
-      if (districtIds.length === 0) {
-
-        this.showDistrictError(
-          "Select at least one district."
-        );
-
-        return;
-      }
-
-      if (
-        serviceStatus === "ACTIVE" &&
-        this.state.selectedState &&
-        this.state.selectedState
-          .serviceStatus !== "ACTIVE"
-      ) {
-
-        this.showDistrictError(
-          "Activate the parent state before activating its districts."
-        );
-
-        return;
-      }
-
-      this.state.pendingAction = {
-
-        type:
-          "BULK_DISTRICT_STATUS",
-
-        districtIds:
-          districtIds,
-
-        serviceStatus:
-          serviceStatus
-
-      };
-
-      this.openStatusDialog(
-        (
-          serviceStatus === "ACTIVE"
-            ? "Activate "
-            : "Deactivate "
-        ) +
-        districtIds.length +
-        " districts",
-        "This bulk operation will update all selected districts."
+    const districtIds =
+      Array.from(
+        this.state.selectedDistrictIds
       );
+
+
+    if (districtIds.length === 0) {
+
+      this.showDistrictError(
+        "Select at least one district."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      serviceStatus === "ACTIVE" &&
+      this.state.selectedState &&
+      this.state.selectedState
+        .serviceStatus !==
+        "ACTIVE"
+    ) {
+
+      this.showDistrictError(
+        "Activate the parent state before activating its districts."
+      );
+
+      return;
+
+    }
+
+
+    this.state.pendingAction = {
+
+      type:
+        "BULK_DISTRICT_STATUS",
+
+      districtIds:
+        districtIds,
+
+      serviceStatus:
+        serviceStatus
+
+    };
+
+
+    this.openStatusDialog(
+      (
+        serviceStatus === "ACTIVE"
+          ? "Activate "
+          : "Deactivate "
+      ) +
+      districtIds.length +
+      " districts",
+      "This bulk operation will update all selected districts."
+    );
 
   },
 
@@ -2849,7 +3657,7 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  openStatusDialog: function(
+  openStatusDialog(
     title,
     description
   ) {
@@ -2860,58 +3668,45 @@ const AdminDistrictControl = {
       title
     );
 
+
     this.setText(
       this.elements
         .serviceStatusDialogDescription,
       description
     );
 
-    if (
-      this.elements
-        .serviceStatusReasonInput
-    ) {
 
-      this.elements
-        .serviceStatusReasonInput.value =
-          "";
+    this.elements
+      .serviceStatusReasonInput.value =
+        "";
 
-    }
 
     this.hide(
       this.elements
         .serviceStatusDialogError
     );
 
+
     this.show(
-      this.elements.serviceStatusDialog
-    );
-
-    if (
-      this.elements.serviceStatusDialog
-    ) {
-
       this.elements
         .serviceStatusDialog
-        .setAttribute(
-          "aria-hidden",
-          "false"
-        );
+    );
 
-    }
+
+    this.elements
+      .serviceStatusDialog
+      .setAttribute(
+        "aria-hidden",
+        "false"
+      );
+
 
     setTimeout(
       () => {
 
-        if (
-          this.elements
-            .serviceStatusReasonInput
-        ) {
-
-          this.elements
-            .serviceStatusReasonInput
-            .focus();
-
-        }
+        this.elements
+          .serviceStatusReasonInput
+          .focus();
 
       },
       50
@@ -2920,132 +3715,140 @@ const AdminDistrictControl = {
   },
 
 
-  closeStatusDialog: function() {
+  closeStatusDialog() {
 
     this.hide(
-      this.elements.serviceStatusDialog
-    );
-
-    if (
-      this.elements.serviceStatusDialog
-    ) {
-
       this.elements
         .serviceStatusDialog
-        .setAttribute(
-          "aria-hidden",
-          "true"
-        );
+    );
 
-    }
 
-    this.state.pendingAction = null;
+    this.elements
+      .serviceStatusDialog
+      .setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+
+    this.state.pendingAction =
+      null;
 
   },
 
 
-  confirmStatusAction:
-    async function() {
+  async confirmStatusAction() {
 
-      const pendingAction =
-        this.state.pendingAction;
+    const pendingAction =
+      this.state.pendingAction;
 
-      if (!pendingAction) {
-        return;
-      }
 
-      const reason =
+    if (!pendingAction) {
+      return;
+    }
+
+
+    const reason =
+      String(
         this.elements
           .serviceStatusReasonInput
-          ? String(
-              this.elements
-                .serviceStatusReasonInput
-                .value || ""
-            ).trim()
-          : "";
+          .value ||
+        ""
+      ).trim();
 
-      if (reason.length < 3) {
 
-        this.showStatusDialogError(
-          "Enter a change reason of at least 3 characters."
-        );
+    if (reason.length < 3) {
 
-        return;
-      }
-
-      this.setStatusDialogLoading(true);
-
-      this.hide(
-        this.elements
-          .serviceStatusDialogError
+      this.showStatusDialogError(
+        "Enter a change reason of at least 3 characters."
       );
 
-      try {
+      return;
 
-        if (
-          pendingAction.type ===
-          "STATE_STATUS"
-        ) {
+    }
 
-          await this.updateStateStatus(
-            pendingAction,
-            reason
-          );
 
-        } else if (
-          pendingAction.type ===
-          "DISTRICT_STATUS"
-        ) {
+    this.setStatusDialogLoading(
+      true
+    );
 
-          await this.updateDistrictStatus(
-            pendingAction,
-            reason
-          );
 
-        } else if (
-          pendingAction.type ===
-          "BULK_DISTRICT_STATUS"
-        ) {
+    this.hide(
+      this.elements
+        .serviceStatusDialogError
+    );
 
-          await this.updateBulkDistrictStatus(
-            pendingAction,
-            reason
-          );
 
-        }
+    try {
 
-        this.closeStatusDialog();
+      if (
+        pendingAction.type ===
+        "STATE_STATUS"
+      ) {
 
-      } catch (error) {
-
-        console.error(
-          "Geography status update failed:",
-          error
+        await this.updateStateStatus(
+          pendingAction,
+          reason
         );
 
-        this.showStatusDialogError(
-          error &&
-          error.message
-            ? error.message
-            : "Service status could not be updated."
+      } else if (
+        pendingAction.type ===
+        "DISTRICT_STATUS"
+      ) {
+
+        await this.updateDistrictStatus(
+          pendingAction,
+          reason
         );
 
-      } finally {
+      } else if (
+        pendingAction.type ===
+        "BULK_DISTRICT_STATUS"
+      ) {
 
-        this.setStatusDialogLoading(false);
+        await this.updateBulkDistrictStatus(
+          pendingAction,
+          reason
+        );
 
       }
 
-    },
+
+      this.closeStatusDialog();
+
+    } catch (error) {
+
+      console.error(
+        "Geography status update failed:",
+        error
+      );
+
+
+      this.showStatusDialogError(
+        error &&
+        error.message
+          ? error.message
+          : "Service status could not be updated."
+      );
+
+    } finally {
+
+      this.setStatusDialogLoading(
+        false
+      );
+
+    }
+
+  },
 
 
   /*
    * ==========================================================
-   * STATE STATUS UPDATE
+   * STATE WRITE
    * ==========================================================
    */
 
-  updateStateStatus: async function(
+  async updateStateStatus(
     action,
     reason
   ) {
@@ -3071,7 +3874,11 @@ const AdminDistrictControl = {
       }
     );
 
-    await this.loadGeography(true);
+
+    await this.loadGeography(
+      true
+    );
+
 
     const refreshedState =
       this.state.states.find(
@@ -3080,132 +3887,160 @@ const AdminDistrictControl = {
           action.stateCode
       );
 
-    if (refreshedState) {
 
-      this.state.selectedState =
-        refreshedState;
-
-      this.renderSelectedStateHeader();
-
-      await this.loadSelectedStateDistricts();
-
+    if (!refreshedState) {
+      return;
     }
 
-  },
+
+    this.state.selectedState =
+      refreshedState;
 
 
-  /*
-   * ==========================================================
-   * DISTRICT STATUS UPDATE
-   * ==========================================================
-   */
+    this.state.districts =
+      [];
 
-  updateDistrictStatus:
-    async function(
-      action,
-      reason
-    ) {
 
-      await this.request(
-        this.CONFIG.ACTIONS
-          .SET_DISTRICT_STATUS,
-        {
-          sessionId:
-            this.getSessionId(),
+    this.state.filteredDistricts =
+      [];
 
-          districtId:
-            action.districtId,
 
-          serviceStatus:
-            action.serviceStatus,
+    this.renderSelectedStateHeader();
 
-          reason:
-            reason,
 
-          changeReason:
-            reason
-        }
-      );
+    this.renderDistrictSummary();
 
-      await this.refreshAfterDistrictWrite();
+
+    await this.loadSelectedStateDistricts();
 
   },
 
 
   /*
    * ==========================================================
-   * BULK DISTRICT STATUS UPDATE
+   * DISTRICT WRITE
    * ==========================================================
    */
 
-  updateBulkDistrictStatus:
-    async function(
-      action,
-      reason
-    ) {
+  async updateDistrictStatus(
+    action,
+    reason
+  ) {
 
-      await this.request(
-        this.CONFIG.ACTIONS
-          .BULK_SET_DISTRICT_STATUS,
-        {
-          sessionId:
-            this.getSessionId(),
+    await this.request(
+      this.CONFIG.ACTIONS
+        .SET_DISTRICT_STATUS,
+      {
+        sessionId:
+          this.getSessionId(),
 
-          districtIds:
-            action.districtIds,
+        districtId:
+          action.districtId,
 
-          serviceStatus:
-            action.serviceStatus,
+        serviceStatus:
+          action.serviceStatus,
 
-          reason:
-            reason,
+        reason:
+          reason,
 
-          changeReason:
-            reason
-        }
-      );
+        changeReason:
+          reason
+      }
+    );
 
-      this.state.selectedDistrictIds.clear();
 
-      await this.refreshAfterDistrictWrite();
+    await this.refreshAfterDistrictWrite();
 
   },
 
 
-  refreshAfterDistrictWrite:
-    async function() {
+  async updateBulkDistrictStatus(
+    action,
+    reason
+  ) {
 
-      const selectedStateCode =
-        this.state.selectedState
-          ? this.state.selectedState
-              .stateCode
-          : "";
+    await this.request(
+      this.CONFIG.ACTIONS
+        .BULK_SET_DISTRICT_STATUS,
+      {
+        sessionId:
+          this.getSessionId(),
 
-      await this.loadGeography(true);
+        districtIds:
+          action.districtIds,
 
-      if (!selectedStateCode) {
-        return;
+        serviceStatus:
+          action.serviceStatus,
+
+        reason:
+          reason,
+
+        changeReason:
+          reason
       }
+    );
 
-      const refreshedState =
-        this.state.states.find(
-          (state) =>
-            state.stateCode ===
-            selectedStateCode
-        );
 
-      if (refreshedState) {
+    this.state.selectedDistrictIds
+      .clear();
 
-        this.state.selectedState =
-          refreshedState;
 
-        this.renderSelectedStateHeader();
+    await this.refreshAfterDistrictWrite();
 
-        this.renderDistrictSummary();
+  },
 
-        await this.loadSelectedStateDistricts();
 
-      }
+  async refreshAfterDistrictWrite() {
+
+    const selectedStateCode =
+      this.state.selectedState
+        ? this.state.selectedState
+            .stateCode
+        : "";
+
+
+    await this.loadGeography(
+      true
+    );
+
+
+    if (!selectedStateCode) {
+      return;
+    }
+
+
+    const refreshedState =
+      this.state.states.find(
+        (state) =>
+          state.stateCode ===
+          selectedStateCode
+      );
+
+
+    if (!refreshedState) {
+      return;
+    }
+
+
+    this.state.selectedState =
+      refreshedState;
+
+
+    this.state.districts =
+      [];
+
+
+    this.state.filteredDistricts =
+      [];
+
+
+    this.renderSelectedStateHeader();
+
+
+    this.renderDistrictSummary();
+
+
+    await this.loadSelectedStateDistricts();
 
   },
 
@@ -3216,16 +4051,18 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  openRulesDialog: function(district) {
+  openRulesDialog(district) {
 
     this.state.selectedDistrict =
       district;
+
 
     this.setText(
       this.elements.districtRulesTitle,
       district.districtName +
       " service rules"
     );
+
 
     this.setText(
       this.elements.districtRulesId,
@@ -3238,11 +4075,13 @@ const AdminDistrictControl = {
       )
     );
 
+
     this.setInputValue(
       this.elements
         .districtServiceRadiusInput,
       district.serviceRadiusKm
     );
+
 
     this.setInputValue(
       this.elements
@@ -3250,192 +4089,219 @@ const AdminDistrictControl = {
       district.deliveryFeePerKm
     );
 
+
     this.setInputValue(
       this.elements
         .districtMinimumDeliveryFeeInput,
       district.minimumDeliveryFee
     );
 
-    if (
-      this.elements
-        .districtLongDistanceInput
-    ) {
 
-      this.elements
-        .districtLongDistanceInput
-        .value =
-          district.longDistanceEnabled
-            ? "TRUE"
-            : "FALSE";
+    this.elements
+      .districtLongDistanceInput.value =
+        district.longDistanceEnabled
+          ? "TRUE"
+          : "FALSE";
 
-    }
 
-    if (
-      this.elements
-        .districtRulesReasonInput
-    ) {
+    this.elements
+      .districtRulesReasonInput.value =
+        "";
 
-      this.elements
-        .districtRulesReasonInput.value =
-          "";
-
-    }
 
     this.hide(
-      this.elements.districtRulesError
+      this.elements
+        .districtRulesError
     );
+
 
     this.show(
-      this.elements.districtRulesDialog
-    );
-
-    if (
-      this.elements.districtRulesDialog
-    ) {
-
       this.elements
         .districtRulesDialog
-        .setAttribute(
-          "aria-hidden",
-          "false"
-        );
-
-    }
-
-  },
-
-
-  closeRulesDialog: function() {
-
-    this.hide(
-      this.elements.districtRulesDialog
     );
 
-    if (
-      this.elements.districtRulesDialog
-    ) {
 
-      this.elements
-        .districtRulesDialog
-        .setAttribute(
-          "aria-hidden",
-          "true"
-        );
-
-    }
-
-    this.state.selectedDistrict = null;
-
-  },
-
-
-  saveDistrictRules:
-    async function() {
-
-      const district =
-        this.state.selectedDistrict;
-
-      if (!district) {
-        return;
-      }
-
-      const serviceRadiusKm =
-        this.readNumberInput(
-          this.elements
-            .districtServiceRadiusInput
-        );
-
-      const deliveryFeePerKm =
-        this.readNumberInput(
-          this.elements
-            .districtDeliveryFeeInput
-        );
-
-      const minimumDeliveryFee =
-        this.readNumberInput(
-          this.elements
-            .districtMinimumDeliveryFeeInput
-        );
-
-      const longDistanceEnabled =
-        this.elements
-          .districtLongDistanceInput
-          ? this.elements
-              .districtLongDistanceInput
-              .value === "TRUE"
-          : false;
-
-      const reason =
-        this.elements
-          .districtRulesReasonInput
-          ? String(
-              this.elements
-                .districtRulesReasonInput
-                .value || ""
-            ).trim()
-          : "";
-
-      if (
-        !Number.isFinite(
-          serviceRadiusKm
-        ) ||
-        serviceRadiusKm <= 0 ||
-        serviceRadiusKm > 100
-      ) {
-
-        this.showRulesError(
-          "Service radius must be between 1 and 100 KM."
-        );
-
-        return;
-      }
-
-      if (
-        !Number.isFinite(
-          deliveryFeePerKm
-        ) ||
-        deliveryFeePerKm < 0
-      ) {
-
-        this.showRulesError(
-          "Enter a valid delivery fee per kilometre."
-        );
-
-        return;
-      }
-
-      if (
-        !Number.isFinite(
-          minimumDeliveryFee
-        ) ||
-        minimumDeliveryFee < 0
-      ) {
-
-        this.showRulesError(
-          "Enter a valid minimum delivery fee."
-        );
-
-        return;
-      }
-
-      if (reason.length < 3) {
-
-        this.showRulesError(
-          "Enter an update reason of at least 3 characters."
-        );
-
-        return;
-      }
-
-      this.setRulesLoading(true);
-
-      this.hide(
-        this.elements.districtRulesError
+    this.elements
+      .districtRulesDialog
+      .setAttribute(
+        "aria-hidden",
+        "false"
       );
 
-      try {
+  },
 
-        const rules = {
+
+  closeRulesDialog() {
+
+    this.hide(
+      this.elements
+        .districtRulesDialog
+    );
+
+
+    this.elements
+      .districtRulesDialog
+      .setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+
+    this.state.selectedDistrict =
+      null;
+
+  },
+
+
+  async saveDistrictRules() {
+
+    const district =
+      this.state.selectedDistrict;
+
+
+    if (!district) {
+      return;
+    }
+
+
+    const serviceRadiusKm =
+      this.readNumberInput(
+        this.elements
+          .districtServiceRadiusInput
+      );
+
+
+    const deliveryFeePerKm =
+      this.readNumberInput(
+        this.elements
+          .districtDeliveryFeeInput
+      );
+
+
+    const minimumDeliveryFee =
+      this.readNumberInput(
+        this.elements
+          .districtMinimumDeliveryFeeInput
+      );
+
+
+    const longDistanceEnabled =
+      this.elements
+        .districtLongDistanceInput
+        .value === "TRUE";
+
+
+    const reason =
+      String(
+        this.elements
+          .districtRulesReasonInput
+          .value ||
+        ""
+      ).trim();
+
+
+    if (
+      !Number.isFinite(
+        serviceRadiusKm
+      ) ||
+      serviceRadiusKm <= 0 ||
+      serviceRadiusKm > 100
+    ) {
+
+      this.showRulesError(
+        "Service radius must be between 1 and 100 KM."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !Number.isFinite(
+        deliveryFeePerKm
+      ) ||
+      deliveryFeePerKm < 0
+    ) {
+
+      this.showRulesError(
+        "Enter a valid delivery fee per kilometre."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !Number.isFinite(
+        minimumDeliveryFee
+      ) ||
+      minimumDeliveryFee < 0
+    ) {
+
+      this.showRulesError(
+        "Enter a valid minimum delivery fee."
+      );
+
+      return;
+
+    }
+
+
+    if (reason.length < 3) {
+
+      this.showRulesError(
+        "Enter an update reason of at least 3 characters."
+      );
+
+      return;
+
+    }
+
+
+    this.setRulesLoading(
+      true
+    );
+
+
+    this.hide(
+      this.elements
+        .districtRulesError
+    );
+
+
+    try {
+
+      const rules = {
+
+        serviceRadiusKm:
+          serviceRadiusKm,
+
+        deliveryFeePerKm:
+          deliveryFeePerKm,
+
+        minimumDeliveryFee:
+          minimumDeliveryFee,
+
+        longDistanceEnabled:
+          longDistanceEnabled
+
+      };
+
+
+      await this.request(
+        this.CONFIG.ACTIONS
+          .UPDATE_DISTRICT_RULES,
+        {
+          sessionId:
+            this.getSessionId(),
+
+          districtId:
+            district.districtId,
+
+          rules:
+            rules,
 
           serviceRadiusKm:
             serviceRadiusKm,
@@ -3447,81 +4313,60 @@ const AdminDistrictControl = {
             minimumDeliveryFee,
 
           longDistanceEnabled:
-            longDistanceEnabled
+            longDistanceEnabled,
 
-        };
+          reason:
+            reason,
 
-        await this.request(
-          this.CONFIG.ACTIONS
-            .UPDATE_DISTRICT_RULES,
-          {
-            sessionId:
-              this.getSessionId(),
+          changeReason:
+            reason
+        }
+      );
 
-            districtId:
-              district.districtId,
 
-            rules:
-              rules,
+      this.closeRulesDialog();
 
-            serviceRadiusKm:
-              serviceRadiusKm,
 
-            deliveryFeePerKm:
-              deliveryFeePerKm,
+      await this.refreshAfterDistrictWrite();
 
-            minimumDeliveryFee:
-              minimumDeliveryFee,
+    } catch (error) {
 
-            longDistanceEnabled:
-              longDistanceEnabled,
+      console.error(
+        "District rule update failed:",
+        error
+      );
 
-            reason:
-              reason,
 
-            changeReason:
-              reason
-          }
-        );
+      this.showRulesError(
+        error &&
+        error.message
+          ? error.message
+          : "District rules could not be updated."
+      );
 
-        this.closeRulesDialog();
+    } finally {
 
-        await this.refreshAfterDistrictWrite();
+      this.setRulesLoading(
+        false
+      );
 
-      } catch (error) {
+    }
 
-        console.error(
-          "District rules update failed:",
-          error
-        );
-
-        this.showRulesError(
-          error &&
-          error.message
-            ? error.message
-            : "District rules could not be updated."
-        );
-
-      } finally {
-
-        this.setRulesLoading(false);
-
-      }
-
-    },
+  },
 
 
   /*
    * ==========================================================
-   * PAGE VISIBILITY
+   * DISPLAY STATES
    * ==========================================================
    */
 
-  showSkeleton: function() {
+  showSkeleton() {
 
     this.show(
       this.elements.pageSkeleton
     );
+
 
     this.hide(
       this.elements.pageContent
@@ -3530,11 +4375,19 @@ const AdminDistrictControl = {
   },
 
 
-  showContent: function() {
+  hideSkeleton() {
 
     this.hide(
       this.elements.pageSkeleton
     );
+
+  },
+
+
+  showContent() {
+
+    this.hideSkeleton();
+
 
     this.show(
       this.elements.pageContent
@@ -3543,9 +4396,7 @@ const AdminDistrictControl = {
   },
 
 
-  showDistrictLoading: function(
-    loading
-  ) {
+  showDistrictLoading(loading) {
 
     if (loading) {
 
@@ -3553,71 +4404,94 @@ const AdminDistrictControl = {
         this.elements.districtLoading
       );
 
+
       this.hide(
         this.elements.districtList
       );
 
-      this.hide(
-        this.elements.districtEmptyState
-      );
-
-    } else {
 
       this.hide(
-        this.elements.districtLoading
+        this.elements
+          .districtEmptyState
       );
 
-      this.show(
-        this.elements.districtList
-      );
+      return;
 
     }
+
+
+    this.hide(
+      this.elements.districtLoading
+    );
+
+
+    this.show(
+      this.elements.districtList
+    );
+
+
+    this.renderDistricts();
 
   },
 
 
   /*
    * ==========================================================
-   * ERROR AND SUCCESS MESSAGES
+   * MESSAGES
    * ==========================================================
    */
 
-  showPageError: function(message) {
+  showPageError(message) {
 
     const element =
       this.elements.pageMessage;
 
-    if (!element) {
-      return;
-    }
 
     element.className =
       "admin-global-message admin-error-message";
 
+
     element.textContent =
       message;
 
-    this.show(element);
+
+    this.show(
+      element
+    );
 
   },
 
 
-  showPageSuccess: function(message) {
+  showPageSuccess(message) {
 
     const element =
       this.elements.pageMessage;
 
-    if (!element) {
-      return;
-    }
 
     element.className =
-      "admin-global-message admin-success-message";
+      "admin-global-message";
+
 
     element.textContent =
       message;
 
-    this.show(element);
+
+    element.style.color =
+      "#087443";
+
+
+    element.style.background =
+      "#eaf8f0";
+
+
+    element.style.borderColor =
+      "#bce7cd";
+
+
+    this.show(
+      element
+    );
+
 
     setTimeout(
       () => {
@@ -3627,7 +4501,7 @@ const AdminDistrictControl = {
           message
         ) {
 
-          this.hide(element);
+          this.clearPageMessage();
 
         }
 
@@ -3638,89 +4512,94 @@ const AdminDistrictControl = {
   },
 
 
-  clearPageMessage: function() {
+  clearPageMessage() {
 
-    if (
-      this.elements.pageMessage
-    ) {
+    const element =
+      this.elements.pageMessage;
 
-      this.elements
-        .pageMessage.textContent = "";
 
-      this.hide(
-        this.elements.pageMessage
-      );
+    element.textContent =
+      "";
 
-    }
+
+    element.removeAttribute(
+      "style"
+    );
+
+
+    this.hide(
+      element
+    );
 
   },
 
 
-  showDistrictError: function(message) {
+  showDistrictError(message) {
 
     const element =
       this.elements.districtError;
 
-    if (!element) {
-      return;
-    }
 
-    element.textContent = message;
-
-    this.show(element);
-
-  },
+    element.textContent =
+      message;
 
 
-  clearDistrictError: function() {
-
-    if (
-      this.elements.districtError
-    ) {
-
-      this.elements
-        .districtError.textContent =
-          "";
-
-      this.hide(
-        this.elements.districtError
-      );
-
-    }
+    this.show(
+      element
+    );
 
   },
 
 
-  showStatusDialogError:
-    function(message) {
-
-      const element =
-        this.elements
-          .serviceStatusDialogError;
-
-      if (!element) {
-        return;
-      }
-
-      element.textContent = message;
-
-      this.show(element);
-
-    },
-
-
-  showRulesError: function(message) {
+  clearDistrictError() {
 
     const element =
-      this.elements.districtRulesError;
+      this.elements.districtError;
 
-    if (!element) {
-      return;
-    }
 
-    element.textContent = message;
+    element.textContent =
+      "";
 
-    this.show(element);
+
+    this.hide(
+      element
+    );
+
+  },
+
+
+  showStatusDialogError(message) {
+
+    const element =
+      this.elements
+        .serviceStatusDialogError;
+
+
+    element.textContent =
+      message;
+
+
+    this.show(
+      element
+    );
+
+  },
+
+
+  showRulesError(message) {
+
+    const element =
+      this.elements
+        .districtRulesError;
+
+
+    element.textContent =
+      message;
+
+
+    this.show(
+      element
+    );
 
   },
 
@@ -3731,59 +4610,71 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  setRefreshLoading: function(
-    loading
-  ) {
+  setRefreshLoading(loading) {
 
     const button =
       this.elements.refreshButton;
 
-    if (!button) {
-      return;
-    }
 
-    button.disabled = loading;
+    button.disabled =
+      loading;
 
-    button.innerHTML =
+
+    button.classList.toggle(
+      "loading",
       loading
-        ? "<span>↻</span> Loading"
-        : "<span>↻</span> Refresh";
+    );
+
+
+    const label =
+      button.querySelector(
+        "strong"
+      );
+
+
+    if (label) {
+
+      label.textContent =
+        loading
+          ? "Updating"
+          : "Refresh coverage";
+
+    }
 
   },
 
 
-  setStatusDialogLoading:
-    function(loading) {
+  setStatusDialogLoading(
+    loading
+  ) {
 
-      const button =
-        this.elements
-          .confirmServiceStatusButton;
-
-      if (!button) {
-        return;
-      }
-
-      button.disabled = loading;
-
-      button.textContent =
-        loading
-          ? "Updating..."
-          : "Confirm change";
-
-    },
+    const button =
+      this.elements
+        .confirmServiceStatusButton;
 
 
-  setRulesLoading: function(loading) {
+    button.disabled =
+      loading;
+
+
+    button.textContent =
+      loading
+        ? "Updating..."
+        : "Confirm change";
+
+  },
+
+
+  setRulesLoading(loading) {
 
     const button =
       this.elements
         .saveDistrictRulesButton;
 
-    if (!button) {
-      return;
-    }
 
-    button.disabled = loading;
+    button.disabled =
+      loading;
+
 
     button.textContent =
       loading
@@ -3799,12 +4690,15 @@ const AdminDistrictControl = {
    * ==========================================================
    */
 
-  normalizeStatus: function(value) {
+  normalizeStatus(value) {
 
     const status =
-      String(value || "")
+      String(
+        value || ""
+      )
         .trim()
         .toUpperCase();
+
 
     return status === "ACTIVE"
       ? "ACTIVE"
@@ -3813,32 +4707,36 @@ const AdminDistrictControl = {
   },
 
 
-  normalizeFilterStatus:
-    function(value) {
+  normalizeFilterStatus(value) {
 
-      const status =
-        String(value || "ALL")
-          .trim()
-          .toUpperCase();
-
-      if (
-        status === "ACTIVE" ||
-        status === "INACTIVE"
-      ) {
-
-        return status;
-
-      }
-
-      return "ALL";
-
-    },
+    const status =
+      String(
+        value || "ALL"
+      )
+        .trim()
+        .toUpperCase();
 
 
-  toNumber: function(value) {
+    if (
+      status === "ACTIVE" ||
+      status === "INACTIVE"
+    ) {
+
+      return status;
+
+    }
+
+
+    return "ALL";
+
+  },
+
+
+  toNumber(value) {
 
     const number =
       Number(value);
+
 
     return Number.isFinite(number)
       ? number
@@ -3847,16 +4745,20 @@ const AdminDistrictControl = {
   },
 
 
-  toBoolean: function(value) {
+  toBoolean(value) {
 
     if (value === true) {
       return true;
     }
 
+
     const normalized =
-      String(value || "")
+      String(
+        value || ""
+      )
         .trim()
         .toUpperCase();
+
 
     return (
       normalized === "TRUE" ||
@@ -3868,56 +4770,74 @@ const AdminDistrictControl = {
   },
 
 
-  readNumberInput: function(element) {
-
-    if (!element) {
-      return NaN;
-    }
+  readNumberInput(element) {
 
     const value =
-      String(element.value || "")
-        .trim();
+      String(
+        element.value || ""
+      ).trim();
+
 
     if (!value) {
       return NaN;
     }
+
 
     return Number(value);
 
   },
 
 
-  formatNumber: function(value) {
+  formatNumber(value) {
 
-    const number =
-      this.toNumber(value);
-
-    return number.toLocaleString(
+    return new Intl.NumberFormat(
       "en-IN",
       {
-        maximumFractionDigits: 2
+        maximumFractionDigits:
+          0
       }
+    ).format(
+      this.toNumber(value)
     );
 
   },
 
 
-  updateLastUpdated: function(value) {
+  formatDecimal(value) {
 
-    if (!this.elements.lastUpdated) {
-      return;
-    }
+    return new Intl.NumberFormat(
+      "en-IN",
+      {
+        minimumFractionDigits:
+          0,
+
+        maximumFractionDigits:
+          2
+      }
+    ).format(
+      this.toNumber(value)
+    );
+
+  },
+
+
+  updateLastUpdated(value) {
 
     if (!value) {
 
-      this.elements
-        .lastUpdated.textContent = "—";
+      this.setText(
+        this.elements.lastUpdated,
+        "—"
+      );
 
       return;
+
     }
+
 
     const date =
       new Date(value);
+
 
     if (
       Number.isNaN(
@@ -3925,27 +4845,43 @@ const AdminDistrictControl = {
       )
     ) {
 
-      this.elements
-        .lastUpdated.textContent =
-          String(value);
+      this.setText(
+        this.elements.lastUpdated,
+        String(value)
+      );
 
       return;
+
     }
 
-    this.elements
-      .lastUpdated.textContent =
-        date.toLocaleString(
-          "en-IN",
-          {
-            dateStyle: "medium",
-            timeStyle: "short"
-          }
-        );
+
+    this.setText(
+      this.elements.lastUpdated,
+      new Intl.DateTimeFormat(
+        "en-IN",
+        {
+          day:
+            "2-digit",
+
+          month:
+            "short",
+
+          year:
+            "numeric",
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit"
+        }
+      ).format(date)
+    );
 
   },
 
 
-  setText: function(
+  setText(
     element,
     value
   ) {
@@ -3953,17 +4889,18 @@ const AdminDistrictControl = {
     if (!element) {
       return;
     }
+
 
     element.textContent =
-      value === undefined ||
-      value === null
+      value === null ||
+      value === undefined
         ? ""
         : String(value);
 
   },
 
 
-  setInputValue: function(
+  setInputValue(
     element,
     value
   ) {
@@ -3972,16 +4909,17 @@ const AdminDistrictControl = {
       return;
     }
 
+
     element.value =
-      value === undefined ||
-      value === null
+      value === null ||
+      value === undefined
         ? ""
         : String(value);
 
   },
 
 
-  show: function(element) {
+  show(element) {
 
     if (element) {
 
@@ -3994,7 +4932,7 @@ const AdminDistrictControl = {
   },
 
 
-  hide: function(element) {
+  hide(element) {
 
     if (element) {
 
@@ -4010,10 +4948,14 @@ const AdminDistrictControl = {
   /*
    * ==========================================================
    * READ-ONLY INTEGRATION TEST
+   *
+   * Browser console:
+   *
+   * await AdminDistrictControl.test()
    * ==========================================================
    */
 
-  test: async function() {
+  async test() {
 
     console.log(
       "========================================"
@@ -4031,75 +4973,67 @@ const AdminDistrictControl = {
     const startedAt =
       performance.now();
 
-    let apiData = {};
 
-    let requestError = "";
+    await this.activate();
 
 
-    try {
+    const firstPromise =
+      this.loadGeography(
+        true
+      );
 
-      const result =
-        await this.request(
-          this.CONFIG.ACTIONS
-            .GET_GEOGRAPHY,
-          {
-            sessionId:
-              this.getSessionId(),
 
-            filters: {
+    const secondPromise =
+      this.loadGeography(
+        true
+      );
 
-              query: "",
 
-              serviceStatus:
-                "ALL",
+    const duplicateProtected =
+      firstPromise ===
+      secondPromise;
 
-              stateCode:
-                "",
 
-              includeDistricts:
-                false
+    await firstPromise;
 
-            }
-          }
-        );
 
-      apiData =
-        result.data || {};
-
-    } catch (error) {
-
-      requestError =
-        error &&
-        error.message
-          ? error.message
-          : String(error);
-
-    }
+    const summary =
+      this.state.summary || {};
 
 
     const states =
-      Array.isArray(apiData.states)
-        ? apiData.states
-        : [];
+      this.state.states || [];
 
-    const summary =
-      apiData.summary || {};
 
     const pageVisible =
       Boolean(
         this.elements.pageContent &&
         !this.elements.pageContent
-          .classList.contains("hidden")
+          .classList.contains(
+            "hidden"
+          )
       );
+
 
     const drawerHidden =
       Boolean(
         this.elements.districtPanel &&
         this.elements.districtPanel
-          .classList.contains("hidden")
+          .classList.contains(
+            "hidden"
+          )
       );
 
-    const tests = [
+
+    const correctDashboardView =
+      Boolean(
+        document.querySelector(
+          '[data-admin-panel="districts"]'
+        )
+      );
+
+
+    const results = [
 
       {
         test:
@@ -4110,48 +5044,61 @@ const AdminDistrictControl = {
 
         actual:
           document.body.dataset
-            .requiredRole || "",
+            .requiredRole,
 
         passed:
           document.body.dataset
-            .requiredRole === "Admin"
+            .requiredRole ===
+            "Admin"
       },
 
       {
         test:
-          "Geography API",
+          "Single dashboard architecture",
 
         expected:
           true,
 
         actual:
-          apiData.success,
+          correctDashboardView,
 
         passed:
-          apiData.success === true
+          correctDashboardView
       },
 
       {
         test:
-          "State array",
+          "Geography module initialized",
 
         expected:
           true,
 
         actual:
-          Array.isArray(
-            apiData.states
-          ),
+          this.state.initialized,
 
         passed:
-          Array.isArray(
-            apiData.states
-          )
+          this.state.initialized ===
+            true
       },
 
       {
         test:
-          "Official states and UTs",
+          "Geography API loaded",
+
+        expected:
+          true,
+
+        actual:
+          this.state.loaded,
+
+        passed:
+          this.state.loaded ===
+            true
+      },
+
+      {
+        test:
+          "Official States and UTs",
 
         expected:
           36,
@@ -4172,44 +5119,50 @@ const AdminDistrictControl = {
 
         actual:
           Number(
-            summary.totalDistricts || 0
+            summary.totalDistricts ||
+            0
           ),
 
         passed:
           Number(
-            summary.totalDistricts || 0
+            summary.totalDistricts ||
+            0
           ) === 784
       },
 
       {
         test:
-          "Only state summary loaded",
+          "State-first loading",
 
         expected:
           true,
 
         actual:
-          states.every(
-            (state) =>
-              !Array.isArray(
-                state.districts
-              ) ||
-              state.districts.length === 0
-          ),
+          this.state.districts.length ===
+            0,
 
         passed:
-          states.every(
-            (state) =>
-              !Array.isArray(
-                state.districts
-              ) ||
-              state.districts.length === 0
-          )
+          this.state.districts.length ===
+            0
       },
 
       {
         test:
-          "Page visible",
+          "Duplicate request protection",
+
+        expected:
+          true,
+
+        actual:
+          duplicateProtected,
+
+        passed:
+          duplicateProtected
+      },
+
+      {
+        test:
+          "Geography page visible",
 
         expected:
           true,
@@ -4219,46 +5172,6 @@ const AdminDistrictControl = {
 
         passed:
           pageVisible
-      },
-
-      {
-        test:
-          "State search available",
-
-        expected:
-          true,
-
-        actual:
-          Boolean(
-            this.elements
-              .stateSearchInput
-          ),
-
-        passed:
-          Boolean(
-            this.elements
-              .stateSearchInput
-          )
-      },
-
-      {
-        test:
-          "District lazy drawer",
-
-        expected:
-          true,
-
-        actual:
-          Boolean(
-            this.elements
-              .districtPanel
-          ),
-
-        passed:
-          Boolean(
-            this.elements
-              .districtPanel
-          )
       },
 
       {
@@ -4277,7 +5190,7 @@ const AdminDistrictControl = {
 
       {
         test:
-          "State write action available",
+          "State write action",
 
         expected:
           true,
@@ -4297,7 +5210,7 @@ const AdminDistrictControl = {
 
       {
         test:
-          "District write actions available",
+          "District write actions",
 
         expected:
           true,
@@ -4341,10 +5254,11 @@ const AdminDistrictControl = {
 
 
     const passed =
-      tests.every(
-        (test) =>
-          test.passed
+      results.every(
+        (result) =>
+          result.passed
       );
+
 
     const durationMs =
       Math.round(
@@ -4353,23 +5267,29 @@ const AdminDistrictControl = {
       );
 
 
-    console.table(tests);
-
-    console.log(
-      "Admin Geography Data:",
-      apiData
+    console.table(
+      results
     );
 
+
     console.log(
-      "Request Error:",
-      requestError
+      "State Summary:",
+      summary
     );
+
+
+    console.log(
+      "States:",
+      states
+    );
+
 
     console.log(
       "Duration:",
       durationMs,
       "ms"
     );
+
 
     console.log(
       passed
@@ -4391,14 +5311,14 @@ const AdminDistrictControl = {
       durationMs:
         durationMs,
 
-      data:
-        apiData,
+      summary:
+        summary,
 
-      error:
-        requestError,
+      states:
+        states,
 
       results:
-        tests
+        results
 
     };
 
@@ -4409,25 +5329,15 @@ const AdminDistrictControl = {
 
 /*
  * ============================================================
- * AUTOMATIC PAGE START
+ * IMPORTANT
+ * ============================================================
+ *
+ * No DOMContentLoaded automatic API request is used here.
+ *
+ * AdminDashboard activates this module only when:
+ *
+ * dashboard.html?view=districts
+ *
+ * is opened.
  * ============================================================
  */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  function() {
-
-    AdminDistrictControl.init()
-      .catch(
-        function(error) {
-
-          console.error(
-            "Admin District Control initialization failed:",
-            error
-          );
-
-        }
-      );
-
-  }
-);
