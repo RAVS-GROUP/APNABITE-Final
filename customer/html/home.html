@@ -6,8 +6,10 @@
   <meta name="theme-color" content="#ef5b00">
   <meta name="description" content="Discover nearby home food, kitchens and meals on ApnaBite">
   <title>Home | ApnaBite</title>
+
   <link rel="manifest" href="../../manifest.json">
   <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+
   <link rel="stylesheet" href="../../shared/css/reset.css">
   <link rel="stylesheet" href="../../shared/css/variables.css">
   <link rel="stylesheet" href="../../shared/css/common.css">
@@ -16,112 +18,556 @@
   <link rel="stylesheet" href="../css/customer-common.css">
   <link rel="stylesheet" href="../css/home.css">
 </head>
+
 <body data-required-role="Customer">
   <main class="customer-app customer-page" id="customerApp">
+
     <div class="customer-page-loader" id="roleHomeLoader">
       <div class="loader-spinner" aria-hidden="true"></div>
       <p>Preparing your ApnaBite home...</p>
     </div>
 
-    <div class="customer-home customer-bottom-safe-area hidden" id="roleHomeContent">
-      <section class="customer-hero" aria-label="Delivery and food search">
+    <div
+      class="customer-home customer-bottom-safe-area hidden"
+      id="roleHomeContent"
+    >
+      <section
+        class="customer-hero"
+        aria-label="Delivery and food search"
+      >
         <header class="customer-header">
-          <button class="customer-location-button" id="customerLocationButton" type="button" aria-label="View or update delivery location">
-            <span class="customer-location-icon" aria-hidden="true">📍</span>
+          <button
+            class="customer-location-button"
+            id="customerLocationButton"
+            type="button"
+            aria-label="View or update delivery location"
+          >
+            <span
+              class="customer-location-icon"
+              aria-hidden="true"
+            >📍</span>
+
             <span class="customer-location-copy">
               <small>DELIVERING TO</small>
               <strong id="customerLocationText">Select location</strong>
             </span>
-            <span class="customer-location-arrow" aria-hidden="true">⌄</span>
+
+            <span
+              class="customer-location-arrow"
+              aria-hidden="true"
+            >⌄</span>
           </button>
-          <button class="customer-icon-button" id="notificationButton" type="button" aria-label="Open notifications">
+
+          <button
+            class="customer-icon-button"
+            id="notificationButton"
+            type="button"
+            aria-label="Open notifications"
+          >
             <span aria-hidden="true">🔔</span>
-            <span class="notification-dot hidden" id="notificationDot"></span>
+            <span
+              class="notification-dot hidden"
+              id="notificationDot"
+            ></span>
           </button>
         </header>
 
         <div class="hero-search-row">
           <div class="customer-search-wrap">
-            <span class="customer-search-icon" aria-hidden="true">⌕</span>
-            <input id="customerSearchInput" type="search" inputmode="search" autocomplete="off" placeholder="Search biryani, thali, sweets..." aria-label="Search food, dish or kitchen">
-            <button class="search-clear-button hidden" id="searchClearButton" type="button" aria-label="Clear search">×</button>
-            <span class="search-mic-icon" aria-hidden="true">🎙</span>
+            <span
+              class="customer-search-icon"
+              aria-hidden="true"
+            >⌕</span>
+
+            <input
+              id="customerSearchInput"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="Search biryani, thali, sweets..."
+              aria-label="Search food, dish or kitchen"
+            >
+
+            <button
+              class="search-clear-button hidden"
+              id="searchClearButton"
+              type="button"
+              aria-label="Clear search"
+            >×</button>
+
+            <span
+              class="search-mic-icon"
+              aria-hidden="true"
+            >🎙</span>
           </div>
         </div>
 
         <div class="hero-preference-row">
-          <div class="food-type-filter" id="foodTypeFilter" aria-label="Select food preference">
-            <button class="food-type-chip active" data-food-type="ALL" type="button">All</button>
-            <button class="food-type-chip" data-food-type="VEG" type="button"><span class="veg-symbol" aria-hidden="true"></span>Veg</button>
-            <button class="food-type-chip" data-food-type="NON_VEG" type="button"><span class="non-veg-symbol" aria-hidden="true"></span>Non-Veg</button>
+          <div
+            class="food-type-filter"
+            id="foodTypeFilter"
+            aria-label="Select food preference"
+          >
+            <button
+              class="food-type-chip active"
+              data-food-type="ALL"
+              type="button"
+            >All</button>
+
+            <button
+              class="food-type-chip"
+              data-food-type="VEG"
+              type="button"
+            >
+              <span
+                class="veg-symbol"
+                aria-hidden="true"
+              ></span>
+              Veg
+            </button>
+
+            <button
+              class="food-type-chip"
+              data-food-type="NON_VEG"
+              type="button"
+            >
+              <span
+                class="non-veg-symbol"
+                aria-hidden="true"
+              ></span>
+              Non-Veg
+            </button>
           </div>
-          <span class="hero-fresh-badge">⚡ Fresh nearby</span>
+
+          <span class="hero-fresh-badge">
+            ⚡ Fresh nearby
+          </span>
         </div>
 
-        <div class="offer-banner" id="customerOfferBanner">
+        <div
+          class="offer-banner"
+          id="customerOfferBanner"
+        >
           <div class="offer-banner-content">
-            <span class="offer-label">APNABITE SPECIAL</span>
-            <h1>Ghar jaisa swaad,<br>ab aapke paas</h1>
-            <p>Discover fresh meals from trusted kitchens around you.</p>
-            <span class="offer-action">Explore now →</span>
+            <span class="offer-label">
+              APNABITE SPECIAL
+            </span>
+
+            <h1>
+              Ghar jaisa swaad,<br>
+              ab aapke paas
+            </h1>
+
+            <p>
+              Discover fresh meals from trusted kitchens around you.
+            </p>
+
+            <span class="offer-action">
+              Explore now →
+            </span>
           </div>
-          <div class="offer-food-art" aria-hidden="true"><span>🍛</span><span>🥘</span><span>🫓</span></div>
+
+          <div
+            class="offer-food-art"
+            aria-hidden="true"
+          >
+            <span>🍛</span>
+            <span>🥘</span>
+            <span>🫓</span>
+          </div>
         </div>
       </section>
 
       <section class="customer-main">
-        <section class="customer-section category-section" aria-labelledby="categoryHeading">
-          <div class="customer-section-heading">
-            <div><span class="section-eyebrow">WHAT ARE YOU CRAVING?</span><h2 id="categoryHeading">Explore food</h2></div>
-          </div>
-          <div class="category-scroll">
-            <button class="category-item" data-category="Home Food" type="button"><span aria-hidden="true">🏠</span><strong>Home Food</strong></button>
-            <button class="category-item" data-category="Meals" type="button"><span aria-hidden="true">🍱</span><strong>Meals</strong></button>
-            <button class="category-item" data-category="Tiffin" type="button"><span aria-hidden="true">🥘</span><strong>Tiffin</strong></button>
-            <button class="category-item" data-category="Snacks" type="button"><span aria-hidden="true">🥟</span><strong>Snacks</strong></button>
-            <button class="category-item" data-category="Bakery" type="button"><span aria-hidden="true">🧁</span><strong>Bakery</strong></button>
-            <button class="category-item" data-category="Sweets" type="button"><span aria-hidden="true">🍬</span><strong>Sweets</strong></button>
-          </div>
-        </section>
-
-        <div class="discovery-promise-row" aria-label="ApnaBite delivery benefits">
-          <span>⚡ Near &amp; fresh</span><span>🏠 Home kitchens</span><span>✓ Trusted partners</span>
-        </div>
-
-        <section class="customer-section kitchen-discovery-section" aria-labelledby="nearbyKitchenHeading">
+        <section
+          class="customer-section category-section"
+          aria-labelledby="categoryHeading"
+        >
           <div class="customer-section-heading">
             <div>
-              <div class="nearby-kitchen-title-row"><h2 id="nearbyKitchenHeading">Recommended for you</h2><span class="nearby-kitchen-count hidden" id="nearbyKitchenCount" aria-label="Kitchen result count">0</span></div>
-              <p id="nearbyKitchenSubtitle">Based on your selected delivery location</p>
+              <span class="section-eyebrow">
+                WHAT ARE YOU CRAVING?
+              </span>
+
+              <h2 id="categoryHeading">
+                Explore food
+              </h2>
             </div>
-            <button class="section-text-button" id="refreshKitchensButton" type="button">Refresh</button>
           </div>
 
-          <div class="kitchen-list" id="kitchenList" aria-live="polite">
-            <article class="kitchen-skeleton"><div class="skeleton kitchen-image-skeleton"></div><div class="kitchen-skeleton-content"><div class="skeleton skeleton-line-wide"></div><div class="skeleton skeleton-line-medium"></div><div class="skeleton skeleton-line-small"></div></div></article>
-            <article class="kitchen-skeleton"><div class="skeleton kitchen-image-skeleton"></div><div class="kitchen-skeleton-content"><div class="skeleton skeleton-line-wide"></div><div class="skeleton skeleton-line-medium"></div><div class="skeleton skeleton-line-small"></div></div></article>
+          <div class="category-scroll">
+            <button
+              class="category-item"
+              data-category="Home Food"
+              type="button"
+            >
+              <span aria-hidden="true">🏠</span>
+              <strong>Home Food</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Meals"
+              type="button"
+            >
+              <span aria-hidden="true">🍱</span>
+              <strong>Meals</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Tiffin"
+              type="button"
+            >
+              <span aria-hidden="true">🥘</span>
+              <strong>Tiffin</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Snacks"
+              type="button"
+            >
+              <span aria-hidden="true">🥟</span>
+              <strong>Snacks</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Bakery"
+              type="button"
+            >
+              <span aria-hidden="true">🧁</span>
+              <strong>Bakery</strong>
+            </button>
+
+            <button
+              class="category-item"
+              data-category="Sweets"
+              type="button"
+            >
+              <span aria-hidden="true">🍬</span>
+              <strong>Sweets</strong>
+            </button>
+          </div>
+        </section>
+
+        <div
+          class="discovery-promise-row"
+          aria-label="ApnaBite delivery benefits"
+        >
+          <span>⚡ Near &amp; fresh</span>
+          <span>🏠 Home kitchens</span>
+          <span>✓ Trusted partners</span>
+        </div>
+
+        <section
+          class="customer-section kitchen-discovery-section"
+          aria-labelledby="nearbyKitchenHeading"
+        >
+          <div class="customer-section-heading">
+            <div>
+              <div class="nearby-kitchen-title-row">
+                <h2 id="nearbyKitchenHeading">
+                  Recommended for you
+                </h2>
+
+                <span
+                  class="nearby-kitchen-count hidden"
+                  id="nearbyKitchenCount"
+                  aria-label="Kitchen result count"
+                >0</span>
+              </div>
+
+              <p id="nearbyKitchenSubtitle">
+                Based on your selected delivery location
+              </p>
+            </div>
+
+            <button
+              class="section-text-button"
+              id="refreshKitchensButton"
+              type="button"
+            >Refresh</button>
           </div>
 
-          <div class="customer-empty-state hidden" id="kitchenEmptyState"><span class="empty-state-icon" aria-hidden="true">🍽️</span><h3 id="kitchenEmptyTitle">No kitchens available yet</h3><p id="kitchenEmptyDescription">Active kitchens within your service location will appear here.</p></div>
-          <div class="kitchen-error-state hidden" id="kitchenErrorState" role="alert"><span class="kitchen-error-icon" aria-hidden="true">!</span><h3>Kitchens could not be loaded</h3><p id="kitchenErrorMessage">Please check your connection and try again.</p><button class="app-button app-button-secondary" id="retryKitchensButton" type="button">Try Again</button></div>
-          <div class="kitchen-load-more-wrap hidden" id="kitchenLoadMoreWrap"><button class="app-button app-button-secondary" id="loadMoreKitchensButton" type="button">Load More Kitchens</button><p class="kitchen-pagination-status" id="kitchenPaginationStatus" aria-live="polite"></p></div>
+          <div
+            class="kitchen-list"
+            id="kitchenList"
+            aria-live="polite"
+          >
+            <article class="kitchen-skeleton">
+              <div class="skeleton kitchen-image-skeleton"></div>
+
+              <div class="kitchen-skeleton-content">
+                <div class="skeleton skeleton-line-wide"></div>
+                <div class="skeleton skeleton-line-medium"></div>
+                <div class="skeleton skeleton-line-small"></div>
+              </div>
+            </article>
+
+            <article class="kitchen-skeleton">
+              <div class="skeleton kitchen-image-skeleton"></div>
+
+              <div class="kitchen-skeleton-content">
+                <div class="skeleton skeleton-line-wide"></div>
+                <div class="skeleton skeleton-line-medium"></div>
+                <div class="skeleton skeleton-line-small"></div>
+              </div>
+            </article>
+          </div>
+
+          <div
+            class="customer-empty-state hidden"
+            id="kitchenEmptyState"
+          >
+            <span
+              class="empty-state-icon"
+              aria-hidden="true"
+            >🍽️</span>
+
+            <h3 id="kitchenEmptyTitle">
+              No kitchens available yet
+            </h3>
+
+            <p id="kitchenEmptyDescription">
+              Active kitchens within your service location will appear here.
+            </p>
+          </div>
+
+          <div
+            class="kitchen-error-state hidden"
+            id="kitchenErrorState"
+            role="alert"
+          >
+            <span
+              class="kitchen-error-icon"
+              aria-hidden="true"
+            >!</span>
+
+            <h3>Kitchens could not be loaded</h3>
+
+            <p id="kitchenErrorMessage">
+              Please check your connection and try again.
+            </p>
+
+            <button
+              class="app-button app-button-secondary"
+              id="retryKitchensButton"
+              type="button"
+            >Try Again</button>
+          </div>
+
+          <div
+            class="kitchen-load-more-wrap hidden"
+            id="kitchenLoadMoreWrap"
+          >
+            <button
+              class="app-button app-button-secondary"
+              id="loadMoreKitchensButton"
+              type="button"
+            >Load More Kitchens</button>
+
+            <p
+              class="kitchen-pagination-status"
+              id="kitchenPaginationStatus"
+              aria-live="polite"
+            ></p>
+          </div>
         </section>
 
-        <section class="customer-section home-benefit-section" aria-labelledby="benefitHeading">
-          <div class="home-benefit-card"><div><span class="section-eyebrow">WHY APNABITE?</span><h2 id="benefitHeading">Fresh food from your neighbourhood</h2><p>Support local kitchens and enjoy food prepared closer to home.</p></div><span class="home-benefit-emoji" aria-hidden="true">🧑‍🍳</span></div>
+        <section
+          class="customer-section home-benefit-section"
+          aria-labelledby="benefitHeading"
+        >
+          <div class="home-benefit-card">
+            <div>
+              <span class="section-eyebrow">
+                WHY APNABITE?
+              </span>
+
+              <h2 id="benefitHeading">
+                Fresh food from your neighbourhood
+              </h2>
+
+              <p>
+                Support local kitchens and enjoy food prepared closer to home.
+              </p>
+            </div>
+
+            <span
+              class="home-benefit-emoji"
+              aria-hidden="true"
+            >🧑‍🍳</span>
+          </div>
         </section>
 
-        <div class="customer-page-message hidden" id="roleHomeMessage" role="status" aria-live="polite"></div>
+        <div
+          class="customer-page-message hidden"
+          id="roleHomeMessage"
+          role="status"
+          aria-live="polite"
+        ></div>
       </section>
 
-      <nav class="customer-bottom-nav" aria-label="Customer navigation">
-        <a class="customer-nav-item active" href="home.html" aria-current="page"><span aria-hidden="true">⌂</span><strong>Home</strong></a>
-        <a class="customer-nav-item" href="orders.html"><span aria-hidden="true">▣</span><strong>Orders</strong></a>
-        <a class="customer-nav-item" href="dine-in.html"><span aria-hidden="true">♨</span><strong>Dine-In</strong></a>
-        <a class="customer-nav-item" href="account.html"><span aria-hidden="true">●</span><strong>Account</strong></a>
+      <!-- Persistent cart summary -->
+      <section
+        class="customer-cart-summary hidden"
+        id="customerCartSummary"
+        aria-label="Current cart"
+      >
+        <button
+          class="customer-cart-summary-button"
+          id="viewCustomerCartButton"
+          type="button"
+        >
+          <span class="customer-cart-summary-icon" aria-hidden="true">
+            🛒
+          </span>
+
+          <span class="customer-cart-summary-copy">
+            <strong id="customerCartItemCount">
+              0 items
+            </strong>
+
+            <small id="customerCartKitchenName">
+              Your cart
+            </small>
+          </span>
+
+          <span class="customer-cart-summary-action">
+            <strong id="customerCartSubtotal">
+              ₹0
+            </strong>
+
+            <small>
+              View Cart →
+            </small>
+          </span>
+        </button>
+      </section>
+
+      <!-- One-kitchen cart replacement confirmation -->
+      <dialog
+        class="cart-replacement-dialog"
+        id="cartReplacementDialog"
+        aria-labelledby="cartReplacementTitle"
+        aria-describedby="cartReplacementDescription"
+      >
+        <form
+          class="cart-replacement-card"
+          method="dialog"
+        >
+          <div
+            class="cart-replacement-icon"
+            aria-hidden="true"
+          >🛒</div>
+
+          <h2 id="cartReplacementTitle">
+            Replace current cart?
+          </h2>
+
+          <p id="cartReplacementDescription">
+            Your cart contains items from another kitchen. ApnaBite supports one kitchen per cart.
+          </p>
+
+          <div class="cart-replacement-kitchens">
+            <span>
+              Current:
+              <strong id="currentCartKitchenName">
+                Existing kitchen
+              </strong>
+            </span>
+
+            <span>
+              New:
+              <strong id="newCartKitchenName">
+                Selected kitchen
+              </strong>
+            </span>
+          </div>
+
+          <div class="cart-replacement-actions">
+            <button
+              class="cart-keep-button"
+              id="keepCurrentCartButton"
+              type="button"
+            >
+              Keep Current Cart
+            </button>
+
+            <button
+              class="cart-replace-button"
+              id="replaceCurrentCartButton"
+              type="button"
+            >
+              Replace Cart
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <!-- Cart operation status -->
+      <div
+        class="cart-operation-status hidden"
+        id="cartOperationStatus"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <nav
+        class="customer-bottom-nav"
+        aria-label="Customer navigation"
+      >
+        <a
+          class="customer-nav-item active"
+          href="home.html"
+          aria-current="page"
+        >
+          <span aria-hidden="true">⌂</span>
+          <strong>Home</strong>
+        </a>
+
+        <a
+          class="customer-nav-item"
+          href="orders.html"
+        >
+          <span aria-hidden="true">▣</span>
+          <strong>Orders</strong>
+        </a>
+
+        <a
+          class="customer-nav-item"
+          href="dine-in.html"
+        >
+          <span aria-hidden="true">♨</span>
+          <strong>Dine-In</strong>
+        </a>
+
+        <a
+          class="customer-nav-item"
+          href="account.html"
+        >
+          <span aria-hidden="true">●</span>
+          <strong>Account</strong>
+        </a>
       </nav>
 
-      <div class="hidden" aria-hidden="true"><span id="roleHomeUserRole"></span><span id="roleHomeUserMobile"></span><button id="roleLogoutButton" type="button" tabindex="-1">Logout</button></div>
+      <div
+        class="hidden"
+        aria-hidden="true"
+      >
+        <span id="roleHomeUserRole"></span>
+        <span id="roleHomeUserMobile"></span>
+
+        <button
+          id="roleLogoutButton"
+          type="button"
+          tabindex="-1"
+        >
+          Logout
+        </button>
+      </div>
     </div>
   </main>
 
