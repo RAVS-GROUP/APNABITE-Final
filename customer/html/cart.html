@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ef5b00">
+  <meta name="description" content="Review your ApnaBite cart">
+  <title>Your Cart | ApnaBite</title>
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../../shared/css/responsive.css">
+  <link rel="stylesheet" href="../css/customer-common.css">
+  <link rel="stylesheet" href="../css/cart.css">
+</head>
+<body data-required-role="Customer">
+  <main class="cart-app" id="cartApp">
+    <section class="cart-loader" id="cartLoader">
+      <div class="loader-spinner" aria-hidden="true"></div>
+      <p>Preparing your cart...</p>
+    </section>
+    <section class="cart-page hidden" id="cartPage">
+      <header class="cart-header">
+        <button class="cart-back-button" id="cartBackButton" type="button" aria-label="Go back">←</button>
+        <div>
+          <small>APNABITE</small>
+          <h1>Your Cart</h1>
+        </div>
+        <button class="cart-clear-button hidden" id="clearCartButton" type="button">Clear</button>
+      </header>
+      <section class="cart-kitchen-card hidden" id="cartKitchenCard">
+        <span class="cart-kitchen-icon" aria-hidden="true">🏠</span>
+        <div>
+          <small>ORDERING FROM</small>
+          <strong id="cartKitchenName">Selected kitchen</strong>
+        </div>
+      </section>
+      <section class="cart-items-section hidden" id="cartItemsSection">
+        <div class="cart-section-heading">
+          <h2>Items</h2>
+          <span id="cartItemCount">0 items</span>
+        </div>
+        <div class="cart-items-list" id="cartItemsList" aria-live="polite"></div>
+      </section>
+      <section class="cart-bill-card hidden" id="cartBillCard">
+        <h2>Bill details</h2>
+        <div class="cart-bill-row">
+          <span>Item subtotal</span>
+          <strong id="cartSubtotal">₹0</strong>
+        </div>
+        <div class="cart-bill-row cart-bill-note">
+          <span>Delivery and other charges</span>
+          <small>Calculated at checkout</small>
+        </div>
+        <div class="cart-bill-total">
+          <span>Amount before checkout</span>
+          <strong id="cartTotal">₹0</strong>
+        </div>
+      </section>
+      <section class="cart-empty-state hidden" id="cartEmptyState">
+        <span aria-hidden="true">🛒</span>
+        <h2>Your cart is empty</h2>
+        <p>Add fresh food from a nearby kitchen to continue.</p>
+        <a class="cart-primary-link" href="home.html">Explore kitchens</a>
+      </section>
+      <section class="cart-error-state hidden" id="cartErrorState" role="alert">
+        <span aria-hidden="true">!</span>
+        <h2>Cart could not be loaded</h2>
+        <p id="cartErrorMessage">Please check your connection and try again.</p>
+        <button class="cart-secondary-button" id="retryCartButton" type="button">Try Again</button>
+      </section>
+      <div class="cart-status hidden" id="cartStatus" role="status" aria-live="polite"></div>
+      <footer class="cart-checkout-bar hidden" id="cartCheckoutBar">
+        <div>
+          <small id="checkoutItemCount">0 items</small>
+          <strong id="checkoutSubtotal">₹0</strong>
+        </div>
+        <button id="proceedCheckoutButton" type="button">Proceed to Checkout <span>→</span></button>
+      </footer>
+    </section>
+  </main>
+  <dialog class="cart-confirm-dialog" id="clearCartDialog">
+    <div class="cart-dialog-content">
+      <span class="cart-dialog-icon" aria-hidden="true">🛒</span>
+      <h2>Clear your cart?</h2>
+      <p>All items from this kitchen will be removed.</p>
+      <div class="cart-dialog-actions">
+        <button id="cancelClearCartButton" type="button">Keep Items</button>
+        <button id="confirmClearCartButton" type="button">Clear Cart</button>
+      </div>
+    </div>
+  </dialog>
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/cache.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../js/cart.js"></script>
+</body>
+</html>
