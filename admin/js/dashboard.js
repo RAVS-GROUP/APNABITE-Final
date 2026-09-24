@@ -1,2306 +1,2505 @@
-/**
- * ============================================================
- * APNABITE ADMIN
- * FILE: admin/js/dashboard.js
- * PURPOSE: Fast Founder, Finance and Operations dashboard
- * VERSION: 2.0.0
- * ============================================================
- *
- * FEATURES:
- *
- * - Secure live Admin dashboard API
- * - Cached dashboard data
- * - Background refresh
- * - Duplicate-request protection
- * - Founder / Finance / Operations / Growth views
- * - Support and district views
- * - Desktop sidebar and mobile navigation
- * - Loading skeleton
- * - Safe financial status handling
- * ============================================================
- */
-
-const AdminDashboard = {
-
-  CACHE_KEY:
-    "apnabite_admin_dashboard_v2",
-
-  CACHE_TTL_MS:
-    5 * 60 * 1000,
-
-  MAX_CACHE_AGE_MS:
-    30 * 60 * 1000,
-
-  ALLOWED_VIEWS: [
-    "overview",
-    "finance",
-    "operations",
-    "growth",
-    "support",
-    "districts"
-  ],
-
-
-  state: {
-
-    loading:
-      false,
-
-    initialized:
-      false,
-
-    activeView:
-      "overview",
-
-    data:
-      null,
-
-    requestPromise:
-      null,
-
-    requestSequence:
-      0,
-
-    lastError:
-      null
-  },
-
-
-  elements: {},
-
-
-  /**
-   * ==========================================================
-   * INITIALIZE
-   * ==========================================================
-   */
-
-  init() {
-
-    if (this.state.initialized) {
-      return true;
-    }
-
-
-    this.elements = {
-
-      skeleton:
-        document.getElementById(
-          "adminDashboardSkeleton"
-        ),
+<!DOCTYPE html>
+<html lang="en">
 
-      content:
-        document.getElementById(
-          "adminDashboardContent"
-        ),
+<head>
 
-      error:
-        document.getElementById(
-          "adminDashboardError"
-        ),
+  <meta charset="UTF-8">
 
-      errorText:
-        document.getElementById(
-          "adminDashboardErrorText"
-        ),
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
 
-      retry:
-        document.getElementById(
-          "retryAdminDashboardButton"
-        ),
+  <meta
+    name="theme-color"
+    content="#111827"
+  >
 
-      refresh:
-        document.getElementById(
-          "refreshAdminDashboardButton"
-        ),
+  <meta
+    name="description"
+    content="ApnaBite secure founder and administration control centre"
+  >
 
-      mobileLogout:
-        document.getElementById(
-          "adminMobileLogoutButton"
-        ),
+  <link
+    rel="manifest"
+    href="../../manifest.json"
+  >
 
-      desktopLogout:
-        document.getElementById(
-          "roleLogoutButton"
-        ),
+  <link
+    rel="icon"
+    type="image/webp"
+    href="../../shared/assets/images/apnabite-logo.webp"
+  >
 
-      alertList:
-        document.getElementById(
-          "managementAlertList"
-        ),
+  <title>
+    Admin Control Centre | ApnaBite
+  </title>
 
-      alertEmpty:
-        document.getElementById(
-          "managementAlertEmpty"
-        ),
 
-      districtBody:
-        document.getElementById(
-          "districtPerformanceBody"
-        ),
+  <!-- Shared styles -->
 
-      districtEmpty:
-        document.getElementById(
-          "districtPerformanceEmpty"
-        )
-    };
+  <link
+    rel="stylesheet"
+    href="../../shared/css/reset.css"
+  >
 
+  <link
+    rel="stylesheet"
+    href="../../shared/css/variables.css"
+  >
 
-    const required = [
-      "skeleton",
-      "content",
-      "error",
-      "errorText",
-      "retry",
-      "refresh",
-      "mobileLogout",
-      "desktopLogout",
-      "alertList",
-      "alertEmpty",
-      "districtBody",
-      "districtEmpty"
-    ];
+  <link
+    rel="stylesheet"
+    href="../../shared/css/common.css"
+  >
 
+  <link
+    rel="stylesheet"
+    href="../../shared/css/components.css"
+  >
 
-    const missing =
-      required.filter(
-        (key) =>
-          !this.elements[key]
-      );
+  <link
+    rel="stylesheet"
+    href="../../shared/css/responsive.css"
+  >
 
 
-    if (missing.length > 0) {
+  <!-- Admin styles -->
 
-      console.error(
-        "Admin dashboard elements are missing:",
-        missing
-      );
+  <link
+    rel="stylesheet"
+    href="../css/admin-common.css"
+  >
 
-      return false;
-    }
+  <link
+    rel="stylesheet"
+    href="../css/dashboard.css"
+  >
 
+  <link
+    rel="stylesheet"
+    href="../css/district-control.css"
+  >
 
-    this.bindEvents();
+</head>
 
 
-    this.state.activeView =
-      this.getViewFromUrl();
+<body data-required-role="Admin">
 
+  <main class="admin-app">
 
-    this.showView(
-      this.state.activeView,
-      false
-    );
 
+    <!-- =====================================================
+         ROLE ACCESS LOADER
+         ===================================================== -->
 
-    const cached =
-      this.readCache();
+    <div
+      class="admin-role-loader"
+      id="roleHomeLoader"
+    >
 
+      <div
+        class="loader-spinner"
+        aria-hidden="true"
+      ></div>
 
-    if (cached) {
+      <strong>
+        Opening Admin Control Centre
+      </strong>
 
-      this.state.data =
-        cached.data;
+      <p>
+        Verifying secure access...
+      </p>
 
+    </div>
 
-      this.render(
-        cached.data
-      );
 
+    <!-- =====================================================
+         PROTECTED ADMIN CONTENT
+         ===================================================== -->
 
-      this.showDashboard();
+    <div
+      class="admin-shell hidden"
+      id="roleHomeContent"
+    >
 
 
-      this.load({
-        force:
-          false,
+      <!-- ===================================================
+           DESKTOP SIDEBAR
+           =================================================== -->
 
-        silent:
-          true
-      });
+      <aside
+        class="admin-sidebar"
+        aria-label="Admin navigation"
+      >
 
-    } else {
+        <div class="admin-sidebar-brand">
 
-      this.showSkeleton();
+          <div
+            class="admin-brand-mark"
+            aria-hidden="true"
+          >
+            A
+          </div>
 
+          <div>
 
-      this.load({
-        force:
-          true,
+            <strong>
+              ApnaBite
+            </strong>
 
-        silent:
-          false
-      });
-    }
+            <span>
+              Control Centre
+            </span>
 
+          </div>
 
-    this.state.initialized =
-      true;
+        </div>
 
 
-    console.log(
-      "ApnaBite Admin Dashboard initialized."
-    );
+        <div class="admin-identity">
 
+          <span class="admin-identity-icon">
+            👤
+          </span>
 
-    return true;
-  },
+          <div>
 
+            <small>
+              SIGNED IN AS
+            </small>
 
-  /**
-   * ==========================================================
-   * EVENTS
-   * ==========================================================
-   */
+            <strong id="roleHomeUserRole">
+              Admin
+            </strong>
 
-  bindEvents() {
+            <span id="roleHomeUserMobile">
+              Verified administrator
+            </span>
 
-    this.elements.refresh
-      .addEventListener(
-        "click",
-        () => {
+          </div>
 
-          this.load({
-            force:
-              true,
+        </div>
 
-            silent:
-              true
-          });
-        }
-      );
 
+        <nav class="admin-sidebar-navigation">
 
-    this.elements.retry
-      .addEventListener(
-        "click",
-        () => {
+          <p>
+            COMMAND CENTRE
+          </p>
 
-          this.load({
-            force:
-              true,
 
-            silent:
-              false
-          });
-        }
-      );
+          <button
+            class="admin-navigation-item active"
+            type="button"
+            data-admin-view="overview"
+          >
 
+            <span aria-hidden="true">
+              ◫
+            </span>
 
-    this.elements.mobileLogout
-      .addEventListener(
-        "click",
-        () => {
+            <strong>
+              Founder Overview
+            </strong>
 
-          this.elements.desktopLogout
-            .click();
-        }
-      );
+          </button>
 
 
-    document
-      .querySelectorAll(
-        "[data-admin-view]"
-      )
-      .forEach(
-        (button) => {
+          <button
+            class="admin-navigation-item"
+            type="button"
+            data-admin-view="finance"
+          >
 
-          button.addEventListener(
-            "click",
-            () => {
+            <span aria-hidden="true">
+              ₹
+            </span>
 
-              this.showView(
-                button.dataset.adminView,
-                true
-              );
-            }
-          );
-        }
-      );
+            <strong>
+              Finance & Audit
+            </strong>
 
+          </button>
 
-    document
-      .querySelectorAll(
-        "[data-admin-view-target]"
-      )
-      .forEach(
-        (button) => {
 
-          button.addEventListener(
-            "click",
-            () => {
+          <button
+            class="admin-navigation-item"
+            type="button"
+            data-admin-view="operations"
+          >
 
-              this.showView(
-                button.dataset
-                  .adminViewTarget,
-                true
-              );
-            }
-          );
-        }
-      );
+            <span aria-hidden="true">
+              ⚙
+            </span>
 
+            <strong>
+              Operations
+            </strong>
 
-    window.addEventListener(
-      "popstate",
-      () => {
+          </button>
 
-        this.showView(
-          this.getViewFromUrl(),
-          false
-        );
-      }
-    );
 
+          <button
+            class="admin-navigation-item"
+            type="button"
+            data-admin-view="growth"
+          >
 
-    document.addEventListener(
-      "visibilitychange",
-      () => {
+            <span aria-hidden="true">
+              ↗
+            </span>
 
-        if (
-          document.visibilityState ===
-          "visible" &&
-          this.cacheNeedsRefresh()
-        ) {
+            <strong>
+              Growth & Offers
+            </strong>
 
-          this.load({
-            force:
-              false,
+          </button>
 
-            silent:
-              true
-          });
-        }
-      }
-    );
-  },
 
+          <p>
+            MANAGEMENT
+          </p>
 
-  /**
-   * ==========================================================
-   * LOAD DASHBOARD
-   * ==========================================================
-   */
 
-  async load(options = {}) {
+          <a
+            class="admin-navigation-item"
+            href="kyc-review.html"
+          >
 
-    const force =
-      options.force === true;
+            <span aria-hidden="true">
+              ✓
+            </span>
 
-    const silent =
-      options.silent === true;
+            <strong>
+              Partner KYC
+            </strong>
 
+            <b id="sidebarKycCount">
+              0
+            </b>
 
-    if (
-      this.state.loading &&
-      this.state.requestPromise
-    ) {
+          </a>
 
-      return this.state
-        .requestPromise;
-    }
 
+          <button
+            class="admin-navigation-item"
+            type="button"
+            data-admin-view="support"
+          >
 
-    if (
-      !force &&
-      this.state.data &&
-      !this.cacheNeedsRefresh()
-    ) {
+            <span aria-hidden="true">
+              ◉
+            </span>
 
-      return this.state.data;
-    }
+            <strong>
+              Support
+            </strong>
 
+          </button>
 
-    this.state.loading =
-      true;
 
+          <button
+            class="admin-navigation-item"
+            type="button"
+            data-admin-view="districts"
+          >
 
-    this.setRefreshLoading(
-      true
-    );
+            <span aria-hidden="true">
+              ⌖
+            </span>
 
+            <strong>
+              State & Districts
+            </strong>
 
-    if (
-      !silent &&
-      !this.state.data
-    ) {
+          </button>
 
-      this.showSkeleton();
-    }
+        </nav>
 
 
-    this.hideError();
+        <div class="admin-sidebar-footer">
 
+          <button
+            class="admin-logout-button"
+            id="roleLogoutButton"
+            type="button"
+          >
 
-    const requestSequence =
-      ++this.state
-        .requestSequence;
+            <span aria-hidden="true">
+              ↪
+            </span>
 
+            Logout
 
-    try {
+          </button>
 
-      const data =
-        await this.fetchSummary();
+        </div>
 
+      </aside>
 
-      if (
-        requestSequence !==
-        this.state.requestSequence
-      ) {
 
-        return data;
-      }
+      <!-- ===================================================
+           MAIN WORKSPACE
+           =================================================== -->
 
+      <section class="admin-workspace">
 
-      this.state.data =
-        data;
 
+        <!-- =================================================
+             TOP HEADER
+             ================================================= -->
 
-      this.state.lastError =
-        null;
+        <header class="admin-topbar">
 
+          <div class="admin-topbar-title">
 
-      this.writeCache(
-        data
-      );
+            <small>
+              APNABITE ADMIN
+            </small>
 
+            <h1>
+              Control Centre
+            </h1>
 
-      this.render(
-        data
-      );
+            <p>
+              Founder, finance and operations overview
+            </p>
 
+          </div>
 
-      this.showDashboard();
 
+          <div class="admin-topbar-actions">
 
-      return data;
+            <div class="admin-live-status">
 
-    } catch (error) {
+              <span></span>
 
-      this.state.lastError =
-        error;
+              Live data
 
+            </div>
 
-      console.error(
-        "Admin dashboard load failed:",
-        error
-      );
 
+            <button
+              class="admin-refresh-button"
+              id="refreshAdminDashboardButton"
+              type="button"
+              aria-label="Refresh dashboard"
+            >
 
-      if (this.state.data) {
+              <span aria-hidden="true">
+                ↻
+              </span>
 
-        this.showError(
-          "Live update failed. Cached dashboard data is still visible."
-        );
+              <strong>
+                Refresh
+              </strong>
 
-        this.showDashboard();
+            </button>
 
-      } else {
 
-        this.showError(
-          error.message ||
-          "Admin dashboard could not be loaded."
-        );
+            <button
+              class="admin-mobile-logout"
+              id="adminMobileLogoutButton"
+              type="button"
+              aria-label="Logout"
+            >
+              ↪
+            </button>
 
-        this.hideSkeleton();
-      }
+          </div>
 
+        </header>
 
-      return null;
 
-    } finally {
+        <!-- Role/session message -->
 
-      this.state.loading =
-        false;
+        <div
+          class="admin-global-message hidden"
+          id="roleHomeMessage"
+          role="alert"
+          aria-live="polite"
+        ></div>
 
 
-      this.state.requestPromise =
-        null;
+        <!-- Dashboard request error -->
 
+        <div
+          class="admin-global-message admin-error-message hidden"
+          id="adminDashboardError"
+          role="alert"
+          aria-live="assertive"
+        >
 
-      this.setRefreshLoading(
-        false
-      );
-    }
-  },
+          <div>
 
+            <strong>
+              Dashboard could not be updated
+            </strong>
 
-  /**
-   * ==========================================================
-   * DUPLICATE-PROTECTED API REQUEST
-   * ==========================================================
-   */
+            <p id="adminDashboardErrorText">
+              Please try again.
+            </p>
 
-  fetchSummary() {
+          </div>
 
-    if (
-      this.state.requestPromise
-    ) {
+          <button
+            id="retryAdminDashboardButton"
+            type="button"
+          >
+            Retry
+          </button>
 
-      return this.state
-        .requestPromise;
-    }
+        </div>
 
 
-    const session =
-      SessionManager.get();
+        <!-- =================================================
+             DASHBOARD SKELETON
+             ================================================= -->
 
+        <section
+          class="admin-dashboard-skeleton"
+          id="adminDashboardSkeleton"
+          aria-label="Loading dashboard"
+        >
 
-    if (
-      !session ||
-      !session.sessionId
-    ) {
+          <div class="admin-skeleton-heading"></div>
 
-      return Promise.reject(
-        new Error(
-          "Admin session is unavailable."
-        )
-      );
-    }
+          <div class="admin-skeleton-grid">
 
+            <div class="admin-skeleton-card"></div>
+            <div class="admin-skeleton-card"></div>
+            <div class="admin-skeleton-card"></div>
+            <div class="admin-skeleton-card"></div>
 
-    this.state.requestPromise =
-      API.request(
-        "get_admin_dashboard_summary",
-        {
-          sessionId:
-            session.sessionId
-        }
-      )
-        .then(
-          (response) => {
+          </div>
 
-            const data =
-              response &&
-              response.data
-                ? response.data
-                : {};
+          <div class="admin-skeleton-panels">
 
+            <div></div>
+            <div></div>
 
-            if (
-              data.success !== true
-            ) {
+          </div>
 
-              throw new Error(
-                "Admin dashboard returned an invalid response."
-              );
-            }
+        </section>
 
 
-            return data;
-          }
-        )
-        .catch(
-          (error) => {
+        <!-- =================================================
+             LIVE DASHBOARD
+             ================================================= -->
 
-            this.state.requestPromise =
-              null;
+        <div
+          class="admin-dashboard hidden"
+          id="adminDashboardContent"
+        >
 
-            throw error;
-          }
-        );
 
+          <!-- ===============================================
+               OVERVIEW VIEW
+               =============================================== -->
 
-    return this.state
-      .requestPromise;
-  },
+          <section
+            class="admin-view active"
+            data-admin-panel="overview"
+          >
 
+            <div class="admin-page-heading">
 
-  /**
-   * ==========================================================
-   * CACHE
-   * ==========================================================
-   */
+              <div>
 
-  getCacheKey() {
+                <span class="admin-eyebrow">
+                  FOUNDER OVERVIEW
+                </span>
 
-    const session =
-      SessionManager.get();
+                <h2>
+                  Business at a glance
+                </h2>
 
+                <p>
+                  Revenue, orders and operational health in one place.
+                </p>
 
-    const identity =
-      session &&
-      (
-        session.userId ||
-        session.sessionId
-      )
-        ? (
-            session.userId ||
-            session.sessionId
-          )
-        : "anonymous";
+              </div>
 
 
-    return (
-      this.CACHE_KEY +
-      "_" +
-      identity
-    );
-  },
+              <div class="admin-updated-time">
 
+                <span>
+                  Last updated
+                </span>
 
-  readCache() {
+                <strong id="adminLastUpdated">
+                  —
+                </strong>
 
-    try {
+              </div>
 
-      const record =
-        AppStorage.get(
-          this.getCacheKey()
-        );
+            </div>
 
 
-      if (
-        !record ||
-        typeof record !== "object" ||
-        !record.data ||
-        !record.savedAt
-      ) {
+            <div class="admin-primary-metrics">
 
-        return null;
-      }
+              <article class="admin-metric-card metric-gmv">
 
+                <div class="admin-metric-top">
 
-      const age =
-        Date.now() -
-        Number(record.savedAt);
+                  <span class="admin-metric-icon">
+                    ₹
+                  </span>
 
+                  <span class="admin-metric-label">
+                    TOTAL GMV
+                  </span>
 
-      if (
-        !Number.isFinite(age) ||
-        age < 0 ||
-        age >
-          this.MAX_CACHE_AGE_MS
-      ) {
+                </div>
 
-        this.clearCache();
+                <strong id="totalGmvValue">
+                  ₹0
+                </strong>
 
-        return null;
-      }
+                <p>
+                  Paid non-cancelled order value
+                </p>
 
+              </article>
 
-      return record;
 
-    } catch (error) {
+              <article class="admin-metric-card">
 
-      console.warn(
-        "Admin dashboard cache unavailable:",
-        error
-      );
+                <div class="admin-metric-top">
 
+                  <span class="admin-metric-icon revenue">
+                    ↗
+                  </span>
 
-      return null;
-    }
-  },
+                  <span class="admin-metric-label">
+                    PLATFORM REVENUE
+                  </span>
 
+                </div>
 
-  writeCache(data) {
+                <strong id="platformRevenueValue">
+                  ₹0
+                </strong>
 
-    try {
+                <p>
+                  Commission and platform fees
+                </p>
 
-      AppStorage.set(
-        this.getCacheKey(),
-        {
-          savedAt:
-            Date.now(),
+              </article>
 
-          data:
-            data
-        }
-      );
 
-    } catch (error) {
+              <article class="admin-metric-card">
 
-      console.warn(
-        "Admin dashboard cache write failed:",
-        error
-      );
-    }
-  },
+                <div class="admin-metric-top">
 
+                  <span class="admin-metric-icon contribution">
+                    ◈
+                  </span>
 
-  clearCache() {
+                  <span class="admin-metric-label">
+                    EST. CONTRIBUTION
+                  </span>
 
-    try {
+                </div>
 
-      AppStorage.remove(
-        this.getCacheKey()
-      );
+                <strong id="estimatedContributionValue">
+                  ₹0
+                </strong>
 
-    } catch (error) {
+                <p>
+                  Preliminary, not audited profit
+                </p>
 
-      console.warn(
-        "Admin dashboard cache clear failed:",
-        error
-      );
-    }
-  },
+              </article>
 
 
-  cacheNeedsRefresh() {
+              <article class="admin-metric-card">
 
-    const record =
-      this.readCache();
+                <div class="admin-metric-top">
 
+                  <span class="admin-metric-icon orders">
+                    ▣
+                  </span>
 
-    if (!record) {
-      return true;
-    }
+                  <span class="admin-metric-label">
+                    TOTAL ORDERS
+                  </span>
 
+                </div>
 
-    return (
-      Date.now() -
-      Number(record.savedAt)
-    ) >=
-      this.CACHE_TTL_MS;
-  },
+                <strong id="totalOrdersValue">
+                  0
+                </strong>
 
+                <p>
 
-  /**
-   * ==========================================================
-   * COMPLETE RENDER
-   * ==========================================================
-   */
+                  <b id="todayOrdersInline">
+                    0
+                  </b>
 
-  render(data) {
+                  orders today
 
-    const overview =
-      data.overview || {};
+                </p>
 
-    const finance =
-      data.finance || {};
+              </article>
 
-    const orders =
-      data.orders || {};
+            </div>
 
-    const payments =
-      data.payments || {};
 
-    const refunds =
-      data.refunds || {};
+            <div class="admin-secondary-metrics">
 
-    const partners =
-      data.partners || {};
+              <article>
 
-    const riders =
-      data.riders || {};
+                <span>
+                  TODAY GMV
+                </span>
 
-    const users =
-      data.users || {};
+                <strong id="todayGmvValue">
+                  ₹0
+                </strong>
 
-    const offers =
-      data.offers || {};
+              </article>
 
-    const support =
-      data.support || {};
 
-    const districts =
-      data.districts || {};
+              <article>
 
-    const dataQuality =
-      data.dataQuality || {};
+                <span>
+                  AVERAGE ORDER
+                </span>
 
+                <strong id="averageOrderValue">
+                  ₹0
+                </strong>
 
-    /*
-     * Founder Overview
-     */
+              </article>
 
-    this.setMoney(
-      "totalGmvValue",
-      overview.totalGmv
-    );
 
-    this.setMoney(
-      "platformRevenueValue",
-      overview.platformRevenue
-    );
+              <article>
 
-    this.setMoney(
-      "estimatedContributionValue",
-      overview.estimatedContribution
-    );
+                <span>
+                  ACTIVE CUSTOMERS
+                </span>
 
-    this.setNumber(
-      "totalOrdersValue",
-      overview.totalOrders
-    );
+                <strong id="activeCustomersValue">
+                  0
+                </strong>
 
-    this.setNumber(
-      "todayOrdersInline",
-      overview.todayOrders
-    );
+              </article>
 
-    this.setMoney(
-      "todayGmvValue",
-      overview.todayGmv
-    );
 
-    this.setMoney(
-      "averageOrderValue",
-      overview.averageOrderValue
-    );
+              <article>
 
-    this.setNumber(
-      "activeCustomersValue",
-      overview.activeCustomers
-    );
+                <span>
+                  OPEN KITCHENS
+                </span>
 
-    this.setNumber(
-      "activeKitchensValue",
-      overview.activeKitchens
-    );
+                <strong id="activeKitchensValue">
+                  0
+                </strong>
 
-    this.setNumber(
-      "activeRidersValue",
-      overview.activeRiders
-    );
+              </article>
 
-    this.setNumber(
-      "openSupportValue",
-      overview.openSupportTickets
-    );
 
+              <article>
 
-    /*
-     * Orders
-     */
+                <span>
+                  ACTIVE RIDERS
+                </span>
 
-    this.setNumber(
-      "deliveredOrdersValue",
-      orders.deliveredOrders
-    );
+                <strong id="activeRidersValue">
+                  0
+                </strong>
 
-    this.setNumber(
-      "inProcessOrdersValue",
-      orders.inProcessOrders
-    );
+              </article>
 
-    this.setNumber(
-      "cancelledOrdersValue",
-      orders.cancelledOrders
-    );
 
-    this.setNumber(
-      "failedOrdersValue",
-      orders.failedOrders
-    );
+              <article>
 
+                <span>
+                  OPEN TICKETS
+                </span>
 
-    /*
-     * Finance
-     */
+                <strong id="openSupportValue">
+                  0
+                </strong>
 
-    this.setText(
-      "profitLossStatus",
-      finance.profitLossStatus ||
-      "PRELIMINARY"
-    );
+              </article>
 
-    this.setText(
-      "financeAuditMessage",
-      finance.profitLossMessage ||
-      "Final profit requires a complete expense ledger."
-    );
+            </div>
 
-    this.setMoney(
-      "commissionRevenueValue",
-      finance.commissionRevenue
-    );
 
-    this.setMoney(
-      "platformFeeRevenueValue",
-      finance.platformFeeRevenue
-    );
+            <div class="admin-panel-grid">
 
-    this.setMoney(
-      "deliveryFeeCollectedValue",
-      finance.deliveryFeeCollected
-    );
+              <section class="admin-panel">
 
-    this.setMoney(
-      "promotionCostValue",
-      finance.promotionCost
-    );
+                <div class="admin-panel-heading">
 
-    this.setMoney(
-      "refundOutflowValue",
-      finance.refundOutflow
-    );
+                  <div>
 
-    this.setMoney(
-      "recordedExpensesValue",
-      finance.recordedOperatingExpenses
-    );
+                    <span class="admin-eyebrow">
+                      ORDER CONTROL
+                    </span>
 
-    this.setMoney(
-      "partnerPayableValue",
-      finance.partnerPayable
-    );
+                    <h3>
+                      Order performance
+                    </h3>
 
-    this.setMoney(
-      "riderPayableValue",
-      finance.riderPayable
-    );
+                  </div>
 
-    this.setMoney(
-      "pendingSettlementValue",
-      finance.pendingSettlementAmount
-    );
+                  <button
+                    type="button"
+                    data-admin-view-target="operations"
+                  >
+                    View operations
+                  </button>
 
+                </div>
 
-    /*
-     * Payments and refunds
-     */
 
-    this.setNumber(
-      "successfulPaymentsValue",
-      payments.successfulPayments
-    );
+                <div class="admin-status-grid">
 
-    this.setNumber(
-      "pendingPaymentsValue",
-      payments.pendingPayments
-    );
+                  <article>
 
-    this.setNumber(
-      "failedPaymentsValue",
-      payments.failedPayments
-    );
+                    <span class="status-dot delivered"></span>
 
-    this.setNumber(
-      "pendingRefundsValue",
-      refunds.pendingRefunds
-    );
+                    <div>
 
+                      <small>
+                        Delivered
+                      </small>
 
-    /*
-     * Partners and products
-     */
+                      <strong id="deliveredOrdersValue">
+                        0
+                      </strong>
 
-    this.setNumber(
-      "totalPartnersValue",
-      partners.totalPartners
-    );
+                    </div>
 
-    this.setNumber(
-      "approvedPartnersValue",
-      partners.approvedPartners
-    );
+                  </article>
 
-    this.setNumber(
-      "openKitchensValue",
-      partners.openKitchens
-    );
 
-    this.setNumber(
-      "closedKitchensValue",
-      partners.closedKitchens
-    );
+                  <article>
 
-    this.setNumber(
-      "totalProductsValue",
-      partners.totalProducts
-    );
+                    <span class="status-dot processing"></span>
 
-    this.setNumber(
-      "availableProductsValue",
-      partners.availableProducts
-    );
+                    <div>
 
-    this.setNumber(
-      "pendingPartnerApprovalValue",
-      partners.pendingApproval
-    );
+                      <small>
+                        In process
+                      </small>
 
-    this.setNumber(
-      "pendingPartnerKycValue",
-      partners.pendingKyc
-    );
+                      <strong id="inProcessOrdersValue">
+                        0
+                      </strong>
 
-    this.setNumber(
-      "rejectedPartnersValue",
-      partners.rejectedPartners
-    );
+                    </div>
 
+                  </article>
 
-    /*
-     * Riders
-     */
 
-    this.setNumber(
-      "totalRidersValue",
-      riders.totalRiders
-    );
+                  <article>
 
-    this.setNumber(
-      "operatingRidersValue",
-      riders.activeRiders
-    );
+                    <span class="status-dot cancelled"></span>
 
-    this.setNumber(
-      "approvedRidersValue",
-      riders.approvedRiders
-    );
+                    <div>
 
-    this.setNumber(
-      "pendingRiderApprovalValue",
-      riders.pendingApproval
-    );
+                      <small>
+                        Cancelled
+                      </small>
 
-    this.setNumber(
-      "pendingRiderKycValue",
-      riders.pendingKyc
-    );
+                      <strong id="cancelledOrdersValue">
+                        0
+                      </strong>
 
+                    </div>
 
-    /*
-     * Offers
-     */
+                  </article>
 
-    this.setNumber(
-      "totalOffersValue",
-      offers.totalOffers
-    );
 
-    this.setNumber(
-      "activeOffersValue",
-      offers.activeOffers
-    );
+                  <article>
 
-    this.setNumber(
-      "scheduledOffersValue",
-      offers.scheduledOffers
-    );
+                    <span class="status-dot failed"></span>
 
-    this.setNumber(
-      "expiredOffersValue",
-      offers.expiredOffers
-    );
+                    <div>
 
-    this.setNumber(
-      "disabledOffersValue",
-      offers.disabledOffers
-    );
+                      <small>
+                        Failed
+                      </small>
 
+                      <strong id="failedOrdersValue">
+                        0
+                      </strong>
 
-    /*
-     * Support
-     */
+                    </div>
 
-    this.setNumber(
-      "totalTicketsValue",
-      support.totalTickets
-    );
+                  </article>
 
-    this.setNumber(
-      "openTicketsValue",
-      support.openTickets
-    );
+                </div>
 
-    this.setNumber(
-      "highPriorityTicketsValue",
-      support.highPriorityTickets
-    );
+              </section>
 
-    this.setNumber(
-      "resolvedTicketsValue",
-      support.resolvedTickets
-    );
 
-    this.setNumber(
-      "closedTicketsValue",
-      support.closedTickets
-    );
+              <section class="admin-panel">
 
+                <div class="admin-panel-heading">
 
-    /*
-     * Districts
-     */
+                  <div>
 
-    this.setNumber(
-      "totalDistrictsValue",
-      districts.totalDistricts
-    );
+                    <span class="admin-eyebrow">
+                      ATTENTION CENTRE
+                    </span>
 
-    this.setNumber(
-      "activeDistrictsValue",
-      districts.activeDistricts
-    );
+                    <h3>
+                      Action required
+                    </h3>
 
-    this.setNumber(
-      "inactiveDistrictsValue",
-      districts.inactiveDistricts
-    );
+                  </div>
 
+                  <span
+                    class="admin-count-badge"
+                    id="managementAlertCount"
+                  >
+                    0
+                  </span>
 
-    /*
-     * KYC indicators
-     */
+                </div>
 
-    const pendingKyc =
-      this.safeNumber(
-        overview.pendingKyc
-      );
 
+                <div
+                  class="admin-alert-list"
+                  id="managementAlertList"
+                ></div>
 
-    this.setNumber(
-      "sidebarKycCount",
-      pendingKyc
-    );
 
-    this.setNumber(
-      "managementKycCount",
-      pendingKyc
-    );
+                <div
+                  class="admin-empty-state"
+                  id="managementAlertEmpty"
+                >
 
+                  <span aria-hidden="true">
+                    ✓
+                  </span>
 
-    /*
-     * Updated time and status
-     */
+                  <strong>
+                    All systems clear
+                  </strong>
 
-    this.setText(
-      "adminLastUpdated",
-      this.formatDateTime(
-        data.generatedAt
-      )
-    );
+                  <p>
+                    No urgent management action is required.
+                  </p>
 
+                </div>
 
-    const finalProfitAvailable =
-      dataQuality
-        .finalProfitAvailable ===
-      true;
+              </section>
 
+            </div>
 
-    this.setText(
-      "adminDataStatus",
-      finalProfitAvailable
-        ? "Audited financial data"
-        : "Live operational data"
-    );
 
+            <section class="admin-management-section">
 
-    const notes =
-      Array.isArray(
-        dataQuality.notes
-      )
-        ? dataQuality.notes
-        : [];
+              <div class="admin-section-heading">
 
+                <div>
 
-    this.setText(
-      "adminDataQualityNote",
-      notes.length > 0
-        ? notes[0]
-        : "Dashboard values are calculated from current records."
-    );
+                  <span class="admin-eyebrow">
+                    MANAGEMENT
+                  </span>
 
+                  <h2>
+                    Business controls
+                  </h2>
 
-    this.renderAlerts(
-      data.alerts
-    );
+                </div>
 
+                <p>
+                  Secure access to key operational modules
+                </p>
 
-    this.renderDistricts(
-      districts.performance
-    );
+              </div>
 
 
-    this.applyContributionStyle(
-      overview.estimatedContribution
-    );
+              <div class="admin-management-grid">
 
+                <a
+                  class="admin-management-card"
+                  href="kyc-review.html"
+                >
 
-    console.log(
-      "Admin dashboard rendered:",
-      {
-        users:
-          users.totalUsers || 0,
+                  <span class="management-icon kyc">
+                    ✓
+                  </span>
 
-        orders:
-          orders.totalOrders || 0,
+                  <div>
 
-        partners:
-          partners.totalPartners || 0
-      }
-    );
-  },
+                    <strong>
+                      Partner KYC
+                    </strong>
 
+                    <p>
+                      Review and approve kitchens
+                    </p>
 
-  /**
-   * ==========================================================
-   * ALERT RENDERING
-   * ==========================================================
-   */
+                  </div>
 
-  renderAlerts(alerts) {
+                  <b id="managementKycCount">
+                    0
+                  </b>
 
-    const safeAlerts =
-      Array.isArray(alerts)
-        ? alerts
-        : [];
+                  <i>
+                    →
+                  </i>
 
+                </a>
 
-    this.elements.alertList
-      .innerHTML = "";
 
+                <button
+                  class="admin-management-card"
+                  type="button"
+                  data-admin-view-target="finance"
+                >
 
-    this.setNumber(
-      "managementAlertCount",
-      safeAlerts.length
-    );
+                  <span class="management-icon finance">
+                    ₹
+                  </span>
 
+                  <div>
 
-    safeAlerts.forEach(
-      (alert) => {
+                    <strong>
+                      Finance & Audit
+                    </strong>
 
-        const item =
-          document.createElement(
-            "article"
-          );
+                    <p>
+                      Revenue, refunds and liabilities
+                    </p>
 
+                  </div>
 
-        const severity =
-          String(
-            alert.severity || ""
-          ).trim().toLowerCase();
+                  <i>
+                    →
+                  </i>
 
+                </button>
 
-        item.className =
-          "admin-alert-item" +
-          (
-            severity
-              ? " " + severity
-              : ""
-          );
 
+                <button
+                  class="admin-management-card"
+                  type="button"
+                  data-admin-view-target="operations"
+                >
 
-        const icon =
-          document.createElement(
-            "span"
-          );
+                  <span class="management-icon operations">
+                    ⚙
+                  </span>
 
+                  <div>
 
-        icon.textContent =
-          severity === "critical"
-            ? "!"
-            : severity === "high"
-              ? "!"
-              : "i";
+                    <strong>
+                      Live Operations
+                    </strong>
 
+                    <p>
+                      Partners, riders and orders
+                    </p>
 
-        const content =
-          document.createElement(
-            "div"
-          );
+                  </div>
 
+                  <i>
+                    →
+                  </i>
 
-        const title =
-          document.createElement(
-            "strong"
-          );
+                </button>
 
 
-        title.textContent =
-          alert.title ||
-          "Management alert";
+                <button
+                  class="admin-management-card"
+                  type="button"
+                  data-admin-view-target="growth"
+                >
 
+                  <span class="management-icon growth">
+                    ↗
+                  </span>
 
-        const message =
-          document.createElement(
-            "p"
-          );
+                  <div>
 
+                    <strong>
+                      Offers & Growth
+                    </strong>
 
-        message.textContent =
-          alert.message || "";
+                    <p>
+                      Promotions and acquisition controls
+                    </p>
 
+                  </div>
 
-        content.append(
-          title,
-          message
-        );
+                  <i>
+                    →
+                  </i>
 
+                </button>
 
-        item.append(
-          icon,
-          content
-        );
 
+                <button
+                  class="admin-management-card"
+                  type="button"
+                  data-admin-view-target="support"
+                >
 
-        this.elements.alertList
-          .appendChild(item);
-      }
-    );
+                  <span class="management-icon support">
+                    ◉
+                  </span>
 
+                  <div>
 
-    this.elements.alertEmpty
-      .classList.toggle(
-        "hidden",
-        safeAlerts.length > 0
-      );
-  },
+                    <strong>
+                      Support Centre
+                    </strong>
 
+                    <p>
+                      Customer and partner issues
+                    </p>
 
-  /**
-   * ==========================================================
-   * DISTRICT RENDERING
-   * ==========================================================
-   */
+                  </div>
 
-  renderDistricts(performance) {
+                  <i>
+                    →
+                  </i>
 
-    const districts =
-      Array.isArray(performance)
-        ? performance
-        : [];
+                </button>
 
 
-    this.elements.districtBody
-      .innerHTML = "";
+                <button
+                  class="admin-management-card"
+                  type="button"
+                  data-admin-view-target="districts"
+                >
 
+                  <span class="management-icon districts">
+                    ⌖
+                  </span>
 
-    districts.forEach(
-      (district) => {
+                  <div>
 
-        const row =
-          document.createElement(
-            "tr"
-          );
+                    <strong>
+                      State & District Control
+                    </strong>
 
+                    <p>
+                      Pan-India service coverage
+                    </p>
 
-        const districtName =
-          this.createCell(
-            district.districtName ||
-            district.districtId ||
-            "Unnamed district"
-          );
+                  </div>
 
+                  <i>
+                    →
+                  </i>
 
-        const state =
-          this.createCell(
-            district.state || "—"
-          );
+                </button>
 
+              </div>
 
-        const statusCell =
-          document.createElement(
-            "td"
-          );
+            </section>
 
+          </section>
 
-        const status =
-          document.createElement(
-            "span"
-          );
 
+          <!-- ===============================================
+               FINANCE VIEW
+               =============================================== -->
 
-        const statusValue =
-          String(
-            district.serviceStatus ||
-            "INACTIVE"
-          ).toUpperCase();
+          <section
+            class="admin-view"
+            data-admin-panel="finance"
+          >
 
+            <div class="admin-page-heading">
 
-        status.className =
-          "admin-table-status" +
-          (
-            [
-              "ACTIVE",
-              "ENABLED",
-              "AVAILABLE"
-            ].includes(statusValue)
-              ? ""
-              : " inactive"
-          );
+              <div>
 
+                <span class="admin-eyebrow">
+                  FINANCE & AUDIT
+                </span>
 
-        status.textContent =
-          this.prettyStatus(
-            statusValue
-          );
+                <h2>
+                  Financial control room
+                </h2>
 
+                <p>
+                  Turnover, revenue, liabilities and preliminary contribution.
+                </p>
 
-        statusCell.appendChild(
-          status
-        );
+              </div>
 
+              <span
+                class="admin-status-pill preliminary"
+                id="profitLossStatus"
+              >
+                PRELIMINARY
+              </span>
 
-        const kitchens =
-          this.createCell(
-            this.formatNumber(
-              district.kitchenCount
-            )
-          );
+            </div>
 
 
-        const orders =
-          this.createCell(
-            this.formatNumber(
-              district.orderCount
-            )
-          );
+            <div
+              class="admin-finance-warning"
+              id="financeAuditWarning"
+            >
 
+              <span>
+                !
+              </span>
 
-        const gmv =
-          this.createCell(
-            this.formatMoney(
-              district.gmv
-            )
-          );
+              <div>
 
+                <strong>
+                  Net profit is not final
+                </strong>
 
-        row.append(
-          districtName,
-          state,
-          statusCell,
-          kitchens,
-          orders,
-          gmv
-        );
+                <p id="financeAuditMessage">
+                  A complete expense ledger is required before audited profit can be calculated.
+                </p>
 
+              </div>
 
-        this.elements.districtBody
-          .appendChild(row);
-      }
-    );
+            </div>
 
 
-    this.elements.districtEmpty
-      .classList.toggle(
-        "hidden",
-        districts.length > 0
-      );
-  },
+            <div class="admin-finance-grid">
 
+              <article>
+                <span>Commission revenue</span>
+                <strong id="commissionRevenueValue">₹0</strong>
+              </article>
 
-  createCell(value) {
+              <article>
+                <span>Platform fee revenue</span>
+                <strong id="platformFeeRevenueValue">₹0</strong>
+              </article>
 
-    const cell =
-      document.createElement(
-        "td"
-      );
+              <article>
+                <span>Delivery fee collected</span>
+                <strong id="deliveryFeeCollectedValue">₹0</strong>
+              </article>
 
+              <article class="finance-negative">
+                <span>Promotion cost</span>
+                <strong id="promotionCostValue">₹0</strong>
+              </article>
 
-    cell.textContent =
-      String(
-        value === null ||
-        value === undefined
-          ? ""
-          : value
-      );
+              <article class="finance-negative">
+                <span>Refund outflow</span>
+                <strong id="refundOutflowValue">₹0</strong>
+              </article>
 
+              <article class="finance-negative">
+                <span>Recorded expenses</span>
+                <strong id="recordedExpensesValue">₹0</strong>
+              </article>
 
-    return cell;
-  },
+            </div>
 
 
-  /**
-   * ==========================================================
-   * VIEW NAVIGATION
-   * ==========================================================
-   */
+            <div class="admin-panel-grid">
 
-  showView(
-    requestedView,
-    updateUrl = true
-  ) {
+              <section class="admin-panel">
 
-    const view =
-      this.ALLOWED_VIEWS.includes(
-        requestedView
-      )
-        ? requestedView
-        : "overview";
+                <div class="admin-panel-heading">
 
+                  <div>
+                    <span class="admin-eyebrow">PAYABLES</span>
+                    <h3>Settlement liabilities</h3>
+                  </div>
 
-    this.state.activeView =
-      view;
+                </div>
 
+                <div class="admin-liability-list">
 
-    document
-      .querySelectorAll(
-        "[data-admin-panel]"
-      )
-      .forEach(
-        (panel) => {
+                  <article>
+                    <span>Food Partner payable</span>
+                    <strong id="partnerPayableValue">₹0</strong>
+                  </article>
 
-          panel.classList.toggle(
-            "active",
-            panel.dataset.adminPanel ===
-              view
-          );
-        }
-      );
+                  <article>
+                    <span>Rider payable</span>
+                    <strong id="riderPayableValue">₹0</strong>
+                  </article>
 
+                  <article>
+                    <span>Pending settlement</span>
+                    <strong id="pendingSettlementValue">₹0</strong>
+                  </article>
 
-    document
-      .querySelectorAll(
-        "[data-admin-view]"
-      )
-      .forEach(
-        (button) => {
+                </div>
 
-          const active =
-            button.dataset.adminView ===
-            view;
+              </section>
 
 
-          button.classList.toggle(
-            "active",
-            active
-          );
+              <section class="admin-panel">
 
+                <div class="admin-panel-heading">
 
-          if (active) {
+                  <div>
+                    <span class="admin-eyebrow">PAYMENT HEALTH</span>
+                    <h3>Payments and refunds</h3>
+                  </div>
 
-            button.setAttribute(
-              "aria-current",
-              "page"
-            );
+                </div>
 
-          } else {
+                <div class="admin-status-grid">
 
-            button.removeAttribute(
-              "aria-current"
-            );
-          }
-        }
-      );
+                  <article>
+                    <span class="status-dot delivered"></span>
+                    <div>
+                      <small>Successful</small>
+                      <strong id="successfulPaymentsValue">0</strong>
+                    </div>
+                  </article>
 
+                  <article>
+                    <span class="status-dot processing"></span>
+                    <div>
+                      <small>Pending</small>
+                      <strong id="pendingPaymentsValue">0</strong>
+                    </div>
+                  </article>
 
-    if (updateUrl) {
+                  <article>
+                    <span class="status-dot failed"></span>
+                    <div>
+                      <small>Failed</small>
+                      <strong id="failedPaymentsValue">0</strong>
+                    </div>
+                  </article>
 
-      this.updateViewUrl(
-        view
-      );
-    }
+                  <article>
+                    <span class="status-dot cancelled"></span>
+                    <div>
+                      <small>Pending refunds</small>
+                      <strong id="pendingRefundsValue">0</strong>
+                    </div>
+                  </article>
 
+                </div>
 
-    window.scrollTo({
-      top:
-        0,
+              </section>
 
-      behavior:
-        "smooth"
-    });
-  },
+            </div>
 
+          </section>
 
-  getViewFromUrl() {
 
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
+          <!-- ===============================================
+               OPERATIONS VIEW
+               =============================================== -->
 
+          <section
+            class="admin-view"
+            data-admin-panel="operations"
+          >
 
-    const view =
-      String(
-        params.get("view") ||
-        "overview"
-      ).toLowerCase();
+            <div class="admin-page-heading">
 
+              <div>
+                <span class="admin-eyebrow">OPERATIONS</span>
+                <h2>Marketplace operations</h2>
+                <p>Monitor kitchens, riders, products and order flow.</p>
+              </div>
 
-    return this.ALLOWED_VIEWS
-      .includes(view)
-        ? view
-        : "overview";
-  },
+            </div>
 
 
-  updateViewUrl(view) {
+            <div class="admin-operations-grid">
 
-    const url =
-      new URL(
-        window.location.href
-      );
+              <section class="admin-operation-card">
 
+                <div class="operation-card-icon">🍳</div>
 
-    if (view === "overview") {
+                <div>
+                  <span>FOOD PARTNERS</span>
+                  <strong id="totalPartnersValue">0</strong>
+                  <p><b id="approvedPartnersValue">0</b> approved</p>
+                </div>
 
-      url.searchParams.delete(
-        "view"
-      );
+              </section>
 
-    } else {
 
-      url.searchParams.set(
-        "view",
-        view
-      );
-    }
+              <section class="admin-operation-card">
 
+                <div class="operation-card-icon">🟢</div>
 
-    window.history.pushState(
-      {
-        adminView:
-          view
-      },
-      "",
-      url.toString()
-    );
-  },
+                <div>
+                  <span>OPEN KITCHENS</span>
+                  <strong id="openKitchensValue">0</strong>
+                  <p><b id="closedKitchensValue">0</b> currently closed</p>
+                </div>
 
+              </section>
 
-  /**
-   * ==========================================================
-   * DISPLAY STATES
-   * ==========================================================
-   */
 
-  showSkeleton() {
+              <section class="admin-operation-card">
 
-    this.elements.skeleton
-      .classList.remove(
-        "hidden"
-      );
+                <div class="operation-card-icon">🛵</div>
 
+                <div>
+                  <span>TOTAL RIDERS</span>
+                  <strong id="totalRidersValue">0</strong>
+                  <p><b id="operatingRidersValue">0</b> active</p>
+                </div>
 
-    this.elements.content
-      .classList.add(
-        "hidden"
-      );
-  },
+              </section>
 
 
-  hideSkeleton() {
+              <section class="admin-operation-card">
 
-    this.elements.skeleton
-      .classList.add(
-        "hidden"
-      );
-  },
+                <div class="operation-card-icon">🍱</div>
 
+                <div>
+                  <span>PRODUCTS</span>
+                  <strong id="totalProductsValue">0</strong>
+                  <p><b id="availableProductsValue">0</b> available</p>
+                </div>
 
-  showDashboard() {
+              </section>
 
-    this.hideSkeleton();
+            </div>
 
 
-    this.elements.content
-      .classList.remove(
-        "hidden"
-      );
-  },
+            <div class="admin-panel-grid">
 
+              <section class="admin-panel">
 
-  showError(message) {
+                <div class="admin-panel-heading">
 
-    this.elements.errorText
-      .textContent =
-        message ||
-        "Dashboard request failed.";
+                  <div>
+                    <span class="admin-eyebrow">APPROVAL PIPELINE</span>
+                    <h3>Partner verification</h3>
+                  </div>
 
+                  <a href="kyc-review.html">
+                    Review KYC
+                  </a>
 
-    this.elements.error
-      .classList.remove(
-        "hidden"
-      );
-  },
+                </div>
 
+                <div class="admin-liability-list">
 
-  hideError() {
+                  <article>
+                    <span>Pending approval</span>
+                    <strong id="pendingPartnerApprovalValue">0</strong>
+                  </article>
 
-    this.elements.error
-      .classList.add(
-        "hidden"
-      );
+                  <article>
+                    <span>Pending KYC</span>
+                    <strong id="pendingPartnerKycValue">0</strong>
+                  </article>
 
+                  <article>
+                    <span>Rejected partners</span>
+                    <strong id="rejectedPartnersValue">0</strong>
+                  </article>
 
-    this.elements.errorText
-      .textContent = "";
-  },
+                </div>
 
+              </section>
 
-  setRefreshLoading(loading) {
 
-    this.elements.refresh
-      .disabled =
-        loading;
+              <section class="admin-panel">
 
+                <div class="admin-panel-heading">
 
-    this.elements.refresh
-      .classList.toggle(
-        "loading",
-        loading
-      );
+                  <div>
+                    <span class="admin-eyebrow">RIDER NETWORK</span>
+                    <h3>Delivery workforce</h3>
+                  </div>
 
+                </div>
 
-    const label =
-      this.elements.refresh
-        .querySelector(
-          "strong"
-        );
+                <div class="admin-liability-list">
 
+                  <article>
+                    <span>Approved riders</span>
+                    <strong id="approvedRidersValue">0</strong>
+                  </article>
 
-    if (label) {
+                  <article>
+                    <span>Pending rider approval</span>
+                    <strong id="pendingRiderApprovalValue">0</strong>
+                  </article>
 
-      label.textContent =
-        loading
-          ? "Updating"
-          : "Refresh";
-    }
-  },
+                  <article>
+                    <span>Rider KYC pending</span>
+                    <strong id="pendingRiderKycValue">0</strong>
+                  </article>
 
+                </div>
 
-  applyContributionStyle(value) {
+              </section>
 
-    const element =
-      document.getElementById(
-        "estimatedContributionValue"
-      );
+            </div>
 
+          </section>
 
-    if (!element) {
-      return;
-    }
 
+          <!-- ===============================================
+               GROWTH VIEW
+               =============================================== -->
 
-    const amount =
-      this.safeNumber(value);
+          <section
+            class="admin-view"
+            data-admin-panel="growth"
+          >
 
+            <div class="admin-page-heading">
 
-    element.style.color =
-      amount < 0
-        ? "#c83228"
-        : "";
-  },
+              <div>
+                <span class="admin-eyebrow">GROWTH & OFFERS</span>
+                <h2>Promotion control</h2>
+                <p>Monitor active, scheduled and expired campaigns.</p>
+              </div>
 
+            </div>
 
-  /**
-   * ==========================================================
-   * VALUE HELPERS
-   * ==========================================================
-   */
 
-  setText(id, value) {
+            <div class="admin-growth-grid">
 
-    const element =
-      document.getElementById(id);
+              <article>
+                <span>TOTAL OFFERS</span>
+                <strong id="totalOffersValue">0</strong>
+              </article>
 
+              <article class="growth-active">
+                <span>ACTIVE</span>
+                <strong id="activeOffersValue">0</strong>
+              </article>
 
-    if (!element) {
-      return;
-    }
+              <article>
+                <span>SCHEDULED</span>
+                <strong id="scheduledOffersValue">0</strong>
+              </article>
 
+              <article>
+                <span>EXPIRED</span>
+                <strong id="expiredOffersValue">0</strong>
+              </article>
 
-    element.textContent =
-      String(
-        value === null ||
-        value === undefined
-          ? ""
-          : value
-      );
-  },
+              <article>
+                <span>DISABLED</span>
+                <strong id="disabledOffersValue">0</strong>
+              </article>
 
+            </div>
 
-  setNumber(id, value) {
 
-    this.setText(
-      id,
-      this.formatNumber(value)
-    );
-  },
+            <section class="admin-panel admin-coming-panel">
 
+              <span>↗</span>
 
-  setMoney(id, value) {
+              <div>
+                <h3>Offer management workspace</h3>
+                <p>
+                  Create, schedule and audit discount campaigns from the dedicated Growth module.
+                </p>
+              </div>
 
-    this.setText(
-      id,
-      this.formatMoney(value)
-    );
-  },
+              <b>NEXT MODULE</b>
 
+            </section>
 
-  safeNumber(value) {
+          </section>
 
-    const number =
-      Number(value);
 
+          <!-- ===============================================
+               SUPPORT VIEW
+               =============================================== -->
 
-    return Number.isFinite(number)
-      ? number
-      : 0;
-  },
+          <section
+            class="admin-view"
+            data-admin-panel="support"
+          >
 
+            <div class="admin-page-heading">
 
-  formatNumber(value) {
+              <div>
+                <span class="admin-eyebrow">SUPPORT CONTROL</span>
+                <h2>Service resolution</h2>
+                <p>Monitor open, urgent and resolved support cases.</p>
+              </div>
 
-    return new Intl.NumberFormat(
-      "en-IN",
-      {
-        maximumFractionDigits:
-          0
-      }
-    ).format(
-      this.safeNumber(value)
-    );
-  },
+            </div>
 
 
-  formatMoney(value) {
+            <div class="admin-growth-grid">
 
-    return new Intl.NumberFormat(
-      "en-IN",
-      {
-        style:
-          "currency",
+              <article>
+                <span>TOTAL TICKETS</span>
+                <strong id="totalTicketsValue">0</strong>
+              </article>
 
-        currency:
-          "INR",
+              <article>
+                <span>OPEN</span>
+                <strong id="openTicketsValue">0</strong>
+              </article>
 
-        minimumFractionDigits:
-          0,
+              <article class="support-urgent">
+                <span>HIGH PRIORITY</span>
+                <strong id="highPriorityTicketsValue">0</strong>
+              </article>
 
-        maximumFractionDigits:
-          2
-      }
-    ).format(
-      this.safeNumber(value)
-    );
-  },
+              <article class="growth-active">
+                <span>RESOLVED</span>
+                <strong id="resolvedTicketsValue">0</strong>
+              </article>
 
+              <article>
+                <span>CLOSED</span>
+                <strong id="closedTicketsValue">0</strong>
+              </article>
 
-  formatDateTime(value) {
+            </div>
 
-    if (!value) {
-      return "—";
-    }
+          </section>
 
 
-    const date =
-      new Date(value);
+          <!-- ===============================================
+               STATE AND DISTRICTS VIEW
+               =============================================== -->
 
+          <section
+            class="admin-view"
+            data-admin-panel="districts"
+          >
 
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return String(value);
-    }
+            <div
+              class="admin-global-message hidden"
+              id="geographyPageMessage"
+              role="alert"
+              aria-live="polite"
+            ></div>
 
 
-    return new Intl.DateTimeFormat(
-      "en-IN",
-      {
-        day:
-          "2-digit",
+            <!-- Geography loading skeleton -->
 
-        month:
-          "short",
+            <section
+              class="geography-skeleton"
+              id="geographyPageSkeleton"
+              aria-label="Loading service geography"
+            >
 
-        year:
-          "numeric",
+              <div class="geography-skeleton-heading"></div>
 
-        hour:
-          "2-digit",
+              <div class="geography-skeleton-cards">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
 
-        minute:
-          "2-digit"
-      }
-    ).format(date);
-  },
+              <div class="geography-skeleton-toolbar"></div>
 
+              <div class="geography-skeleton-list">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
 
-  prettyStatus(value) {
+            </section>
 
-    return String(value || "")
-      .replace(
-        /_/g,
-        " "
-      )
-      .toLowerCase()
-      .replace(
-        /\b\w/g,
-        (letter) =>
-          letter.toUpperCase()
-      );
-  },
 
+            <!-- Geography live content -->
 
-  /**
-   * ==========================================================
-   * LIVE INTEGRATION TEST
-   *
-   * Browser console:
-   *
-   * AdminDashboard.test()
-   * ==========================================================
-   */
+            <div
+              class="geography-page hidden"
+              id="geographyPageContent"
+            >
 
-  async test() {
+              <div class="geography-page-heading">
 
-    console.log(
-      "========================================"
-    );
+                <div>
 
-    console.log(
-      "APNABITE ADMIN DASHBOARD INTEGRATION TEST"
-    );
+                  <span class="admin-eyebrow">
+                    PAN-INDIA SERVICE CONTROL
+                  </span>
 
-    console.log(
-      "========================================"
-    );
+                  <h2>
+                    State and district coverage
+                  </h2>
 
+                  <p>
+                    Activate service state-wise and manage individual district rules.
+                  </p>
 
-    const firstPromise =
-      this.fetchSummary();
+                </div>
 
 
-    const secondPromise =
-      this.fetchSummary();
+                <div class="geography-page-heading-actions">
 
+                  <div class="geography-last-updated">
 
-    const duplicateProtected =
-      firstPromise ===
-      secondPromise;
+                    <span>
+                      Last updated
+                    </span>
 
+                    <strong id="geographyLastUpdated">
+                      —
+                    </strong>
 
-    let liveData = null;
+                  </div>
 
 
-    try {
+                  <button
+                    class="admin-refresh-button"
+                    id="refreshGeographyButton"
+                    type="button"
+                  >
 
-      liveData =
-        await firstPromise;
+                    <span aria-hidden="true">
+                      ↻
+                    </span>
 
-    } catch (error) {
+                    <strong>
+                      Refresh coverage
+                    </strong>
 
-      console.error(
-        "Admin dashboard test API failed:",
-        error
-      );
-    }
+                  </button>
 
+                </div>
 
-    if (liveData) {
+              </div>
 
-      this.state.data =
-        liveData;
 
+              <!-- Geography metrics -->
 
-      this.writeCache(
-        liveData
-      );
+              <section class="geography-summary-grid">
 
+                <article class="geography-summary-card total">
 
-      this.render(
-        liveData
-      );
+                  <div>
+                    <span>TOTAL STATES & UTS</span>
+                    <strong id="totalStatesValue">0</strong>
+                  </div>
 
+                  <b>🇮🇳</b>
 
-      this.showDashboard();
-    }
+                  <p>Official LGD coverage</p>
 
+                </article>
 
-    this.state.requestPromise =
-      null;
 
+                <article class="geography-summary-card active">
 
-    const cache =
-      this.readCache();
+                  <div>
+                    <span>ACTIVE STATES</span>
+                    <strong id="activeStatesValue">0</strong>
+                  </div>
 
+                  <b>✓</b>
 
-    const views =
-      document.querySelectorAll(
-        "[data-admin-panel]"
-      );
+                  <p>States accepting service</p>
 
+                </article>
 
-    const mobileButtons =
-      document.querySelectorAll(
-        ".admin-mobile-navigation [data-admin-view]"
-      );
 
+                <article class="geography-summary-card districts">
 
-    const sidebarButtons =
-      document.querySelectorAll(
-        ".admin-sidebar [data-admin-view]"
-      );
+                  <div>
+                    <span>TOTAL DISTRICTS</span>
+                    <strong id="totalDistrictsValue">0</strong>
+                  </div>
 
+                  <b>◈</b>
 
-    const dashboardVisible =
-      !this.elements.content
-        .classList.contains(
-          "hidden"
-        );
+                  <p>Official districts available</p>
 
+                </article>
 
-    const results = [
 
-      {
-        test:
-          "Required role",
+                <article class="geography-summary-card live">
 
-        expected:
-          "Admin",
+                  <div>
+                    <span>LIVE DISTRICTS</span>
+                    <strong id="effectiveActiveDistrictsValue">0</strong>
+                  </div>
 
-        actual:
-          document.body.dataset
-            .requiredRole,
+                  <b>●</b>
 
-        passed:
-          document.body.dataset
-            .requiredRole ===
-            "Admin"
-      },
+                  <p>Effectively active for customers</p>
 
-      {
-        test:
-          "Live Admin API",
+                </article>
 
-        expected:
-          true,
+              </section>
 
-        actual:
-          Boolean(
-            liveData &&
-            liveData.success
-          ),
 
-        passed:
-          Boolean(
-            liveData &&
-            liveData.success
-          )
-      },
+              <!-- Secondary geography metrics -->
 
-      {
-        test:
-          "Founder overview",
+              <section class="geography-status-strip">
 
-        expected:
-          true,
+                <div>
+                  <span>Inactive states</span>
+                  <strong id="inactiveStatesValue">0</strong>
+                </div>
 
-        actual:
-          Boolean(
-            liveData &&
-            liveData.overview
-          ),
+                <div>
+                  <span>Active districts</span>
+                  <strong id="activeDistrictsValue">0</strong>
+                </div>
 
-        passed:
-          Boolean(
-            liveData &&
-            liveData.overview
-          )
-      },
+                <div>
+                  <span>Inactive districts</span>
+                  <strong id="inactiveDistrictsValue">0</strong>
+                </div>
 
-      {
-        test:
-          "Finance summary",
+                <div>
+                  <span>Coming soon</span>
+                  <strong id="comingSoonDistrictsValue">0</strong>
+                </div>
 
-        expected:
-          true,
+              </section>
 
-        actual:
-          Boolean(
-            liveData &&
-            liveData.finance
-          ),
 
-        passed:
-          Boolean(
-            liveData &&
-            liveData.finance
-          )
-      },
+              <!-- State filters -->
 
-      {
-        test:
-          "Operations summary",
+              <section class="geography-filter-panel">
 
-        expected:
-          true,
+                <div class="geography-search-box">
 
-        actual:
-          Boolean(
-            liveData &&
-            liveData.partners &&
-            liveData.riders
-          ),
+                  <span>⌕</span>
 
-        passed:
-          Boolean(
-            liveData &&
-            liveData.partners &&
-            liveData.riders
-          )
-      },
+                  <input
+                    id="stateSearchInput"
+                    type="search"
+                    placeholder="Search state or union territory"
+                    autocomplete="off"
+                  >
 
-      {
-        test:
-          "Dashboard cache",
+                </div>
 
-        expected:
-          true,
 
-        actual:
-          Boolean(
-            cache &&
-            cache.data
-          ),
+                <select
+                  id="stateStatusFilter"
+                  aria-label="Filter states by status"
+                >
 
-        passed:
-          Boolean(
-            cache &&
-            cache.data
-          )
-      },
+                  <option value="ALL">
+                    All service statuses
+                  </option>
 
-      {
-        test:
-          "Duplicate request protection",
+                  <option value="ACTIVE">
+                    Active states
+                  </option>
 
-        expected:
-          true,
+                  <option value="INACTIVE">
+                    Inactive states
+                  </option>
 
-        actual:
-          duplicateProtected,
+                </select>
 
-        passed:
-          duplicateProtected
-      },
 
-      {
-        test:
-          "Dashboard visible",
+                <button
+                  class="geography-clear-filter"
+                  id="clearStateFiltersButton"
+                  type="button"
+                >
+                  Clear filters
+                </button>
 
-        expected:
-          true,
+              </section>
 
-        actual:
-          dashboardVisible,
 
-        passed:
-          dashboardVisible
-      },
+              <!-- State directory -->
 
-      {
-        test:
-          "Admin views",
+              <section class="geography-directory-card">
 
-        expected:
-          6,
+                <header class="geography-directory-heading">
 
-        actual:
-          views.length,
+                  <div>
 
-        passed:
-          views.length === 6
-      },
+                    <span class="admin-eyebrow">
+                      NATIONAL COVERAGE
+                    </span>
 
-      {
-        test:
-          "Mobile navigation",
+                    <h3>
+                      States and union territories
+                    </h3>
 
-        expected:
-          4,
+                    <p>
 
-        actual:
-          mobileButtons.length,
+                      Showing
 
-        passed:
-          mobileButtons.length === 4
-      },
+                      <strong id="visibleStatesCount">
+                        0
+                      </strong>
 
-      {
-  test:
-    "Desktop navigation",
+                      records
 
-  expected:
-    6,
+                    </p>
 
-  actual:
-    sidebarButtons.length,
+                  </div>
 
-  passed:
-    sidebarButtons.length === 6
-},
-      {
-        test:
-          "Financial safety",
+                </header>
 
-        expected:
-          "PRELIMINARY",
 
-        actual:
-          liveData &&
-          liveData.finance
-            ? liveData.finance
-                .profitLossStatus
-            : "",
+                <div
+                  class="geography-state-list"
+                  id="stateList"
+                  aria-live="polite"
+                ></div>
 
-        passed:
-          Boolean(
-            liveData &&
-            liveData.finance &&
-            liveData.finance
-              .profitLossStatus ===
-              "PRELIMINARY" &&
-            liveData.finance
-              .netProfit === null
-          )
-      }
 
-    ];
+                <div
+                  class="geography-empty-state hidden"
+                  id="stateEmptyState"
+                >
 
+                  <span>◈</span>
 
-    const passed =
-      results.every(
-        (result) =>
-          result.passed
-      );
+                  <strong>
+                    No states found
+                  </strong>
 
+                  <p>
+                    Change the search or service-status filter.
+                  </p>
 
-    console.table(
-      results
-    );
+                </div>
 
+              </section>
 
-    console.log(
-      "Admin Dashboard Data:",
-      liveData
-    );
 
+              <aside class="geography-safety-note">
 
-    console.log(
-      passed
-        ? "Admin Dashboard Integration Test: PASS"
-        : "Admin Dashboard Integration Test: FAIL"
-    );
+                <span>!</span>
 
+                <div>
 
-    return {
-      success:
-        passed,
+                  <strong>
+                    State status controls effective service
+                  </strong>
 
-      status:
-        passed
-          ? "PASS"
-          : "FAIL",
+                  <p>
+                    Deactivating a state makes all its districts unavailable
+                    to customers. Individual district settings remain preserved
+                    and return when the state is activated again.
+                  </p>
 
-      data:
-        liveData,
+                </div>
 
-      results:
-        results
-    };
-  }
+              </aside>
 
-};
+            </div>
 
 
-/**
- * ============================================================
- * INITIALIZE
- * ============================================================
- */
+            <!--
+              Compatibility elements for dashboard.js V2.
+              These remain hidden until dashboard.js is updated.
+            -->
 
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
+            <div class="hidden" aria-hidden="true">
 
-    AdminDashboard.init();
-  }
-);
+              <table>
+                <tbody id="districtPerformanceBody"></tbody>
+              </table>
+
+              <div
+                class="admin-empty-state hidden"
+                id="districtPerformanceEmpty"
+              ></div>
+
+            </div>
+
+          </section>
+
+
+          <!-- ===============================================
+               DATA QUALITY FOOTER
+               =============================================== -->
+
+          <footer class="admin-data-footer">
+
+            <div>
+
+              <span>
+                DATA STATUS
+              </span>
+
+              <strong id="adminDataStatus">
+                Live operational data
+              </strong>
+
+            </div>
+
+            <p id="adminDataQualityNote">
+              Financial values are calculated from current order and transaction records.
+            </p>
+
+          </footer>
+
+        </div>
+
+
+        <!-- =================================================
+             MOBILE BOTTOM NAVIGATION
+             ================================================= -->
+
+        <nav
+          class="admin-mobile-navigation"
+          aria-label="Mobile Admin navigation"
+        >
+
+          <button
+            class="active"
+            type="button"
+            data-admin-view="overview"
+          >
+
+            <span>◫</span>
+            <strong>Overview</strong>
+
+          </button>
+
+
+          <button
+            type="button"
+            data-admin-view="finance"
+          >
+
+            <span>₹</span>
+            <strong>Finance</strong>
+
+          </button>
+
+
+          <button
+            type="button"
+            data-admin-view="operations"
+          >
+
+            <span>⚙</span>
+            <strong>Operations</strong>
+
+          </button>
+
+
+          <button
+            type="button"
+            data-admin-view="growth"
+          >
+
+            <span>↗</span>
+            <strong>Growth</strong>
+
+          </button>
+
+        </nav>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         STATE DISTRICT DRAWER
+         ===================================================== -->
+
+    <div
+      class="geography-drawer-dialog hidden"
+      id="districtPanel"
+      aria-hidden="true"
+    >
+
+      <button
+        class="geography-dialog-backdrop"
+        id="districtPanelBackdrop"
+        type="button"
+        aria-label="Close district panel"
+      ></button>
+
+
+      <section
+        class="geography-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="selectedStateName"
+      >
+
+        <header class="geography-drawer-header">
+
+          <div>
+
+            <small>
+              STATE OPERATIONS
+            </small>
+
+            <h2 id="selectedStateName">
+              State districts
+            </h2>
+
+            <p id="selectedStateMeta">
+              Select a state to manage its districts.
+            </p>
+
+          </div>
+
+
+          <button
+            id="closeDistrictPanelButton"
+            type="button"
+            aria-label="Close district panel"
+          >
+            ×
+          </button>
+
+        </header>
+
+
+        <div class="geography-drawer-content">
+
+          <section class="selected-state-card">
+
+            <div>
+
+              <span
+                class="geography-status-badge inactive"
+                id="selectedStateStatusBadge"
+              >
+                INACTIVE
+              </span>
+
+              <strong id="selectedStateControlName">
+                —
+              </strong>
+
+              <small id="selectedStateControlCode">
+                State code —
+              </small>
+
+            </div>
+
+
+            <button
+              class="geography-state-status-button"
+              id="stateStatusButton"
+              type="button"
+            >
+              Activate state
+            </button>
+
+          </section>
+
+
+          <section class="district-summary-grid">
+
+            <article>
+              <span>Total districts</span>
+              <strong id="selectedStateDistrictCount">0</strong>
+            </article>
+
+            <article>
+              <span>Stored active</span>
+              <strong id="selectedStateActiveCount">0</strong>
+            </article>
+
+            <article>
+              <span>Effectively live</span>
+              <strong id="selectedStateEffectiveCount">0</strong>
+            </article>
+
+          </section>
+
+
+          <section class="district-filter-panel">
+
+            <div class="geography-search-box">
+
+              <span>⌕</span>
+
+              <input
+                id="districtSearchInput"
+                type="search"
+                placeholder="Search district"
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <select
+              id="districtStatusFilter"
+              aria-label="Filter districts by status"
+            >
+
+              <option value="ALL">
+                All district statuses
+              </option>
+
+              <option value="ACTIVE">
+                Active
+              </option>
+
+              <option value="INACTIVE">
+                Inactive
+              </option>
+
+            </select>
+
+          </section>
+
+
+          <section class="district-bulk-toolbar">
+
+            <label>
+
+              <input
+                id="selectAllDistrictsCheckbox"
+                type="checkbox"
+              >
+
+              <span>
+                Select visible districts
+              </span>
+
+            </label>
+
+
+            <div>
+
+              <button
+                class="geography-bulk-activate"
+                id="bulkActivateDistrictsButton"
+                type="button"
+                disabled
+              >
+                Activate
+              </button>
+
+              <button
+                class="geography-bulk-deactivate"
+                id="bulkDeactivateDistrictsButton"
+                type="button"
+                disabled
+              >
+                Deactivate
+              </button>
+
+            </div>
+
+          </section>
+
+
+          <div
+            class="district-loading hidden"
+            id="districtLoading"
+          >
+
+            <span></span>
+
+            <strong>
+              Loading districts
+            </strong>
+
+            <p>
+              Fetching only this state's district records.
+            </p>
+
+          </div>
+
+
+          <div
+            class="admin-global-message admin-error-message hidden"
+            id="districtError"
+            role="alert"
+          ></div>
+
+
+          <div
+            class="district-list"
+            id="districtList"
+            aria-live="polite"
+          ></div>
+
+
+          <div
+            class="geography-empty-state hidden"
+            id="districtEmptyState"
+          >
+
+            <span>◈</span>
+
+            <strong>
+              No districts found
+            </strong>
+
+            <p>
+              Change the search or district-status filter.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         STATUS CONFIRMATION DIALOG
+         ===================================================== -->
+
+    <div
+      class="geography-confirm-dialog hidden"
+      id="serviceStatusDialog"
+      aria-hidden="true"
+    >
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="serviceStatusDialogTitle"
+      >
+
+        <span class="geography-confirm-icon">
+          !
+        </span>
+
+        <h2 id="serviceStatusDialogTitle">
+          Confirm service-status change
+        </h2>
+
+        <p id="serviceStatusDialogDescription">
+          Confirm the selected service-status action.
+        </p>
+
+        <label for="serviceStatusReasonInput">
+          Change reason
+        </label>
+
+        <textarea
+          id="serviceStatusReasonInput"
+          maxlength="500"
+          placeholder="Enter a clear operational reason"
+        ></textarea>
+
+        <div
+          class="geography-form-error hidden"
+          id="serviceStatusDialogError"
+          role="alert"
+        ></div>
+
+        <div class="geography-confirm-actions">
+
+          <button
+            class="geography-secondary-button"
+            id="cancelServiceStatusButton"
+            type="button"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="geography-primary-button"
+            id="confirmServiceStatusButton"
+            type="button"
+          >
+            Confirm change
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         DISTRICT RULES DIALOG
+         ===================================================== -->
+
+    <div
+      class="geography-confirm-dialog hidden"
+      id="districtRulesDialog"
+      aria-hidden="true"
+    >
+
+      <section
+        class="district-rules-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="districtRulesTitle"
+      >
+
+        <header>
+
+          <div>
+
+            <small>
+              DELIVERY CONFIGURATION
+            </small>
+
+            <h2 id="districtRulesTitle">
+              District service rules
+            </h2>
+
+            <p id="districtRulesId">
+              —
+            </p>
+
+          </div>
+
+        </header>
+
+
+        <div class="district-rules-grid">
+
+          <label>
+
+            <span>
+              Service radius (KM)
+            </span>
+
+            <input
+              id="districtServiceRadiusInput"
+              type="number"
+              min="1"
+              max="100"
+              step="0.5"
+              inputmode="decimal"
+            >
+
+          </label>
+
+
+          <label>
+
+            <span>
+              Delivery fee per KM
+            </span>
+
+            <input
+              id="districtDeliveryFeeInput"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+            >
+
+          </label>
+
+
+          <label>
+
+            <span>
+              Minimum delivery fee
+            </span>
+
+            <input
+              id="districtMinimumDeliveryFeeInput"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+            >
+
+          </label>
+
+
+          <label>
+
+            <span>
+              Long-distance delivery
+            </span>
+
+            <select id="districtLongDistanceInput">
+
+              <option value="TRUE">
+                Enabled
+              </option>
+
+              <option value="FALSE">
+                Disabled
+              </option>
+
+            </select>
+
+          </label>
+
+
+          <label class="district-rules-full-field">
+
+            <span>
+              Update reason
+            </span>
+
+            <textarea
+              id="districtRulesReasonInput"
+              maxlength="500"
+              placeholder="Enter the reason for changing district rules"
+            ></textarea>
+
+          </label>
+
+        </div>
+
+
+        <div
+          class="geography-form-error hidden"
+          id="districtRulesError"
+          role="alert"
+        ></div>
+
+
+        <div class="geography-confirm-actions">
+
+          <button
+            class="geography-secondary-button"
+            id="cancelDistrictRulesButton"
+            type="button"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="geography-primary-button"
+            id="saveDistrictRulesButton"
+            type="button"
+          >
+            Save service rules
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- =======================================================
+       SHARED JAVASCRIPT
+       ======================================================= -->
+
+  <script src="../../shared/js/storage.js"></script>
+
+  <script src="../../shared/js/cache.js"></script>
+
+  <script src="../../shared/js/api.js"></script>
+
+  <script src="../../shared/js/session.js"></script>
+
+  <script src="../../shared/js/auth.js"></script>
+
+  <script src="../../shared/js/app-router.js"></script>
+
+  <script src="../../shared/js/role-home.js"></script>
+
+
+  <!-- Admin modules -->
+
+  <script src="../js/dashboard.js"></script>
+
+  <script src="../js/district-control.js"></script>
+
+</body>
+
+</html>
