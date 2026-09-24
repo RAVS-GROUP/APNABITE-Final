@@ -129,14 +129,10 @@ const ServiceLocation = {
       districtId:
         districtId,
 
-      stateCode:
-        String(
-          district.stateCode ||
-          district.StateCode ||
-          ""
-        )
-          .trim()
-          .toUpperCase(),
+     stateCode:
+  this.resolveStateCode(
+    district
+  ),
 
       state:
         state,
@@ -1096,7 +1092,120 @@ const ServiceLocation = {
     }
   },
 
+  /**
+   * ==========================================================
+   * RESOLVE STATE CODE
+   * ==========================================================
+   */
 
+  resolveStateCode(district) {
+
+    if (
+      !district ||
+      typeof district !== "object"
+    ) {
+      return "";
+    }
+
+
+    const directCode =
+      String(
+        district.stateCode ||
+        district.StateCode ||
+        district.state_code ||
+        district.STATE_CODE ||
+        ""
+      )
+        .trim()
+        .toUpperCase();
+
+
+    if (directCode) {
+      return directCode;
+    }
+
+
+    const stateId =
+      String(
+        district.stateId ||
+        district.StateID ||
+        district.stateID ||
+        district.STATE_ID ||
+        ""
+      )
+        .trim()
+        .toUpperCase();
+
+
+    if (
+      stateId.startsWith(
+        "STATE_"
+      )
+    ) {
+
+      return stateId
+        .replace(
+          /^STATE_/,
+          ""
+        )
+        .trim();
+    }
+
+
+    const stateName =
+      String(
+        district.state ||
+        district.State ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const stateCodes = {
+
+      "andaman and nicobar islands": "AN",
+      "andhra pradesh": "AP",
+      "arunachal pradesh": "AR",
+      "assam": "AS",
+      "bihar": "BR",
+      "chandigarh": "CH",
+      "chhattisgarh": "CG",
+      "dadra and nagar haveli and daman and diu": "DN",
+      "delhi": "DL",
+      "goa": "GA",
+      "gujarat": "GJ",
+      "haryana": "HR",
+      "himachal pradesh": "HP",
+      "jammu and kashmir": "JK",
+      "jharkhand": "JH",
+      "karnataka": "KA",
+      "kerala": "KL",
+      "ladakh": "LA",
+      "lakshadweep": "LD",
+      "madhya pradesh": "MP",
+      "maharashtra": "MH",
+      "manipur": "MN",
+      "meghalaya": "ML",
+      "mizoram": "MZ",
+      "nagaland": "NL",
+      "odisha": "OD",
+      "puducherry": "PY",
+      "punjab": "PB",
+      "rajasthan": "RJ",
+      "sikkim": "SK",
+      "tamil nadu": "TN",
+      "telangana": "TS",
+      "tripura": "TR",
+      "uttar pradesh": "UP",
+      "uttarakhand": "UK",
+      "west bengal": "WB"
+    };
+
+
+    return stateCodes[stateName] || "";
+  },
+  
   /**
    * ==========================================================
    * VALUE HELPERS
