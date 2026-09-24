@@ -4528,3 +4528,1361 @@ document.addEventListener(
     CustomerHome.init();
   }
 );
+
+/**
+ * ============================================================
+ * CUSTOMER HOME CART INTEGRATION
+ * VERSION: 1.0.0
+ * ============================================================
+ */
+(() => {
+  const originalInit = CustomerHome.init.bind(CustomerHome);
+  const originalRenderKitchens = CustomerHome.renderKitchens.bind(CustomerHome);
+
+  Object.assign(CustomerHome, {
+    cart: null,
+    cartItems: [],
+    cartSummary: {
+      distinctItems: 0,
+      totalQuantity: 0,
+      subtotal: 0
+    },
+    cartLoading: false,
+    cartOperationRunning: false,
+    pendingCartProduct: null,
+
+    init() {
+      const initialized = originalInit();
+      if (!initialized) {
+        return false;
+      }
+
+      this.elements.cartSummary =
+        document.getElementById("customerCartSummary");
+
+      this.elements.cartItemCount =
+        document.getElementById("customerCartItemCount");
+
+      this.elements.cartKitchenName =
+        document.getElementById("customerCartKitchenName");
+
+      this.elements.cartSubtotal =
+        document.getElementById("customerCartSubtotal");
+
+      this.elements.viewCartButton =
+        document.getElementById("viewCustomerCartButton");
+
+      this.elements.cartDialog =
+        document.getElementById("cartReplacementDialog");
+
+      this.elements.currentCartKitchenName =
+        document.getElementById("currentCartKitchenName");
+
+      this.elements.newCartKitchenName =
+        document.getElementById("newCartKitchenName");
+
+      this.elements.keepCurrentCartButton =
+        document.getElementById("keepCurrentCartButton");
+
+      this.elements.replaceCurrentCartButton =
+        document.getElementById("replaceCurrentCartButton");
+
+      this.elements.cartOperationStatus =
+        document.getElementById("cartOperationStatus");
+
+      if (!this.hasRequiredCartElements()) {
+        console.error("Customer Home cart elements are missing.");
+        return false;
+      }
+
+      this.bindCartEvents();
+      this.loadCustomerCart();
+
+      console.log("ApnaBite Customer Home cart initialized.");
+      return true;
+    },
+
+    hasRequiredCartElements() {
+      return Boolean(
+        this.elements.cartSummary &&
+        this.elements.cartItemCount &&
+        this.elements.cartKitchenName &&
+        this.elements.cartSubtotal &&
+        this.elements.viewCartButton &&
+        this.elements.cartDialog &&
+        this.elements.currentCartKitchenName &&
+        this.elements.newCartKitchenName &&
+        this.elements.keepCurrentCartButton &&
+        this.elements.replaceCurrentCartButton &&
+        this.elements.cartOperationStatus
+      );
+    },
+
+    bindCartEvents() {
+      this.elements.kitchenList.addEventListener(
+        "click",
+        (event) => {
+          const button =
+            event.target.closest("[data-cart-action]");
+
+          if (!button) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          this.handleCartAction(button);
+        }
+      );
+
+      this.elements.viewCartButton.addEventListener(
+        "click",
+        () => {
+          this.showCartStatus(
+            "Your cart is ready. Cart page integration is the next step."
+          );
+        }
+      );
+
+      this.elements.keepCurrentCartButton.addEventListener(
+        "click",
+        () => {
+          this.closeCartReplacementDialog();
+          this.pendingCartProduct = null;
+        }
+      );
+
+      this.elements.replaceCurrentCartButton.addEventListener(
+        "click",
+        () => {
+          this.confirmCartReplacement();
+        }
+      );
+
+      this.elements.cartDialog.addEventListener(
+        "cancel",
+        () => {
+          this.pendingCartProduct = null;
+        }
+      );
+    },
+
+    renderKitchens(kitchens) {
+      originalRenderKitchens(kitchens);
+      this.renderKitchenProductControls();
+    },
+
+    renderKitchenProductControls() {
+      this.elements.kitchenList
+        .querySelectorAll(".kitchen-card")
+        .forEach((card) => {
+          const chefId =
+            String(card.dataset.chefId || "");
+
+          const kitchen =
+            this.kitchens.find(
+              (item) =>
+                String(item.chefId || "") === chefId
+            );
+
+          const preview =
+            card.querySelector(".kitchen-product-preview");
+
+          if (!kitchen || !preview) {
+            return;
+          }
+
+          const products =
+            Array.isArray(kitchen.products)
+              ? kitchen.products.slice(0, 3)
+              : [];
+
+          preview.innerHTML = "";
+
+          products.forEach((product) => {
+            preview.appendChild(
+              this.createProductCartControl(
+                kitchen,
+                product
+              )
+            );
+          });
+        });
+
+      this.syncProductCartControls();
+    },
+
+    createProductCartControl(kitchen, product) {
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "kitchen-product-cart-item";
+
+      row.dataset.productId =
+        String(product.productId || "");
+
+      row.dataset.variantId =
+        this.getDefaultVariantId(product);
+
+      row.dataset.chefId =
+        String(kitchen.chefId || "");
+
+      const information =
+        document.createElement("div");
+
+      information.className =
+        "kitchen-product-cart-copy";
+
+      const name =
+        document.createElement("strong");
+
+      name.textContent =
+        product.productName || "Dish";
+
+      const price =
+        document.createElement("small");
+
+      price.textContent =
+        this.formatCartMoney(
+          this.getProductPrice(product)
+        );
+
+      information.appendChild(name);
+      information.appendChild(price);
+
+      const controls =
+        document.createElement("div");
+
+      controls.className =
+        "product-cart-controls";
+
+      controls.dataset.productId =
+        String(product.productId || "");
+
+      controls.dataset.variantId =
+        this.getDefaultVariantId(product);
+
+      controls.dataset.chefId =
+        String(kitchen.chefId || "");
+
+      controls.dataset.businessName =
+        String(
+          kitchen.businessName ||
+          "Selected kitchen"
+        );
+
+      controls.dataset.productName =
+        String(product.productName || "Dish");
+
+      controls.dataset.price =
+        String(this.getProductPrice(product));
+
+      controls.appendChild(
+        this.createAddButton(
+          kitchen,
+          product
+        )
+      );
+
+      row.appendChild(information);
+      row.appendChild(controls);
+
+      return row;
+    },
+
+    createAddButton(kitchen, product) {
+      const button =
+        document.createElement("button");
+
+      button.className =
+        "product-add-button";
+
+      button.type =
+        "button";
+
+      button.dataset.cartAction =
+        "ADD";
+
+      button.dataset.chefId =
+        String(kitchen.chefId || "");
+
+      button.dataset.businessName =
+        String(
+          kitchen.businessName ||
+          "Selected kitchen"
+        );
+
+      button.dataset.productId =
+        String(product.productId || "");
+
+      button.dataset.productName =
+        String(product.productName || "Dish");
+
+      button.dataset.variantId =
+        this.getDefaultVariantId(product);
+
+      button.dataset.price =
+        String(this.getProductPrice(product));
+
+      button.textContent =
+        "ADD";
+
+      if (
+        !button.dataset.productId ||
+        !button.dataset.variantId ||
+        !button.dataset.chefId
+      ) {
+        button.disabled = true;
+        button.textContent = "Unavailable";
+      }
+
+      return button;
+    },
+
+    createQuantityControl(item) {
+      const wrapper =
+        document.createElement("div");
+
+      wrapper.className =
+        "product-quantity-control";
+
+      const decrease =
+        document.createElement("button");
+
+      decrease.type =
+        "button";
+
+      decrease.dataset.cartAction =
+        Number(item.quantity || 0) <= 1
+          ? "REMOVE"
+          : "DECREASE";
+
+      decrease.dataset.cartItemId =
+        String(item.cartItemId || "");
+
+      decrease.setAttribute(
+        "aria-label",
+        Number(item.quantity || 0) <= 1
+          ? "Remove item"
+          : "Decrease quantity"
+      );
+
+      decrease.textContent =
+        Number(item.quantity || 0) <= 1
+          ? "×"
+          : "−";
+
+      const quantity =
+        document.createElement("strong");
+
+      quantity.textContent =
+        String(item.quantity || 1);
+
+      quantity.setAttribute(
+        "aria-label",
+        "Quantity " +
+        String(item.quantity || 1)
+      );
+
+      const increase =
+        document.createElement("button");
+
+      increase.type =
+        "button";
+
+      increase.dataset.cartAction =
+        "INCREASE";
+
+      increase.dataset.cartItemId =
+        String(item.cartItemId || "");
+
+      increase.setAttribute(
+        "aria-label",
+        "Increase quantity"
+      );
+
+      increase.textContent =
+        "+";
+
+      wrapper.appendChild(decrease);
+      wrapper.appendChild(quantity);
+      wrapper.appendChild(increase);
+
+      return wrapper;
+    },
+
+    getDefaultVariantId(product) {
+      if (!product) {
+        return "";
+      }
+
+      if (product.variantId) {
+        return String(product.variantId);
+      }
+
+      if (product.defaultVariantId) {
+        return String(product.defaultVariantId);
+      }
+
+      if (
+        product.defaultVariant &&
+        product.defaultVariant.variantId
+      ) {
+        return String(
+          product.defaultVariant.variantId
+        );
+      }
+
+      const variants =
+        Array.isArray(product.variants)
+          ? product.variants
+          : [];
+
+      const defaultVariant =
+        variants.find(
+          (variant) =>
+            variant.isDefault === true ||
+            String(
+              variant.isDefault || ""
+            ).toUpperCase() === "TRUE"
+        ) || variants[0];
+
+      return defaultVariant
+        ? String(defaultVariant.variantId || "")
+        : "";
+    },
+
+    getProductPrice(product) {
+      if (!product) {
+        return 0;
+      }
+
+      if (
+        product.defaultVariant &&
+        Number.isFinite(
+          Number(product.defaultVariant.price)
+        )
+      ) {
+        return Number(
+          product.defaultVariant.price
+        );
+      }
+
+      const variants =
+        Array.isArray(product.variants)
+          ? product.variants
+          : [];
+
+      const defaultVariant =
+        variants.find(
+          (variant) =>
+            variant.isDefault === true ||
+            String(
+              variant.isDefault || ""
+            ).toUpperCase() === "TRUE"
+        ) || variants[0];
+
+      if (
+        defaultVariant &&
+        Number.isFinite(
+          Number(defaultVariant.price)
+        )
+      ) {
+        return Number(defaultVariant.price);
+      }
+
+      return Number(product.price || 0);
+    },
+
+    async loadCustomerCart() {
+      if (this.cartLoading) {
+        return {
+          success: false,
+          reason: "CART_LOADING"
+        };
+      }
+
+      this.cartLoading = true;
+
+      try {
+        const response =
+          await API.request(
+            "get_customer_cart",
+            {
+              sessionId:
+                this.getSessionId()
+            },
+            {
+              timeoutMs: 90000
+            }
+          );
+
+        this.applyCartResponse(
+          response.data || {}
+        );
+
+        return {
+          success: true,
+          cart: this.cart,
+          items: this.cartItems,
+          summary: this.cartSummary
+        };
+
+      } catch (error) {
+        console.error(
+          "Customer cart load failed:",
+          error
+        );
+
+        this.showCartStatus(
+          error.message ||
+          "Your cart could not be loaded."
+        );
+
+        return {
+          success: false,
+          code:
+            error.code ||
+            "CART_LOAD_FAILED",
+          error:
+            error.message
+        };
+
+      } finally {
+        this.cartLoading = false;
+      }
+    },
+
+    applyCartResponse(result) {
+      const status =
+        String(
+          result.status ||
+          result.cartStatus ||
+          ""
+        ).toUpperCase();
+
+      this.cart =
+        result.cart || null;
+
+      this.cartItems =
+        Array.isArray(result.items)
+          ? result.items
+          : [];
+
+      const suppliedSummary =
+        result.summary || {};
+
+      this.cartSummary = {
+        distinctItems:
+          Number(
+            suppliedSummary.distinctItems ||
+            this.cartItems.length ||
+            0
+          ),
+        totalQuantity:
+          Number(
+            suppliedSummary.totalQuantity ||
+            this.cartItems.reduce(
+              (total, item) =>
+                total +
+                Number(item.quantity || 0),
+              0
+            )
+          ),
+        subtotal:
+          Number(
+            suppliedSummary.subtotal ||
+            this.cartItems.reduce(
+              (total, item) =>
+                total +
+                Number(
+                  item.itemTotal ||
+                  (
+                    Number(
+                      item.currentPrice ||
+                      item.priceSnapshot ||
+                      0
+                    ) *
+                    Number(item.quantity || 0)
+                  )
+                ),
+              0
+            )
+          )
+      };
+
+      if (
+        status === "EMPTY" ||
+        this.cartItems.length === 0
+      ) {
+        this.cart = null;
+        this.cartItems = [];
+        this.cartSummary = {
+          distinctItems: 0,
+          totalQuantity: 0,
+          subtotal: 0
+        };
+      }
+
+      this.renderCartSummary();
+      this.syncProductCartControls();
+    },
+
+    renderCartSummary() {
+      const hasItems =
+        this.cartItems.length > 0 &&
+        this.cartSummary.totalQuantity > 0;
+
+      this.elements.cartSummary
+        .classList.toggle(
+          "hidden",
+          !hasItems
+        );
+
+      document.body.classList.toggle(
+        "customer-cart-active",
+        hasItems
+      );
+
+      if (!hasItems) {
+        this.elements.cartItemCount
+          .textContent =
+            "0 items";
+
+        this.elements.cartKitchenName
+          .textContent =
+            "Your cart";
+
+        this.elements.cartSubtotal
+          .textContent =
+            "₹0";
+
+        return;
+      }
+
+      const quantity =
+        this.cartSummary.totalQuantity;
+
+      this.elements.cartItemCount
+        .textContent =
+          quantity +
+          (
+            quantity === 1
+              ? " item"
+              : " items"
+          );
+
+      this.elements.cartKitchenName
+        .textContent =
+          this.getCartKitchenName();
+
+      this.elements.cartSubtotal
+        .textContent =
+          this.formatCartMoney(
+            this.cartSummary.subtotal
+          );
+    },
+
+    getCartKitchenName() {
+      if (
+        this.cart &&
+        this.cart.businessName
+      ) {
+        return this.cart.businessName;
+      }
+
+      const chefId =
+        this.cart
+          ? String(this.cart.chefId || "")
+          : "";
+
+      const kitchen =
+        this.kitchens.find(
+          (item) =>
+            String(item.chefId || "") === chefId
+        );
+
+      return kitchen
+        ? kitchen.businessName
+        : "Your cart";
+    },
+
+    syncProductCartControls() {
+      if (
+        !this.elements ||
+        !this.elements.kitchenList
+      ) {
+        return;
+      }
+
+      this.elements.kitchenList
+        .querySelectorAll(
+          ".product-cart-controls"
+        )
+        .forEach((control) => {
+          const productId =
+            String(
+              control.dataset.productId || ""
+            );
+
+          const variantId =
+            String(
+              control.dataset.variantId || ""
+            );
+
+          const cartItem =
+            this.cartItems.find(
+              (item) =>
+                String(item.productId || "") ===
+                  productId &&
+                String(item.variantId || "") ===
+                  variantId
+            );
+
+          control.innerHTML = "";
+
+          if (cartItem) {
+            control.appendChild(
+              this.createQuantityControl(
+                cartItem
+              )
+            );
+            return;
+          }
+
+          const kitchen = {
+            chefId:
+              control.dataset.chefId || "",
+            businessName:
+              control.dataset.businessName ||
+              "Selected kitchen"
+          };
+
+          const product = {
+            productId:
+              productId,
+            productName:
+              control.dataset.productName ||
+              "Dish",
+            variantId:
+              variantId,
+            price:
+              Number(
+                control.dataset.price || 0
+              )
+          };
+
+          control.appendChild(
+            this.createAddButton(
+              kitchen,
+              product
+            )
+          );
+        });
+    },
+
+    async handleCartAction(button) {
+      if (
+        this.cartOperationRunning ||
+        button.disabled
+      ) {
+        return;
+      }
+
+      const action =
+        String(
+          button.dataset.cartAction || ""
+        ).toUpperCase();
+
+      if (action === "ADD") {
+        return this.addCustomerCartItem({
+          chefId:
+            button.dataset.chefId || "",
+          businessName:
+            button.dataset.businessName ||
+            "Selected kitchen",
+          productId:
+            button.dataset.productId || "",
+          productName:
+            button.dataset.productName ||
+            "Dish",
+          variantId:
+            button.dataset.variantId || "",
+          price:
+            Number(
+              button.dataset.price || 0
+            )
+        });
+      }
+
+      const cartItemId =
+        button.dataset.cartItemId || "";
+
+      const item =
+        this.cartItems.find(
+          (cartItem) =>
+            String(cartItem.cartItemId || "") ===
+            String(cartItemId)
+        );
+
+      if (!item) {
+        this.showCartStatus(
+          "Cart item was not found. Refreshing cart..."
+        );
+
+        return this.loadCustomerCart();
+      }
+
+      if (action === "INCREASE") {
+        return this.updateCustomerCartItem(
+          item,
+          Number(item.quantity || 0) + 1
+        );
+      }
+
+      if (action === "DECREASE") {
+        return this.updateCustomerCartItem(
+          item,
+          Number(item.quantity || 0) - 1
+        );
+      }
+
+      if (action === "REMOVE") {
+        return this.removeCustomerCartItem(
+          item
+        );
+      }
+    },
+
+    async addCustomerCartItem(
+      product,
+      replaceCart = false
+    ) {
+      if (
+        !product.chefId ||
+        !product.productId ||
+        !product.variantId
+      ) {
+        this.showCartStatus(
+          "This product is not available for ordering yet."
+        );
+
+        return {
+          success: false,
+          reason: "PRODUCT_DATA_INCOMPLETE"
+        };
+      }
+
+      this.setCartOperationLoading(
+        true,
+        product.productId
+      );
+
+      try {
+        const response =
+          await API.request(
+            "add_customer_cart_item",
+            {
+              sessionId:
+                this.getSessionId(),
+              chefId:
+                product.chefId,
+              productId:
+                product.productId,
+              variantId:
+                product.variantId,
+              quantity:
+                1,
+              replaceCart:
+                replaceCart === true
+            },
+            {
+              timeoutMs: 90000
+            }
+          );
+
+        this.pendingCartProduct = null;
+
+        this.closeCartReplacementDialog();
+
+        this.applyCartResponse(
+          response.data || {}
+        );
+
+        this.showCartStatus(
+          product.productName +
+          " added to cart."
+        );
+
+        return {
+          success: true,
+          data: response.data
+        };
+
+      } catch (error) {
+        const code =
+          String(
+            error.code || ""
+          ).toUpperCase();
+
+        const replacementRequired = [
+          "CART_KITCHEN_MISMATCH",
+          "DIFFERENT_KITCHEN_CART",
+          "ONE_KITCHEN_PER_CART",
+          "CART_REPLACEMENT_REQUIRED"
+        ].includes(code);
+
+        if (
+          replacementRequired &&
+          replaceCart !== true
+        ) {
+          this.openCartReplacementDialog(
+            product
+          );
+
+          return {
+            success: false,
+            replacementRequired: true,
+            code: code
+          };
+        }
+
+        console.error(
+          "Add cart item failed:",
+          error
+        );
+
+        this.showCartStatus(
+          error.message ||
+          "The item could not be added."
+        );
+
+        return {
+          success: false,
+          code:
+            code ||
+            "CART_ADD_FAILED",
+          error:
+            error.message
+        };
+
+      } finally {
+        this.setCartOperationLoading(
+          false,
+          product.productId
+        );
+      }
+    },
+
+    async updateCustomerCartItem(
+      item,
+      quantity
+    ) {
+      if (quantity <= 0) {
+        return this.removeCustomerCartItem(
+          item
+        );
+      }
+
+      this.setCartOperationLoading(
+        true,
+        item.productId
+      );
+
+      try {
+        const response =
+          await API.request(
+            "update_customer_cart_item",
+            {
+              sessionId:
+                this.getSessionId(),
+              cartItemId:
+                item.cartItemId,
+              quantity:
+                quantity
+            },
+            {
+              timeoutMs: 90000
+            }
+          );
+
+        this.applyCartResponse(
+          response.data || {}
+        );
+
+        this.showCartStatus(
+          "Cart quantity updated."
+        );
+
+        return {
+          success: true,
+          data: response.data
+        };
+
+      } catch (error) {
+        console.error(
+          "Update cart item failed:",
+          error
+        );
+
+        this.showCartStatus(
+          error.message ||
+          "Cart quantity could not be updated."
+        );
+
+        return {
+          success: false,
+          code:
+            error.code ||
+            "CART_UPDATE_FAILED",
+          error:
+            error.message
+        };
+
+      } finally {
+        this.setCartOperationLoading(
+          false,
+          item.productId
+        );
+      }
+    },
+
+    async removeCustomerCartItem(item) {
+      this.setCartOperationLoading(
+        true,
+        item.productId
+      );
+
+      try {
+        const response =
+          await API.request(
+            "remove_customer_cart_item",
+            {
+              sessionId:
+                this.getSessionId(),
+              cartItemId:
+                item.cartItemId
+            },
+            {
+              timeoutMs: 90000
+            }
+          );
+
+        this.applyCartResponse(
+          response.data || {}
+        );
+
+        this.showCartStatus(
+          "Item removed from cart."
+        );
+
+        return {
+          success: true,
+          data: response.data
+        };
+
+      } catch (error) {
+        console.error(
+          "Remove cart item failed:",
+          error
+        );
+
+        this.showCartStatus(
+          error.message ||
+          "The item could not be removed."
+        );
+
+        return {
+          success: false,
+          code:
+            error.code ||
+            "CART_REMOVE_FAILED",
+          error:
+            error.message
+        };
+
+      } finally {
+        this.setCartOperationLoading(
+          false,
+          item.productId
+        );
+      }
+    },
+
+    openCartReplacementDialog(product) {
+      this.pendingCartProduct =
+        product;
+
+      this.elements.currentCartKitchenName
+        .textContent =
+          this.getCartKitchenName();
+
+      this.elements.newCartKitchenName
+        .textContent =
+          product.businessName ||
+          "Selected kitchen";
+
+      if (
+        typeof this.elements.cartDialog
+          .showModal === "function"
+      ) {
+        this.elements.cartDialog.showModal();
+      } else {
+        this.elements.cartDialog
+          .setAttribute("open", "");
+      }
+    },
+
+    closeCartReplacementDialog() {
+      if (!this.elements.cartDialog) {
+        return;
+      }
+
+      if (
+        typeof this.elements.cartDialog
+          .close === "function" &&
+        this.elements.cartDialog.open
+      ) {
+        this.elements.cartDialog.close();
+      } else {
+        this.elements.cartDialog
+          .removeAttribute("open");
+      }
+    },
+
+    async confirmCartReplacement() {
+      if (!this.pendingCartProduct) {
+        this.closeCartReplacementDialog();
+        return;
+      }
+
+      this.elements.replaceCurrentCartButton
+        .disabled =
+          true;
+
+      this.elements.keepCurrentCartButton
+        .disabled =
+          true;
+
+      this.elements.replaceCurrentCartButton
+        .textContent =
+          "Replacing...";
+
+      try {
+        await this.addCustomerCartItem(
+          this.pendingCartProduct,
+          true
+        );
+      } finally {
+        this.elements.replaceCurrentCartButton
+          .disabled =
+            false;
+
+        this.elements.keepCurrentCartButton
+          .disabled =
+            false;
+
+        this.elements.replaceCurrentCartButton
+          .textContent =
+            "Replace Cart";
+      }
+    },
+
+    setCartOperationLoading(
+      loading,
+      productId
+    ) {
+      this.cartOperationRunning =
+        loading;
+
+      this.elements.kitchenList
+        .querySelectorAll(
+          "[data-cart-action]"
+        )
+        .forEach((button) => {
+          const matchingProduct =
+            !productId ||
+            String(
+              button.dataset.productId || ""
+            ) ===
+            String(productId);
+
+          button.disabled =
+            loading;
+
+          if (
+            loading &&
+            matchingProduct
+          ) {
+            button.classList.add(
+              "cart-control-loading"
+            );
+          } else {
+            button.classList.remove(
+              "cart-control-loading"
+            );
+          }
+        });
+    },
+
+    showCartStatus(message) {
+      if (!message) {
+        return;
+      }
+
+      window.clearTimeout(
+        this.cartStatusTimer
+      );
+
+      this.elements.cartOperationStatus
+        .textContent =
+          message;
+
+      this.elements.cartOperationStatus
+        .classList.remove(
+          "hidden"
+        );
+
+      this.cartStatusTimer =
+        window.setTimeout(
+          () => {
+            this.elements.cartOperationStatus
+              .classList.add(
+                "hidden"
+              );
+          },
+          3500
+        );
+    },
+
+    formatCartMoney(value) {
+      return new Intl.NumberFormat(
+        "en-IN",
+        {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        }
+      ).format(
+        Number(value || 0)
+      );
+    },
+
+    async testCartIntegration() {
+      console.log(
+        "========================================"
+      );
+      console.log(
+        "APNABITE CUSTOMER HOME CART TEST"
+      );
+      console.log(
+        "========================================"
+      );
+
+      const loadResult =
+        await this.loadCustomerCart();
+
+      const productControls =
+        this.elements.kitchenList
+          .querySelectorAll(
+            ".product-cart-controls"
+          );
+
+      const results = [
+        {
+          test: "Cart API",
+          expected: true,
+          actual: loadResult.success,
+          passed:
+            loadResult.success === true
+        },
+        {
+          test: "Cart items array",
+          expected: true,
+          actual:
+            Array.isArray(this.cartItems),
+          passed:
+            Array.isArray(this.cartItems)
+        },
+        {
+          test: "Cart summary",
+          expected: true,
+          actual:
+            Boolean(this.cartSummary),
+          passed:
+            Boolean(this.cartSummary)
+        },
+        {
+          test: "Product cart controls",
+          expected: true,
+          actual:
+            productControls.length,
+          passed:
+            this.kitchens.length === 0 ||
+            productControls.length > 0
+        },
+        {
+          test: "Cart summary bar",
+          expected: true,
+          actual:
+            Boolean(
+              this.elements.cartSummary
+            ),
+          passed:
+            Boolean(
+              this.elements.cartSummary
+            )
+        },
+        {
+          test: "One-kitchen dialog",
+          expected: true,
+          actual:
+            Boolean(
+              this.elements.cartDialog
+            ),
+          passed:
+            Boolean(
+              this.elements.cartDialog
+            )
+        }
+      ];
+
+      const passed =
+        results.every(
+          (result) => result.passed
+        );
+
+      console.table(results);
+
+      console.log(
+        "Customer Cart:",
+        {
+          cart: this.cart,
+          items: this.cartItems,
+          summary: this.cartSummary
+        }
+      );
+
+      console.log(
+        passed
+          ? "Customer Home Cart Test: PASS"
+          : "Customer Home Cart Test: FAIL"
+      );
+
+      return {
+        success: passed,
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+        cart: this.cart,
+        items: this.cartItems,
+        summary: this.cartSummary,
+        results: results
+      };
+    }
+  });
+})();
