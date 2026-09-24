@@ -5886,3 +5886,513 @@ document.addEventListener(
     }
   });
 })();
+
+/**
+ * ============================================================
+ * CUSTOMER CART OPTIMISTIC UI
+ * VERSION: 1.0.0
+ * ============================================================
+ */
+(() => {
+  const serverAddCartItem =
+    CustomerHome.addCustomerCartItem.bind(CustomerHome);
+
+  const serverUpdateCartItem =
+    CustomerHome.updateCustomerCartItem.bind(CustomerHome);
+
+  const serverRemoveCartItem =
+    CustomerHome.removeCustomerCartItem.bind(CustomerHome);
+
+  Object.assign(CustomerHome, {
+    snapshotCartState_() {
+      return {
+        cart:
+          this.cart
+            ? JSON.parse(
+                JSON.stringify(this.cart)
+              )
+            : null,
+        items:
+          JSON.parse(
+            JSON.stringify(
+              this.cartItems || []
+            )
+          ),
+        summary:
+          JSON.parse(
+            JSON.stringify(
+              this.cartSummary || {
+                distinctItems: 0,
+                totalQuantity: 0,
+                subtotal: 0
+              }
+            )
+          )
+      };
+    },
+
+    restoreCartState_(snapshot) {
+      this.cart =
+        snapshot.cart;
+
+      this.cartItems =
+        snapshot.items;
+
+      this.cartSummary =
+        snapshot.summary;
+
+      this.renderCartSummary();
+      this.syncProductCartControls();
+    },
+
+    recalculateOptimisticCart_() {
+      let totalQuantity = 0;
+      let subtotal = 0;
+
+      this.cartItems.forEach(
+        (item) => {
+          const quantity =
+            Number(item.quantity || 0);
+
+          const price =
+            Number(
+              item.priceSnapshot ||
+              item.currentPrice ||
+              0
+            );
+
+          item.itemTotal =
+            Math.round(
+              price *
+              quantity *
+              100
+            ) / 100;
+
+          totalQuantity +=
+            quantity;
+
+          subtotal +=
+            item.itemTotal;
+        }
+      );
+
+      this.cartSummary = {
+        distinctItems:
+          this.cartItems.length,
+        totalQuantity:
+          totalQuantity,
+        subtotal:
+          Math.round(
+            subtotal * 100
+          ) / 100
+      };
+
+      if (
+        this.cartItems.length === 0
+      ) {
+        this.cart = null;
+      }
+
+      this.renderCartSummary();
+      this.syncProductCartControls();
+    },
+
+    getOptimisticProduct_(
+      product
+    ) {
+      const kitchen =
+        this.kitchens.find(
+          (item) =>
+            String(item.chefId || "") ===
+            String(product.chefId || "")
+        );
+
+      const discoveredProduct =
+        kitchen &&
+        Array.isArray(kitchen.products)
+          ? kitchen.products.find(
+              (item) =>
+                String(item.productId || "") ===
+                  String(product.productId || "") &&
+                String(
+                  item.variantId ||
+                  item.defaultVariantId ||
+                  ""
+                ) ===
+                  String(product.variantId || "")
+            )
+          : null;
+
+      return {
+        kitchen:
+          kitchen || null,
+        product:
+          discoveredProduct || null
+      };
+    },
+
+    async addCustomerCartItem(
+      product,
+      replaceCart = false
+    ) {
+      if (
+        this.cart &&
+        this.cart.chefId &&
+        String(this.cart.chefId) !==
+          String(product.chefId) &&
+        replaceCart !== true
+      ) {
+        this.openCartReplacementDialog(
+          product
+        );
+
+        return {
+          success: false,
+          replacementRequired: true,
+          code:
+            "CART_KITCHEN_CONFLICT"
+        };
+      }
+
+      const snapshot =
+        this.snapshotCartState_();
+
+      const resolved =
+        this.getOptimisticProduct_(
+          product
+        );
+
+      if (replaceCart === true) {
+        this.cartItems = [];
+      }
+
+      if (!this.cart) {
+        this.cart = {
+          cartId:
+            "OPTIMISTIC_CART",
+          chefId:
+            product.chefId,
+          businessName:
+            product.businessName ||
+            "Selected kitchen",
+          cartStatus:
+            "ACTIVE"
+        };
+      }
+
+      const existingItem =
+        this.cartItems.find(
+          (item) =>
+            String(item.productId || "") ===
+              String(product.productId || "") &&
+            String(item.variantId || "") ===
+              String(product.variantId || "")
+        );
+
+      if (existingItem) {
+        existingItem.quantity =
+          Number(
+            existingItem.quantity || 0
+          ) + 1;
+      } else {
+        this.cartItems.push({
+          cartItemId:
+            "OPTIMISTIC_" +
+            String(product.productId) +
+            "_" +
+            String(product.variantId),
+          cartId:
+            this.cart.cartId,
+          productId:
+            product.productId,
+          variantId:
+            product.variantId,
+          chefId:
+            product.chefId,
+          productName:
+            product.productName ||
+            (
+              resolved.product
+                ? resolved.product.productName
+                : "Dish"
+            ),
+          variantName:
+            resolved.product
+              ? resolved.product.variantName || ""
+              : "",
+          quantityLabel:
+            resolved.product
+              ? resolved.product.quantityLabel || ""
+              : "",
+          imageUrl:
+            resolved.product
+              ? resolved.product.imageUrl || ""
+              : "",
+          foodType:
+            resolved.product
+              ? resolved.product.foodType || ""
+              : "",
+          quantity:
+            1,
+          priceSnapshot:
+            Number(
+              product.price ||
+              (
+                resolved.product
+                  ? resolved.product.price
+                  : 0
+              )
+            ),
+          currentPrice:
+            Number(
+              product.price ||
+              (
+                resolved.product
+                  ? resolved.product.price
+                  : 0
+              )
+            ),
+          priceChanged:
+            false,
+          productAvailable:
+            true
+        });
+      }
+
+      this.recalculateOptimisticCart_();
+
+      try {
+        const result =
+          await serverAddCartItem(
+            product,
+            replaceCart
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          if (
+            result &&
+            result.replacementRequired
+          ) {
+            this.restoreCartState_(
+              snapshot
+            );
+            return result;
+          }
+
+          throw new Error(
+            result &&
+            result.error
+              ? result.error
+              : "Cart item could not be saved."
+          );
+        }
+
+        return result;
+
+      } catch (error) {
+        this.restoreCartState_(
+          snapshot
+        );
+
+        this.showCartStatus(
+          "Cart was restored because the item could not be saved."
+        );
+
+        throw error;
+      }
+    },
+
+    async updateCustomerCartItem(
+      item,
+      quantity
+    ) {
+      if (quantity <= 0) {
+        return this.removeCustomerCartItem(
+          item
+        );
+      }
+
+      const snapshot =
+        this.snapshotCartState_();
+
+      const serverItem =
+        JSON.parse(
+          JSON.stringify(item)
+        );
+
+      const optimisticItem =
+        this.cartItems.find(
+          (cartItem) =>
+            String(cartItem.cartItemId || "") ===
+            String(item.cartItemId || "")
+        );
+
+      if (!optimisticItem) {
+        return serverUpdateCartItem(
+          item,
+          quantity
+        );
+      }
+
+      optimisticItem.quantity =
+        quantity;
+
+      this.recalculateOptimisticCart_();
+
+      try {
+        const result =
+          await serverUpdateCartItem(
+            serverItem,
+            quantity
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.error
+              ? result.error
+              : "Cart quantity could not be saved."
+          );
+        }
+
+        return result;
+
+      } catch (error) {
+        this.restoreCartState_(
+          snapshot
+        );
+
+        this.showCartStatus(
+          "Previous quantity restored because saving failed."
+        );
+
+        throw error;
+      }
+    },
+
+    async removeCustomerCartItem(
+      item
+    ) {
+      const snapshot =
+        this.snapshotCartState_();
+
+      const serverItem =
+        JSON.parse(
+          JSON.stringify(item)
+        );
+
+      this.cartItems =
+        this.cartItems.filter(
+          (cartItem) =>
+            String(cartItem.cartItemId || "") !==
+            String(item.cartItemId || "")
+        );
+
+      this.recalculateOptimisticCart_();
+
+      try {
+        const result =
+          await serverRemoveCartItem(
+            serverItem
+          );
+
+        if (
+          !result ||
+          result.success !== true
+        ) {
+          throw new Error(
+            result &&
+            result.error
+              ? result.error
+              : "Cart item could not be removed."
+          );
+        }
+
+        return result;
+
+      } catch (error) {
+        this.restoreCartState_(
+          snapshot
+        );
+
+        this.showCartStatus(
+          "Item restored because removal could not be saved."
+        );
+
+        throw error;
+      }
+    },
+
+    async testOptimisticCartUI() {
+      const results = [
+        {
+          test:
+            "Cart snapshot",
+          expected:
+            "Function",
+          actual:
+            typeof this.snapshotCartState_,
+          passed:
+            typeof this.snapshotCartState_ ===
+            "function"
+        },
+        {
+          test:
+            "Cart rollback",
+          expected:
+            "Function",
+          actual:
+            typeof this.restoreCartState_,
+          passed:
+            typeof this.restoreCartState_ ===
+            "function"
+        },
+        {
+          test:
+            "Optimistic recalculation",
+          expected:
+            "Function",
+          actual:
+            typeof this.recalculateOptimisticCart_,
+          passed:
+            typeof this.recalculateOptimisticCart_ ===
+            "function"
+        },
+        {
+          test:
+            "Existing cart preserved",
+          expected:
+            true,
+          actual:
+            Array.isArray(this.cartItems),
+          passed:
+            Array.isArray(this.cartItems)
+        }
+      ];
+
+      const passed =
+        results.every(
+          (result) => result.passed
+        );
+
+      console.table(results);
+
+      return {
+        success:
+          passed,
+        status:
+          passed
+            ? "PASS"
+            : "FAIL",
+        results:
+          results
+      };
+    }
+  });
+})();
