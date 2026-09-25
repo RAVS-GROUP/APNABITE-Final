@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ef5b00">
+  <title>Payment | ApnaBite</title>
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../../shared/css/components.css">
+  <link rel="stylesheet" href="../../shared/css/responsive.css">
+  <link rel="stylesheet" href="../css/payment.css">
+</head>
+<body data-required-role="Customer">
+  <main class="payment-app">
+    <header class="payment-header">
+      <button id="paymentBackButton" type="button" aria-label="Return to cart">←</button>
+      <div><small>SECURE CHECKOUT</small><h1>Payment</h1></div>
+      <span aria-hidden="true">🔒</span>
+    </header>
+
+    <section class="test-banner">
+      <strong>TEST PAYMENT MODE</strong>
+      <p>No real money will be charged. This safely tests the checkout experience.</p>
+    </section>
+
+    <section id="paymentMissingState" class="state-card hidden">
+      <span>🛒</span><h2>Payment details unavailable</h2>
+      <p>Please return to your cart and prepare checkout again.</p>
+      <a href="cart.html">Return to Cart</a>
+    </section>
+
+    <div id="paymentContent" class="hidden">
+      <section class="payment-summary panel">
+        <div><small>PAYING TO</small><h2 id="paymentKitchenName">ApnaBite Kitchen</h2><p id="paymentItemCount">0 items</p></div>
+        <div class="amount"><small>TOTAL</small><strong id="paymentAmount">₹0</strong></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><h2>Choose payment method</h2><p>Select a test option</p></div><span>100% secure</span></div>
+        <div class="method-list" role="radiogroup" aria-label="Payment method">
+          <label class="method-card selected">
+            <input type="radio" name="paymentMethod" value="TEST_UPI" checked>
+            <span class="method-icon">₹</span><span class="method-copy"><strong>UPI</strong><small>Test UPI payment</small></span><span class="radio-mark"></span>
+          </label>
+          <label class="method-card">
+            <input type="radio" name="paymentMethod" value="TEST_CARD">
+            <span class="method-icon">💳</span><span class="method-copy"><strong>Credit / Debit Card</strong><small>Test card payment</small></span><span class="radio-mark"></span>
+          </label>
+          <label class="method-card">
+            <input type="radio" name="paymentMethod" value="TEST_COD">
+            <span class="method-icon">💵</span><span class="method-copy"><strong>Cash on Delivery</strong><small>Test COD selection</small></span><span class="radio-mark"></span>
+          </label>
+        </div>
+      </section>
+
+      <section id="testControls" class="panel test-controls">
+        <div class="section-heading"><div><h2>Test result</h2><p>Choose what the test gateway should return</p></div></div>
+        <label><input type="radio" name="testOutcome" value="SUCCESS" checked><span>✓ Success</span></label>
+        <label><input type="radio" name="testOutcome" value="FAILED"><span>× Failed</span></label>
+      </section>
+
+      <section class="panel bill-preview">
+        <h2>Payment summary</h2>
+        <div><span>Item subtotal</span><strong id="paymentSubtotal">₹0</strong></div>
+        <div><span>Delivery fee</span><strong id="paymentDeliveryFee">₹0</strong></div>
+        <div><span>Platform fee</span><strong id="paymentPlatformFee">₹0</strong></div>
+        <div id="paymentDiscountRow" class="saving hidden"><span>Savings</span><strong id="paymentDiscount">−₹0</strong></div>
+        <div class="payable"><span>Amount payable</span><strong id="paymentFinalAmount">₹0</strong></div>
+      </section>
+    </div>
+
+    <div id="paymentMessage" class="payment-message hidden" role="status" aria-live="polite"></div>
+
+    <aside id="paymentActionBar" class="payment-action hidden">
+      <div><small>Total payable</small><strong id="paymentBarAmount">₹0</strong></div>
+      <button id="payNowButton" type="button">Test Pay <span id="payButtonAmount">₹0</span></button>
+    </aside>
+  </main>
+
+  <dialog id="paymentResultDialog" class="result-dialog">
+    <div id="paymentResultIcon" class="result-icon">✓</div>
+    <h2 id="paymentResultTitle">Test payment successful</h2>
+    <p id="paymentResultMessage">No real money was charged.</p>
+    <dl><div><dt>Test reference</dt><dd id="paymentReference">—</dd></div><div><dt>Amount</dt><dd id="paymentResultAmount">₹0</dd></div></dl>
+    <button id="paymentResultButton" type="button">Continue</button>
+  </dialog>
+
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/api.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../js/payment.js"></script>
+</body>
+</html>
