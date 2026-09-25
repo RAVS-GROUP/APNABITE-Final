@@ -8,20 +8,11 @@
 .bill-preview>div{min-height:42px;display:flex;align-items:center;justify-content:space-between;color:#444;font-size:14px}.bill-preview .saving,.bill-preview .saving strong{color:var(--green)}.bill-preview .payable{margin-top:7px;padding-top:14px;border-top:1px dashed #ccc;color:#111;font-size:18px;font-weight:800}
 .payment-action{position:fixed;left:50%;bottom:14px;z-index:30;width:calc(100% - 28px);max-width:872px;min-height:92px;padding:14px 16px 14px 22px;border-radius:24px;background:#181818;display:flex;align-items:center;justify-content:space-between;gap:18px;color:#fff;transform:translateX(-50%);box-shadow:0 14px 35px rgba(0,0,0,.24)}.payment-action div{display:flex;flex-direction:column;gap:4px}.payment-action small{color:#ccc}.payment-action strong{color:#ff650d;font-size:23px}.payment-action button{min-width:210px;min-height:58px;padding:0 22px;border:0;border-radius:18px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer}.payment-action button:disabled{opacity:.6;cursor:not-allowed}
 .payment-message{position:fixed;left:50%;bottom:118px;z-index:40;max-width:calc(100% - 32px);padding:11px 16px;border-radius:999px;background:#292929;color:#fff;font-size:12px;transform:translateX(-50%)}.state-card{margin:24px 28px;padding:45px 24px;text-align:center}.state-card>span{font-size:45px}.state-card h2{margin:14px 0 7px}.state-card p{color:var(--muted)}.state-card a{display:inline-block;margin-top:12px;padding:12px 18px;border-radius:12px;background:var(--orange);color:#fff;text-decoration:none}
-
-.result-dialog {
-  position: fixed;
-  inset: 0;
-  width: min(410px, calc(100% - 32px));
-  max-height: calc(100vh - 32px);
-  margin: auto;
-  padding: 28px;
-  border: 0;
-  border-radius: 25px;
-  text-align: center;
-  overflow-y: auto;
-}
-
-.result-dialog::backdrop{background:rgba(0,0,0,.6)}.result-icon{width:62px;height:62px;margin:auto;border-radius:50%;background:#e9f8ef;color:var(--green);display:grid;place-items:center;font-size:34px;font-weight:900}.result-dialog.failed .result-icon{background:#ffebea;color:var(--red)}.result-dialog h2{margin:16px 0 8px}.result-dialog>p{color:var(--muted);font-size:13px}.result-dialog dl{margin:20px 0;padding:12px 15px;border-radius:14px;background:#f7f7f7}.result-dialog dl div{min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:15px}.result-dialog dt{color:var(--muted);font-size:12px}.result-dialog dd{margin:0;font-size:12px;font-weight:800}.result-dialog button{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--orange);color:#fff;font-weight:800}
+.result-dialog{width:min(410px,calc(100% - 32px));padding:28px;border:0;border-radius:25px;text-align:center}.result-dialog::backdrop{background:rgba(0,0,0,.6)}.result-icon{width:62px;height:62px;margin:auto;border-radius:50%;background:#e9f8ef;color:var(--green);display:grid;place-items:center;font-size:34px;font-weight:900}.result-dialog.failed .result-icon{background:#ffebea;color:var(--red)}.result-dialog h2{margin:16px 0 8px}.result-dialog>p{color:var(--muted);font-size:13px}.result-dialog dl{margin:20px 0;padding:12px 15px;border-radius:14px;background:#f7f7f7}.result-dialog dl div{min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:15px}.result-dialog dt{color:var(--muted);font-size:12px}.result-dialog dd{margin:0;font-size:12px;font-weight:800}.result-dialog button{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--orange);color:#fff;font-weight:800}
 @media(max-width:600px){.payment-header{min-height:76px;padding:12px 18px;grid-template-columns:48px 1fr 48px}.payment-header button{width:48px;height:48px;border-radius:16px}.payment-header h1{font-size:23px}.test-banner{margin:16px 18px 0}#paymentContent{padding:16px 18px}.panel{padding:20px}.payment-action button{min-width:175px;padding:0 15px;font-size:13px}}
 @media(max-width:380px){.payment-summary{align-items:flex-start}.payment-action button{min-width:150px}.payment-action{padding-left:16px}.payment-action strong{font-size:20px}}
+
+/* Optional student contribution and centred result dialog */
+.donation-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.donation-options label{cursor:pointer}.donation-options input{position:absolute;opacity:0}.donation-options span{min-height:44px;padding:0 8px;border:1px solid #ddd;border-radius:13px;display:grid;place-items:center;text-align:center;font-size:12px;font-weight:800}.donation-options input:checked+span{border-color:var(--orange);background:#fff3eb;color:#c84c00}.donation-note{margin:12px 0 0;color:var(--muted);font-size:11px;line-height:1.45}.bill-preview .donation-row,.bill-preview .donation-row strong{color:#9b4c12}
+.result-dialog{position:fixed;inset:0;max-height:calc(100vh - 32px);margin:auto;overflow-y:auto}
+@media(max-width:600px){.donation-options{grid-template-columns:repeat(3,minmax(0,1fr))}}
