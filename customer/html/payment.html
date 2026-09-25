@@ -63,12 +63,29 @@
         <label><input type="radio" name="testOutcome" value="FAILED"><span>× Failed</span></label>
       </section>
 
+      <section class="panel donation-panel">
+        <div class="section-heading">
+          <div><h2>Add a small contribution</h2><p>Optional support for underprivileged students</p></div>
+          <span>OPTIONAL</span>
+        </div>
+        <div class="donation-options" role="radiogroup" aria-label="Optional contribution">
+          <label><input type="radio" name="donationAmount" value="0" checked><span>No thanks</span></label>
+          <label><input type="radio" name="donationAmount" value="1"><span>₹1</span></label>
+          <label><input type="radio" name="donationAmount" value="2"><span>₹2</span></label>
+          <label><input type="radio" name="donationAmount" value="5"><span>₹5</span></label>
+          <label><input type="radio" name="donationAmount" value="10"><span>₹10</span></label>
+          <label><input type="radio" name="donationAmount" value="20"><span>₹20</span></label>
+        </div>
+        <p class="donation-note">Your selected contribution is added to the payable amount and recorded separately.</p>
+      </section>
+
       <section class="panel bill-preview">
         <h2>Payment summary</h2>
         <div><span>Item subtotal</span><strong id="paymentSubtotal">₹0</strong></div>
         <div><span>Delivery fee</span><strong id="paymentDeliveryFee">₹0</strong></div>
         <div><span>Platform fee</span><strong id="paymentPlatformFee">₹0</strong></div>
         <div id="paymentDiscountRow" class="saving hidden"><span>Savings</span><strong id="paymentDiscount">−₹0</strong></div>
+        <div id="paymentDonationRow" class="donation-row hidden"><span>Student contribution</span><strong id="paymentDonation">₹0</strong></div>
         <div class="payable"><span>Amount payable</span><strong id="paymentFinalAmount">₹0</strong></div>
       </section>
     </div>
