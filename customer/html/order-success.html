@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ef5b00">
+  <title>Order Placed | ApnaBite</title>
+  <link rel="manifest" href="../../manifest.json">
+  <link rel="icon" type="image/webp" href="../../shared/assets/images/apnabite-logo.webp">
+  <link rel="stylesheet" href="../../shared/css/reset.css">
+  <link rel="stylesheet" href="../../shared/css/variables.css">
+  <link rel="stylesheet" href="../../shared/css/common.css">
+  <link rel="stylesheet" href="../css/order-success.css">
+</head>
+<body data-required-role="Customer">
+  <main class="success-app">
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+    <section id="successMissing" class="missing hidden">
+      <span>🧾</span><h1>Order details unavailable</h1>
+      <p>Please open your Orders page to check the latest status.</p>
+      <a href="home.html">Go to Home</a>
+    </section>
+
+    <div id="successContent" class="hidden">
+      <section class="hero-card">
+        <div class="success-check">✓</div>
+        <p class="eyebrow">WOW! ORDER PLACED</p>
+        <h1>Your craving is officially on its way!</h1>
+        <p>Thank you for choosing ApnaBite. The kitchen has received your order.</p>
+        <div class="order-chip">Order <strong id="successOrderId">—</strong></div>
+      </section>
+
+      <section class="status-card">
+        <div class="section-title"><div><small>LIVE ORDER STATUS</small><h2 id="successStatus">Order placed</h2></div><span class="pulse"></span></div>
+        <div class="timeline">
+          <div class="timeline-step active"><span>1</span><div><strong>Order received</strong><small>Waiting for kitchen confirmation</small></div></div>
+          <div class="timeline-step"><span>2</span><div><strong>Preparing</strong><small>Your meal will be freshly prepared</small></div></div>
+          <div class="timeline-step"><span>3</span><div><strong>Rider tracking</strong><small>Live tracking starts after rider assignment</small></div></div>
+        </div>
+        <button id="trackOrderButton" type="button" class="primary-button">Track Order</button>
+      </section>
+
+      <section id="cancelCard" class="cancel-card">
+        <div><small>FREE CANCELLATION WINDOW</small><h2 id="cancelCountdown">01:00</h2><p id="cancelText">Cancellation availability is controlled by the server deadline.</p></div>
+        <button id="cancelOrderButton" type="button">Cancel Order</button>
+      </section>
+
+      <section class="details-grid">
+        <article><span>💳</span><small>Paid</small><strong id="successAmount">₹0</strong></article>
+        <article><span>⭐</span><small>Points after completion</small><strong id="successReward">0 points</strong></article>
+      </section>
+
+      <section id="impactCard" class="impact-card hidden">
+        <span>💛</span><div><small>YOUR IMPACT</small><h2>Thank you for contributing <strong id="impactAmount">₹0</strong></h2><p id="impactCause">Supporting underprivileged students</p></div>
+      </section>
+
+      <section class="feedback-card">
+        <small>HELP US IMPROVE</small><h2>How was your checkout experience?</h2>
+        <div id="ratingButtons" class="rating-buttons" aria-label="Rate the app">
+          <button type="button" data-rating="1">★</button><button type="button" data-rating="2">★</button><button type="button" data-rating="3">★</button><button type="button" data-rating="4">★</button><button type="button" data-rating="5">★</button>
+        </div>
+        <textarea id="feedbackText" maxlength="300" placeholder="Share feedback (optional)"></textarea>
+        <button id="submitFeedbackButton" type="button" class="secondary-button">Submit Feedback</button>
+        <p id="feedbackStatus" class="feedback-status hidden" role="status"></p>
+      </section>
+
+      <a class="home-link" href="home.html">Continue exploring ApnaBite</a>
+    </div>
+  </main>
+  <script src="../../shared/js/storage.js"></script>
+  <script src="../../shared/js/session.js"></script>
+  <script src="../../shared/js/auth.js"></script>
+  <script src="../../shared/js/app-router.js"></script>
+  <script src="../js/order-success.js"></script>
+</body>
+</html>
